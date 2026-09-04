@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vises
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vises}
+      POSTGRES_DB: vises
+    volumes:
+      - vises_pg:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vises"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://vises:${POSTGRES_PASSWORD:-vises}@db:5432/vises
+      JWT_SECRET: ${JWT_SECRET:-dev-change-me}
+      UPLOAD_DIR: /data/uploads
+    ports:
+      - "127.0.0.1:8100:8100"
+    volumes:
+      - vises_uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  vises_pg:
+  vises_uploads:
