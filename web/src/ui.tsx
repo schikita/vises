@@ -25,6 +25,9 @@ export function StatusBadge({ status }: { status: Status }) {
     booked: 'bg-[#dcefe8] text-leaf',
     done: 'bg-[#e7f6ed] text-[#146c3a]',
     fixes: 'bg-[#fbe7e0] text-clay',
+    autofill_ok: 'bg-[#e4f3ea] text-[#1f6b42]',
+    autofill_failed: 'bg-[#fbe7e0] text-clay',
+    declined: 'bg-[#f0e6e4] text-[#7a3b32]',
   }
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${map[status]}`}>

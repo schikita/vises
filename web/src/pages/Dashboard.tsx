@@ -39,7 +39,20 @@ export function Dashboard() {
         <Card>
           <p className="font-bold">По статусам</p>
           <ul className="mt-4 space-y-3">
-            {(['new', 'docs', 'review', 'ready', 'booked', 'done', 'fixes'] as Status[]).map(
+            {(
+              [
+                'new',
+                'docs',
+                'review',
+                'ready',
+                'booked',
+                'done',
+                'fixes',
+                'autofill_ok',
+                'autofill_failed',
+                'declined',
+              ] as Status[]
+            ).map(
               (id) => {
                 const n = byStatus(id)
                 const max = Math.max(apps.length, 1)

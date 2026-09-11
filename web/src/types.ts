@@ -8,6 +8,9 @@ export type Status =
   | 'booked'
   | 'done'
   | 'fixes'
+  | 'autofill_ok'
+  | 'autofill_failed'
+  | 'declined'
 
 export type DocType =
   | 'selfie'
@@ -51,6 +54,8 @@ export interface DocFile {
   type: DocType
   name: string
   uploadedAt: string
+  /** Server filesystem name; absent/empty means open is unavailable (DEC-005). */
+  stored?: string
   preview?: string
 }
 
@@ -177,11 +182,26 @@ export function publicUrl(path: string) {
 export const STATUSES: { id: Status; label: string; hint: string }[] = [
   { id: 'new', label: 'Новая', hint: 'Заявка только создана' },
   { id: 'docs', label: 'Документы', hint: 'Ждём файлы от клиента' },
-  { id: 'review', label: 'Проверка', hint: 'Агент смотрит комплект' },
+  { id: 'review', label: 'На рассмотрении', hint: 'Агент смотрит комплект / автозаполнение прошло успешно' },
   { id: 'ready', label: 'Готова', hint: 'Можно записывать на визит' },
   { id: 'booked', label: 'Визит назначен', hint: 'Дата и время известны' },
   { id: 'done', label: 'Завершена', hint: 'Клиент сходил в центр' },
   { id: 'fixes', label: 'Нужны правки', hint: 'Клиенту надо что-то исправить' },
+  {
+    id: 'autofill_ok',
+    label: 'Автозаполнение успешно',
+    hint: 'Ручной статус: автозаполнение прошло успешно',
+  },
+  {
+    id: 'autofill_failed',
+    label: 'Ошибка автозаполнения',
+    hint: 'Ручной статус: при автозаполнении была ошибка',
+  },
+  {
+    id: 'declined',
+    label: 'Отклонено порталом',
+    hint: 'Ручной статус: портал отклонил заявку',
+  },
 ]
 
 export const DOC_TYPES: { id: DocType; label: string; required: boolean }[] = [
@@ -225,6 +245,129 @@ export function formatDateTime(iso: string) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+/** Portal autofill capture outcome (mirrors backend list DTO; not CRM Status). */
+export type PortalAutofillCaptureStatus = 'captured' | 'capture_failed'
+
+/** Staff list item from GET /apps/:applicationId/portal-autofill-runs (DEC-001). */
+export interface PortalAutofillRunListItem {
+  id: string
+  applicationId: string
+  applicantId: string
+  createdAt: string
+  captureStatus: PortalAutofillCaptureStatus
+  reportOk: boolean
+  errorNote: string | null
+  screenshotAvailable: boolean
+  /** Absolute API path when a PNG was captured; otherwise null */
+  downloadPath: string | null
+}
+
+export interface PortalAutofillRunListResponse {
+  runs: PortalAutofillRunListItem[]
+}
+
+/** Russian labels for portal run capture status (DEC-006). Do not use CRM StatusBadge. */
+export function portalCaptureStatusLabel(status: PortalAutofillCaptureStatus) {
+  if (status === 'captured') return 'Скриншот сохранён'
+  if (status === 'capture_failed') return 'Скриншот не сохранён'
+  return status
+}
+
+/** Russian labels for portal fill reportOk (DEC-006). */
+export function portalReportOkLabel(reportOk: boolean) {
+  return reportOk ? 'Заполнение: успешно' : 'Заполнение: с ошибками'
+}
+
+/** Minimal autofill report shape from POST …/portal-autofill (200/422/502 body). */
+export interface AutofillReportSummary {
+  ok: boolean
+  applicationId: string
+  applicantId: string
+  summary?: {
+    filled: number
+    skipped: number
+    failed: number
+  }
+  generatedAt?: string
+  evidence?: {
+    runId: string
+    captureOk: boolean
+    downloadPath?: string
+    error?: string
+  }
+}
+
+/** Result of store.runPortalAutofill (DEC-006): keep report body on 422/502. */
+export interface PortalAutofillRunResult {
+  httpStatus: number
+  report?: AutofillReportSummary
+  message?: string
+}
+
+/** CRM status after staff portal autofill settles (truthful, not random). */
+export type PortalAutofillCrmOutcome = {
+  status: Extract<Status, 'review' | 'declined'>
+  note: string
+}
+
+/**
+ * Map autofill result → CRM status.
+ * Success only when fill report is ok and a screenshot was captured;
+ * otherwise declined.
+ */
+export function resolveCrmStatusAfterPortalAutofill(
+  result: PortalAutofillRunResult,
+): PortalAutofillCrmOutcome {
+  const fillOk = result.report?.ok === true
+  const screenshotOk = result.report?.evidence?.captureOk === true
+  if (fillOk && screenshotOk) {
+    return {
+      status: 'review',
+      note: 'После автозаполнения: поля заполнены, скриншот сохранён — статус «На рассмотрении»',
+    }
+  }
+  return {
+    status: 'declined',
+    note: 'После автозаполнения: ошибка или скриншот не сохранён — статус «Отклонено»',
+  }
+}
+
+const PORTAL_AUTOFILL_REQUIRED_FIELDS: (keyof Applicant)[] = [
+  'firstName',
+  'lastName',
+  'lastNameAtBirth',
+  'dob',
+  'countryOfBirth',
+  'passportNumber',
+  'passportIssued',
+  'passportExpires',
+  'passportType',
+  'passportIssuedBy',
+]
+
+/** Digits-only phone length required by portal mapper (REQ-002). */
+export function portalAutofillPhoneDigits(phone: string | undefined): string {
+  return (phone ?? '').replace(/\D/g, '')
+}
+
+/**
+ * Client-side completeness gate for staff portal autofill trigger (REQ-002 / DEC-005).
+ * Does not use requiredDocsOk or CRM status.
+ */
+export function isPortalAutofillApplicantReady(
+  applicant: Applicant | undefined | null,
+  clientEmail: string | undefined | null,
+): boolean {
+  if (!applicant) return false
+  for (const key of PORTAL_AUTOFILL_REQUIRED_FIELDS) {
+    const raw = applicant[key]
+    if (typeof raw !== 'string' || !raw.trim()) return false
+  }
+  if (portalAutofillPhoneDigits(applicant.phone).length !== 9) return false
+  const email = (applicant.email ?? '').trim() || (clientEmail ?? '').trim()
+  return Boolean(email)
 }
 
 export function money(n: number) {

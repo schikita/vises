@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Upload } from 'lucide-react'
 import { useStore } from '../store'
@@ -15,6 +16,8 @@ import { Avatar, Card, Empty, StatusBadge } from '../ui'
 export function ClientApplication() {
   const { id } = useParams()
   const { apps, session, addDoc } = useStore()
+  const [docError, setDocError] = useState('')
+  const [uploading, setUploading] = useState<DocType | null>(null)
   const app = apps.find(
     (a) =>
       a.id === id &&
@@ -28,6 +31,8 @@ export function ClientApplication() {
   }
 
   function onFile(type: DocType, file: File) {
+    setDocError('')
+    setUploading(type)
     void addDoc(
       app!.id,
       {
@@ -38,6 +43,10 @@ export function ClientApplication() {
       },
       file,
     )
+      .catch((err: unknown) =>
+        setDocError(err instanceof Error ? err.message : 'Не удалось загрузить'),
+      )
+      .finally(() => setUploading(null))
   }
 
   return (
@@ -75,6 +84,8 @@ export function ClientApplication() {
           <div className="mt-4 space-y-3">
             {DOC_TYPES.filter((d) => d.id !== 'other').map((doc) => {
               const have = app.documents.filter((f) => f.type === doc.id)
+              const latest = have[have.length - 1]
+              const missingFile = have.length > 0 && !latest?.stored
               return (
                 <label
                   key={doc.id}
@@ -86,8 +97,15 @@ export function ClientApplication() {
                       {doc.required ? ' *' : ''}
                     </p>
                     <p className="text-xs text-muted">
-                      {have.length ? have.map((f) => f.name).join(', ') : 'ещё не загружено'}
+                      {have.length
+                        ? have.map((f) => f.name).join(', ')
+                        : uploading === doc.id
+                          ? 'загружаем…'
+                          : 'ещё не загружено'}
                     </p>
+                    {missingFile && (
+                      <p className="mt-1 text-xs font-semibold text-muted">Файл недоступен</p>
+                    )}
                   </div>
                   <span className="flex items-center gap-1 text-sm font-bold text-leaf">
                     <Upload size={14} />
@@ -100,12 +118,14 @@ export function ClientApplication() {
                     onChange={(e) => {
                       const file = e.target.files?.[0]
                       if (file) onFile(doc.id, file)
+                      e.target.value = ''
                     }}
                   />
                 </label>
               )
             })}
           </div>
+          {docError && <p className="mt-4 text-sm font-semibold text-clay">{docError}</p>}
           {requiredDocsOk(app) && (
             <p className="mt-4 text-sm font-semibold text-leaf">Обязательные файлы на месте.</p>
           )}

@@ -1,29 +1,39 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18.6-alpine
     environment:
       POSTGRES_USER: vises
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vises}
       POSTGRES_DB: vises
     volumes:
-      - vises_pg:/var/lib/postgresql/data
+      - ./backend/vises_pg:/var/lib/postgresql
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vises"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  # Default api image has no Patchright browser binaries (DEC-010 / DEC-005).
+  # Portal autofill: host Nest Dev + HTTP POST /api/apps/:id/portal-autofill
+  # (not Nest-DI CLI). See .env.example for VISES_PORTAL_* and :5500 stand-in.
   api:
     build: ./backend
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql+psycopg://vises:${POSTGRES_PASSWORD:-vises}@db:5432/vises
-      JWT_SECRET: ${JWT_SECRET:-dev-change-me}
+      DATABASE_URL: postgresql://vises:${POSTGRES_PASSWORD:-vises}@db:5432/vises
+      # Must not be dev-change-me: Nest image runs NODE_ENV=production (DEC-007).
+      JWT_SECRET: ${JWT_SECRET:-vises-local-dev-only}
+      # Local demo UX default on; production hosts should set false / omit (DEC-001).
+      DEMO_AUTH_ENABLED: ${DEMO_AUTH_ENABLED:-true}
       UPLOAD_DIR: /data/uploads
     ports:
-      - "127.0.0.1:8100:8100"
+      - "8100:8100"
     volumes:
-      - vises_uploads:/data/uploads
+      - ./backend/vises_uploads:/data/uploads
     depends_on:
       db:
         condition: service_healthy

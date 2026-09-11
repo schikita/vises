@@ -22,7 +22,12 @@ export const CITIES_BY_COUNTRY: Record<string, string[]> = {
 
 const RELATIONSHIPS = ['Self', 'Spouse', 'Child', 'Parent', 'Other']
 const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed', 'Separated']
-const PASSPORT_TYPES = ['Ordinary passport', 'Diplomatic passport', 'Service passport', 'Official passport']
+export const PASSPORT_TYPES = [
+  'Ordinary passport',
+  'Diplomatic passport',
+  'Service passport',
+  'Official passport',
+]
 const PURPOSES = ['Tourism', 'Business', 'Family visit', 'Medical', 'Study', 'Transit', 'Other']
 const ENTRIES = ['Single entry', 'Two entries', 'Multientry']
 
@@ -58,11 +63,12 @@ export function ApplicantFields({
               required
             />
           </Field>
-          <Field label="Surname at birth">
+          <Field label="Surname at birth" required>
             <input
               className="field uppercase"
               value={p.lastNameAtBirth}
               onChange={(e) => onChange({ lastNameAtBirth: latin(e.target.value) })}
+              required
             />
           </Field>
           <Field label="First name(s)" required>
@@ -196,8 +202,15 @@ export function ApplicantFields({
           <Field label="Email">
             <input className="field" type="email" value={p.email} onChange={(e) => onChange({ email: e.target.value })} />
           </Field>
-          <Field label="Telephone">
-            <input className="field" value={p.phone} onChange={(e) => onChange({ phone: e.target.value })} />
+          <Field label="Telephone" required>
+            <input
+              className="field"
+              value={p.phone}
+              onChange={(e) => onChange({ phone: e.target.value })}
+              placeholder="291234567"
+              inputMode="numeric"
+              required
+            />
           </Field>
           <div className="sm:col-span-2">
             <Field label="Home address">

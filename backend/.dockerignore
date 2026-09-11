@@ -1,0 +1,9 @@
+node_modules
+dist
+vises_pg
+vises_uploads
+.env
+*.md
+.venv
+__pycache__
+*.pyc

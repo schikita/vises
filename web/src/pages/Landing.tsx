@@ -17,15 +17,17 @@ export function Landing() {
     const as = params.get('as') as Role | null
     const to = params.get('to')
     if (as === 'client' || as === 'manager' || as === 'admin') {
-      void login(as).then((ok) => {
-        if (ok) nav(to || homePath(as))
+      void login(as).then((result) => {
+        if (result === true) nav(to || homePath(as))
+        else setError(result)
       })
     }
   }, [login, nav])
 
   async function enter(role: Role) {
-    const ok = await login(role)
-    if (ok) nav(homePath(role))
+    const result = await login(role)
+    if (result === true) nav(homePath(role))
+    else setError(result)
   }
 
   async function submit(e: FormEvent) {
@@ -134,7 +136,7 @@ export function Landing() {
 
       <footer className="mx-auto flex max-w-6xl items-center gap-2 px-5 py-8 text-sm text-muted">
         <Check size={14} className="text-leaf" />
-        Демо. Пользователи и заявки хранятся в этом браузере.
+        Демо. Пользователи и заявки хранятся на сервере (база данных).
       </footer>
     </div>
   )

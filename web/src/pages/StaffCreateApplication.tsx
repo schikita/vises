@@ -1,11 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Upload } from 'lucide-react'
-import { useStore } from '../store'
+import { ArrowLeft, Copy, Link2, Plus, Trash2, Upload } from 'lucide-react'
+import { useStore, type IssuedAccess } from '../store'
 import type { Applicant } from '../types'
-import { emptyApplicant, emptyApplication, nowIso, staffBase } from '../types'
+import { emptyApplicant, emptyApplication, invitePath, nowIso, publicUrl, staffBase } from '../types'
 import { ApplicantFields, CATEGORIES, CITIES_BY_COUNTRY, SUBMIT_COUNTRIES } from '../visaForm'
 import { Btn, Card, Field } from '../ui'
+
+function inviteUrl(token: string) {
+  return publicUrl(invitePath(token))
+}
 
 export function StaffCreateApplication() {
   const { session, upsert, addDoc, settings } = useStore()
@@ -14,6 +18,9 @@ export function StaffCreateApplication() {
   const [video, setVideo] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [issued, setIssued] = useState<IssuedAccess | null>(null)
+  const [createdAppId, setCreatedAppId] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const [draft, setDraft] = useState(() => {
     const app = emptyApplication('')
     app.paymentAmount = settings.defaultPrice
@@ -31,6 +38,7 @@ export function StaffCreateApplication() {
   })
 
   const cities = CITIES_BY_COUNTRY[draft.submitCountry] ?? ['Minsk']
+  const staffAppsBase = `${staffBase(session?.role)}/apps`
 
   function patch(p: Partial<typeof draft>) {
     setDraft({ ...draft, ...p })
@@ -48,7 +56,29 @@ export function StaffCreateApplication() {
   }
 
   function canPeople() {
-    return draft.applicants.every((p) => p.firstName && p.lastName && p.dob && p.passportNumber && p.placeOfBirth)
+    return draft.applicants.every(
+      (p) =>
+        p.firstName &&
+        p.lastName &&
+        p.lastNameAtBirth &&
+        p.dob &&
+        p.placeOfBirth &&
+        p.passportNumber &&
+        p.passportType &&
+        p.passportIssuedBy &&
+        p.phone,
+    )
+  }
+
+  function goToCreatedApp() {
+    if (!createdAppId) return
+    nav(`${staffAppsBase}/${createdAppId}`)
+  }
+
+  function copyLink(token: string) {
+    void navigator.clipboard.writeText(inviteUrl(token))
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1500)
   }
 
   async function submit(e: FormEvent) {
@@ -58,11 +88,16 @@ export function StaffCreateApplication() {
       return
     }
     if (!canPeople()) return
+    const clientIdentity = draft.clientEmail.trim()
+    if (!clientIdentity) {
+      setError('Укажите email или логин клиента')
+      return
+    }
     setSaving(true)
     setError('')
     const next = {
       ...draft,
-      clientEmail: draft.clientEmail.trim(),
+      clientEmail: clientIdentity,
       status: 'new' as const,
       updatedAt: nowIso(),
       timeline: [
@@ -74,27 +109,84 @@ export function StaffCreateApplication() {
       ],
     }
     try {
-      await upsert(next)
+      const saved = await upsert(next)
       if (video) {
-        await addDoc(
-          next.id,
-          { id: `doc-${Date.now()}`, type: 'video', name: video.name, uploadedAt: nowIso() },
-          video,
-        )
+        try {
+          await addDoc(
+            saved.id,
+            { id: `doc-${Date.now()}`, type: 'video', name: video.name, uploadedAt: nowIso() },
+            video,
+          )
+        } catch (docErr) {
+          setError(
+            docErr instanceof Error
+              ? `Заявка создана, но видео не загружено: ${docErr.message}`
+              : 'Заявка создана, но видео не загружено',
+          )
+        }
       }
-      nav(`${staffBase(session?.role)}/apps/${next.id}`)
+      if (saved.issuedClientAccess) {
+        setIssued(saved.issuedClientAccess)
+        setCreatedAppId(saved.id)
+        setSaving(false)
+        return
+      }
+      nav(`${staffAppsBase}/${saved.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось создать заявку')
       setSaving(false)
     }
   }
 
+  if (issued && createdAppId) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <Link to={staffAppsBase} className="inline-flex items-center gap-1 text-sm font-semibold text-muted">
+          <ArrowLeft size={14} /> К заявкам
+        </Link>
+        <h1 className="mt-3 text-2xl font-extrabold tracking-tight">Заявка создана</h1>
+        <p className="mt-1 text-sm text-muted">Отправьте клиенту логин, пароль и ссылку для входа.</p>
+        {error && <p className="mt-4 text-sm font-semibold text-clay">{error}</p>}
+        <Card className="mt-6 border-leaf/40 bg-[#f3f8f5]">
+          <p className="font-bold">Доступ для {issued.user.name}</p>
+          <p className="mt-2 text-sm">
+            Логин: <b>{issued.user.login}</b>
+          </p>
+          <p className="text-sm">
+            Пароль: <b>{issued.password}</b>
+          </p>
+          <p className="mt-2 break-all text-xs text-muted">{inviteUrl(issued.token)}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Btn onClick={() => copyLink(issued.token)}>
+              <Link2 size={14} />
+              {copied ? 'Скопировано' : 'Копировать ссылку'}
+            </Btn>
+            <Btn
+              variant="ghost"
+              className="bg-white"
+              onClick={() => {
+                void navigator.clipboard.writeText(
+                  `Логин: ${issued.user.login}\nПароль: ${issued.password}\nСсылка: ${inviteUrl(issued.token)}`,
+                )
+                setCopied(true)
+                window.setTimeout(() => setCopied(false), 1500)
+              }}
+            >
+              <Copy size={14} />
+              Копировать всё
+            </Btn>
+          </div>
+        </Card>
+        <div className="mt-4 flex justify-end">
+          <Btn onClick={goToCreatedApp}>Перейти к заявке</Btn>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-3xl">
-      <Link
-        to={`${staffBase(session?.role)}/apps`}
-        className="inline-flex items-center gap-1 text-sm font-semibold text-muted"
-      >
+      <Link to={staffAppsBase} className="inline-flex items-center gap-1 text-sm font-semibold text-muted">
         <ArrowLeft size={14} /> К заявкам
       </Link>
       <h1 className="mt-3 text-2xl font-extrabold tracking-tight">Создать заявку</h1>
@@ -221,13 +313,15 @@ export function StaffCreateApplication() {
         {step === 1 && (
           <div className="space-y-4">
             <Card>
-              <Field label="Email клиента, если уже есть в системе">
+              <Field label="Email или логин клиента" required>
                 <input
                   className="field"
-                  type="email"
+                  type="text"
                   value={draft.clientEmail}
                   onChange={(e) => patch({ clientEmail: e.target.value })}
-                  placeholder="необязательно"
+                  placeholder="client@example.com"
+                  required
+                  autoComplete="off"
                 />
               </Field>
             </Card>
@@ -268,7 +362,7 @@ export function StaffCreateApplication() {
           <Btn
             variant="ghost"
             className="bg-white"
-            onClick={() => (step === 0 ? nav(`${staffBase(session?.role)}/apps`) : setStep(0))}
+            onClick={() => (step === 0 ? nav(staffAppsBase) : setStep(0))}
           >
             Назад
           </Btn>

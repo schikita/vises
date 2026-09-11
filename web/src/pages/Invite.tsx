@@ -13,6 +13,7 @@ export function InvitePage() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [show, setShow] = useState(true)
   const [copied, setCopied] = useState('')
+  const [loginError, setLoginError] = useState('')
 
   useEffect(() => {
     void loginByInvite(token).then(setUser)
@@ -64,6 +65,7 @@ export function InvitePage() {
   }
 
   const link = publicUrl(`/invite/${user.inviteToken}`)
+  const passwordRevealed = Boolean(user.password)
 
   return (
     <div className="mx-auto max-w-md px-5 py-12">
@@ -83,37 +85,68 @@ export function InvitePage() {
               </button>
             </dd>
           </div>
-          <div className="rounded-xl bg-[#f7f4ee] px-4 py-3">
-            <dt className="text-xs font-bold text-muted">Пароль</dt>
-            <dd className="mt-1 flex items-center justify-between gap-2 font-bold">
-              <span className="break-all">{show ? user.password : '••••••••••'}</span>
-              <span className="flex gap-2">
-                <button type="button" className="text-muted" onClick={() => setShow((v) => !v)}>
-                  {show ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-                <button type="button" className="text-leaf" onClick={() => copy(user.password, 'password')}>
-                  <Copy size={14} />
-                </button>
-              </span>
-            </dd>
-          </div>
+          {passwordRevealed ? (
+            <div className="rounded-xl bg-[#f7f4ee] px-4 py-3">
+              <dt className="text-xs font-bold text-muted">Пароль</dt>
+              <dd className="mt-1 flex items-center justify-between gap-2 font-bold">
+                <span className="break-all">{show ? user.password : '••••••••••'}</span>
+                <span className="flex gap-2">
+                  <button type="button" className="text-muted" onClick={() => setShow((v) => !v)}>
+                    {show ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-leaf"
+                    onClick={() => copy(user.password, 'password')}
+                  >
+                    <Copy size={14} />
+                  </button>
+                </span>
+              </dd>
+            </div>
+          ) : (
+            <div className="rounded-xl bg-[#f7f4ee] px-4 py-3">
+              <dt className="text-xs font-bold text-muted">Пароль</dt>
+              <dd className="mt-1 text-sm leading-relaxed text-muted">
+                Пароль уже был показан по этой ссылке и больше не отображается.
+                Войдите с сохранённым паролем или попросите администратора
+                перевыпустить доступ.
+              </dd>
+            </div>
+          )}
         </dl>
 
-        <p className="mt-4 text-xs text-muted">
-          Сохраните логин и пароль. Эту ссылку можно открыть ещё раз, пока админ не перевыпустит доступ.
-        </p>
+        {passwordRevealed ? (
+          <p className="mt-4 text-xs text-muted">
+            Сохраните логин и пароль. Повторное открытие ссылки не покажет пароль снова.
+          </p>
+        ) : (
+          <p className="mt-4 text-xs text-muted">
+            Если пароль не сохранился — попросите админа выдать доступ заново.
+          </p>
+        )}
         {copied && <p className="mt-2 text-xs font-semibold text-leaf">Скопировано: {copied}</p>}
+        {loginError && <p className="mt-2 text-sm font-semibold text-clay">{loginError}</p>}
 
         <div className="mt-5 flex flex-col gap-2">
-          <Btn
-            onClick={() => {
-              void loginWithPassword(user.login, user.password).then((result) => {
-                if (typeof result !== 'string') nav(homePath(user.role))
-              })
-            }}
-          >
-            Войти в кабинет
-          </Btn>
+          {passwordRevealed ? (
+            <Btn
+              onClick={() => {
+                void loginWithPassword(user.login, user.password).then((result) => {
+                  if (typeof result === 'string') {
+                    setLoginError(result)
+                    return
+                  }
+                  setLoginError('')
+                  nav(homePath(user.role))
+                })
+              }}
+            >
+              Войти в кабинет
+            </Btn>
+          ) : (
+            <Btn to="/">Войти по логину и паролю</Btn>
+          )}
           <Btn variant="ghost" className="bg-white" onClick={() => copy(link, 'ссылка')}>
             Копировать ссылку
           </Btn>

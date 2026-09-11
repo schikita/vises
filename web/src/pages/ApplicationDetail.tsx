@@ -17,6 +17,7 @@ import {
 } from '../types'
 import { ApplicantFields, CATEGORIES, CITIES_BY_COUNTRY, SUBMIT_COUNTRIES } from '../visaForm'
 import { Avatar, Btn, Card, Empty, Field, StatusBadge } from '../ui'
+import { PortalAutofillEvidenceSection } from './PortalAutofillEvidenceSection'
 
 export function ApplicationDetail() {
   const { id } = useParams()
@@ -25,11 +26,26 @@ export function ApplicationDetail() {
   const found = apps.find((a) => a.id === id)
   const [form, setForm] = useState<Application | null>(found ?? null)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [uploading, setUploading] = useState<DocType | null>(null)
   const [docError, setDocError] = useState('')
 
   useEffect(() => {
-    setForm(found ?? null)
+    if (!found) {
+      setForm(null)
+      return
+    }
+    // DEC-008: keep dirty local edits; sync store-owned status/timeline/documents after side effects.
+    setForm((prev) => {
+      if (!prev || prev.id !== found.id) return found
+      return {
+        ...prev,
+        status: found.status,
+        timeline: found.timeline,
+        documents: found.documents,
+        updatedAt: found.updatedAt,
+      }
+    })
   }, [found])
 
   if (!form) {
@@ -45,6 +61,7 @@ export function ApplicationDetail() {
   }
 
   async function save() {
+    setSaveError('')
     const live = apps.find((a) => a.id === form!.id) ?? form!
     const next = {
       ...form!,
@@ -61,9 +78,13 @@ export function ApplicationDetail() {
             ]
           : live.timeline,
     }
-    await upsert(next)
-    setForm(next)
-    setSaved(true)
+    try {
+      await upsert(next)
+      setForm(next)
+      setSaved(true)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Не удалось сохранить заявку')
+    }
   }
 
   return (
@@ -73,7 +94,7 @@ export function ApplicationDetail() {
           <ArrowLeft size={14} /> К списку
         </Link>
         <div className="flex gap-2">
-          <Btn onClick={save}>{saved ? 'Сохранено' : 'Сохранить'}</Btn>
+          <Btn onClick={() => void save()}>{saved ? 'Сохранено' : 'Сохранить'}</Btn>
           <Btn
             variant="danger"
             onClick={() => {
@@ -85,6 +106,7 @@ export function ApplicationDetail() {
           </Btn>
         </div>
       </div>
+      {saveError && <p className="mb-4 text-sm font-semibold text-clay">{saveError}</p>}
 
       <Card className="mb-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -289,6 +311,8 @@ export function ApplicationDetail() {
           <div className="space-y-3">
             {DOC_TYPES.map((d) => {
               const files = form.documents.filter((f) => f.type === d.id)
+              const latest = files[files.length - 1]
+              const canOpen = Boolean(latest?.stored)
               return (
                 <div
                   key={d.id}
@@ -306,15 +330,18 @@ export function ApplicationDetail() {
                           ? 'загружаем…'
                           : 'ещё не загружено'}
                     </p>
-                    {files.length > 0 && (
-                      <button
-                        type="button"
-                        className="mt-1 text-xs font-bold text-leaf"
-                        onClick={() => void openDoc(form.id, files[files.length - 1].id)}
-                      >
-                        Открыть
-                      </button>
-                    )}
+                    {files.length > 0 &&
+                      (canOpen ? (
+                        <button
+                          type="button"
+                          className="mt-1 text-xs font-bold text-leaf"
+                          onClick={() => void openDoc(form.id, latest.id)}
+                        >
+                          Открыть
+                        </button>
+                      ) : (
+                        <p className="mt-1 text-xs font-semibold text-muted">Файл недоступен</p>
+                      ))}
                   </div>
                   <label className="flex shrink-0 cursor-pointer items-center gap-1 text-sm font-bold text-leaf">
                     <Upload size={14} />
@@ -357,6 +384,13 @@ export function ApplicationDetail() {
             <p className="mt-3 text-sm font-semibold text-leaf">Обязательные файлы на месте.</p>
           )}
         </Card>
+
+        <PortalAutofillEvidenceSection
+          applicationId={form.id}
+          applicants={form.applicants}
+          persistedApplicantIds={(found?.applicants ?? []).map((a) => a.id).filter(Boolean)}
+          clientEmail={form.clientEmail}
+        />
 
         <Card>
           <p className="mb-4 font-bold">История</p>

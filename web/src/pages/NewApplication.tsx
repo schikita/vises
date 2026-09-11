@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import type { Applicant } from '../types'
 import { emptyApplication, nowIso } from '../types'
 import { Btn, Card, Field } from '../ui'
+import { PASSPORT_TYPES } from '../visaForm'
 
 const steps = ['Поездка', 'Паспорт', 'Готово']
 
@@ -11,6 +12,7 @@ export function NewApplication() {
   const { session, upsert, settings } = useStore()
   const nav = useNavigate()
   const [step, setStep] = useState(0)
+  const [error, setError] = useState('')
   const [draft, setDraft] = useState(() => {
     const app = emptyApplication(session?.email || session?.login || '')
     app.paymentAmount = settings.defaultPrice
@@ -21,7 +23,15 @@ export function NewApplication() {
 
   const p = draft.applicants[0]
   const canTrip = draft.travelDate && draft.returnDate
-  const canPerson = p.firstName && p.lastName && p.dob && p.passportNumber
+  const canPerson =
+    p.firstName &&
+    p.lastName &&
+    p.lastNameAtBirth &&
+    p.dob &&
+    p.passportNumber &&
+    p.passportType &&
+    p.passportIssuedBy &&
+    p.phone
 
   const title = useMemo(() => steps[step], [step])
 
@@ -34,6 +44,7 @@ export function NewApplication() {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
+    setError('')
     const next = {
       ...draft,
       status: 'docs' as const,
@@ -42,9 +53,13 @@ export function NewApplication() {
         { at: nowIso(), text: 'Анкета отправлена, жду документы', actor: session?.name ?? 'Клиент' },
       ],
     }
-    await upsert(next)
-    setStep(2)
-    setDraft(next)
+    try {
+      const saved = await upsert(next)
+      setDraft(saved)
+      setStep(2)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось отправить анкету')
+    }
   }
 
   return (
@@ -167,11 +182,12 @@ export function NewApplication() {
                     required
                   />
                 </Field>
-                <Field label="Фамилия при рождении">
+                <Field label="Фамилия при рождении" required>
                   <input
                     className="field uppercase"
                     value={p.lastNameAtBirth}
                     onChange={(e) => setApplicant({ lastNameAtBirth: e.target.value.toUpperCase() })}
+                    required
                   />
                 </Field>
                 <Field label="Дата рождения">
@@ -220,6 +236,18 @@ export function NewApplication() {
                     ))}
                   </select>
                 </Field>
+                <Field label="Тип паспорта" required>
+                  <select
+                    className="field"
+                    value={p.passportType || 'Ordinary passport'}
+                    onChange={(e) => setApplicant({ passportType: e.target.value })}
+                    required
+                  >
+                    {PASSPORT_TYPES.map((x) => (
+                      <option key={x}>{x}</option>
+                    ))}
+                  </select>
+                </Field>
                 <Field label="Номер паспорта">
                   <input
                     className="field uppercase"
@@ -244,6 +272,30 @@ export function NewApplication() {
                     onChange={(e) => setApplicant({ passportExpires: e.target.value })}
                   />
                 </Field>
+                <Field label="Кем выдан" required>
+                  <input
+                    className="field uppercase"
+                    value={p.passportIssuedBy || ''}
+                    onChange={(e) =>
+                      setApplicant({ passportIssuedBy: e.target.value.toUpperCase() })
+                    }
+                    placeholder="RUEP MINSK"
+                    required
+                  />
+                </Field>
+                <Field label="Телефон" required>
+                  <input
+                    className="field"
+                    value={p.phone || ''}
+                    onChange={(e) => setApplicant({ phone: e.target.value })}
+                    placeholder="291234567"
+                    inputMode="numeric"
+                    required
+                  />
+                </Field>
+                <p className="sm:col-span-2 text-xs text-muted">
+                  Телефон — 9 цифр без кода страны (+375), как для портала.
+                </p>
               </div>
             )}
           </Card>
@@ -254,6 +306,7 @@ export function NewApplication() {
             </Btn>
             <Btn type="submit">{step === 0 ? 'Дальше' : 'Отправить анкету'}</Btn>
           </div>
+          {error && <p className="mt-4 text-sm font-semibold text-clay">{error}</p>}
         </form>
       )}
 

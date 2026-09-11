@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Copy, Link2, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
 import type { IssuedAccess } from '../store'
@@ -11,7 +11,8 @@ function inviteUrl(token: string) {
 }
 
 export function UsersPage() {
-  const { users, createUser, updateUser, reissueAccess, removeUser, session } = useStore()
+  const { users, createUser, updateUser, reissueAccess, removeUser, refreshUsers, session } =
+    useStore()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [login, setLogin] = useState('')
@@ -21,6 +22,10 @@ export function UsersPage() {
   const [copied, setCopied] = useState(false)
   const [q, setQ] = useState('')
   const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all')
+
+  useEffect(() => {
+    void refreshUsers()
+  }, [refreshUsers])
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
