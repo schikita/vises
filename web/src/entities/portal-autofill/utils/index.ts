@@ -1,0 +1,7 @@
+﻿export { portalCaptureStatusLabel } from './portal-capture-status-label.util'
+export { portalReportOkLabel } from './portal-report-ok-label.util'
+export { resolveCrmStatusAfterPortalAutofill } from './resolve-crm-status-after-portal-autofill.util'
+export { portalAutofillPhoneDigits } from './portal-autofill-phone-digits.util'
+export { isPortalAutofillApplicantReady } from './is-portal-autofill-applicant-ready.util'
+export { isAutofillReportSummary } from './is-autofill-report-summary.util'
+export { runPortalAutofillRequest } from './run-portal-autofill-request.util'

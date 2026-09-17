@@ -1,9 +1,6 @@
-# Default API image (DEC-010 / portal-autofill-api DEC-005): Patchright npm dep may
-# be present via package.json, but browser binaries / OS browser deps are NOT
-# installed. Autofill is triggered via authenticated HTTP
-# (POST /api/apps/:applicationId/portal-autofill) on a host Nest Dev process with
-# browsers installed — not from Nest-DI CLI (removed). Invoking autofill inside
-# this image without browsers fails clearly. Do not launch browsers from main.ts.
+# Default API image: Patchright npm dep + Chromium binaries + OS deps so
+# authenticated HTTP autofill (POST /api/apps/:applicationId/portal-autofill)
+# can launch a browser in-container. Do not launch browsers from main.ts.
 
 FROM node:24-bookworm-slim AS build
 
@@ -27,6 +24,8 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
+
+RUN npx patchright install --with-deps chromium
 
 RUN mkdir -p /data/uploads
 

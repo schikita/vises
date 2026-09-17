@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>RegisterUser sample fixture (DEC-006)</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 1.5rem;
+        max-width: 42rem;
+      }
+      label {
+        display: block;
+        margin-top: 0.75rem;
+        font-size: 0.85rem;
+      }
+      input,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.35rem 0.5rem;
+        margin-top: 0.2rem;
+      }
+      input[readonly] {
+        background: #f3f3f3;
+      }
+      .div-otp {
+        display: none;
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border: 1px dashed #999;
+      }
+      .hint {
+        color: #555;
+        font-size: 0.8rem;
+        margin-top: 0.15rem;
+      }
+      .widget-display {
+        font-size: 0.8rem;
+        color: #1a5;
+        min-height: 1.1em;
+      }
+      button {
+        margin-top: 1.25rem;
+        margin-right: 0.5rem;
+        padding: 0.4rem 0.9rem;
+      }
+      #btnVerified {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>RegisterUser (local fixture)</h1>
+    <p class="hint">
+      Approximate stand-in for ASP.NET <code>#myForm</code>. Not real Kendo UI —
+      see package README (RISK-009 / DEC-006). Autofill must not click Verify in v1.
+    </p>
+
+    <form
+      id="myForm"
+      action="/Global/Account/RegisterUser"
+      method="POST"
+      data-ajax="true"
+    >
+      <label>
+        SurName *
+        <input type="text" name="SurName" id="SurName" />
+      </label>
+      <label>
+        FirstName *
+        <input type="text" name="FirstName" id="FirstName" />
+      </label>
+      <label>
+        LastName (optional)
+        <input type="text" name="LastName" id="LastName" />
+      </label>
+
+      <label>
+        DateOfBirth * (datepicker stand-in)
+        <input
+          type="text"
+          name="DateOfBirth"
+          id="DateOfBirth"
+          data-role="datepicker"
+          readonly
+          value="0001-01-01"
+        />
+        <span
+          class="widget-display"
+          data-datepicker-display="DateOfBirth"
+          aria-live="polite"
+        ></span>
+        <span class="hint"
+          >Visible display updated by stand-in API (not only input value).</span
+        >
+      </label>
+
+      <label>
+        PassportType * (dropdownlist stand-in)
+        <select
+          name="PassportType"
+          id="PassportType"
+          data-role="dropdownlist"
+        >
+          <option value="">— select —</option>
+          <option value="Ordinary passport">Ordinary passport</option>
+          <option value="Diplomatic passport">Diplomatic passport</option>
+          <option value="Service passport">Service passport</option>
+          <option value="Official passport">Official passport</option>
+        </select>
+        <span
+          class="widget-display"
+          data-dropdown-display="PassportType"
+          aria-live="polite"
+        ></span>
+      </label>
+
+      <label>
+        BirthCountry * (Passport Issue Country)
+        <select
+          name="BirthCountry"
+          id="BirthCountry"
+          data-role="dropdownlist"
+        >
+          <option value="">— select —</option>
+          <option value="Belarus">Belarus</option>
+          <option value="Poland">Poland</option>
+          <option value="Lithuania">Lithuania</option>
+          <option value="Russia">Russia</option>
+        </select>
+        <span
+          class="widget-display"
+          data-dropdown-display="BirthCountry"
+          aria-live="polite"
+        ></span>
+      </label>
+
+      <label>
+        PassportNumber *
+        <input type="text" name="PassportNumber" id="PassportNumber" />
+      </label>
+
+      <label>
+        PassportIssueDate * (datepicker stand-in)
+        <input
+          type="text"
+          name="PassportIssueDate"
+          id="PassportIssueDate"
+          data-role="datepicker"
+          readonly
+          value="0001-01-01"
+        />
+        <span
+          class="widget-display"
+          data-datepicker-display="PassportIssueDate"
+          aria-live="polite"
+        ></span>
+      </label>
+
+      <label>
+        PassportExpiryDate * (datepicker stand-in)
+        <input
+          type="text"
+          name="PassportExpiryDate"
+          id="PassportExpiryDate"
+          data-role="datepicker"
+          readonly
+          value="0001-01-01"
+        />
+        <span
+          class="widget-display"
+          data-datepicker-display="PassportExpiryDate"
+          aria-live="polite"
+        ></span>
+      </label>
+
+      <label>
+        IssuePlace *
+        <input type="text" name="IssuePlace" id="IssuePlace" />
+      </label>
+
+      <label>
+        CountryCode (readonly)
+        <input
+          type="text"
+          name="CountryCode"
+          id="inputGroup-sizing-default"
+          value="+375"
+          readonly
+        />
+      </label>
+      <label>
+        Mobile * (9 digits)
+        <input type="text" name="Mobile" id="Mobile" maxlength="9" />
+      </label>
+
+      <label>
+        Email *
+        <input type="email" name="Email" id="Email" />
+      </label>
+
+      <div class="div-otp" id="otpSection">
+        <label>
+          EmailOtp
+          <input type="text" name="EmailOtp" id="EmailOtp" />
+        </label>
+      </div>
+
+      <button type="button" id="btnVerify">Verify</button>
+      <button type="button" id="btnVerified">Verified</button>
+    </form>
+
+    <script>
+      /**
+       * Minimal Kendo stand-in (DEC-006 / RISK-009).
+       * Real portal uses jQuery + kendoDatePicker / kendoDropDownList.
+       * Fill module tries real Kendo first, then these helpers.
+       */
+      (function () {
+        function syncDateDisplay(name) {
+          const el = document.querySelector('[name="' + name + '"]');
+          const disp = document.querySelector(
+            '[data-datepicker-display="' + name + '"]',
+          );
+          if (el && disp) disp.textContent = el.value || '';
+        }
+
+        function syncDropDisplay(name) {
+          const el = document.querySelector('select[name="' + name + '"]');
+          const disp = document.querySelector(
+            '[data-dropdown-display="' + name + '"]',
+          );
+          if (el && disp) {
+            const opt = el.options[el.selectedIndex];
+            disp.textContent = opt ? opt.text : '';
+          }
+        }
+
+        window.__visesKendoStandIn = {
+          ready: true,
+          setDatePicker: function (name, isoDate) {
+            const el = document.querySelector(
+              'input[name="' + name + '"][data-role="datepicker"]',
+            );
+            if (!el)
+              return { ok: false, reason: 'datepicker not found: ' + name };
+            el.value = isoDate;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            syncDateDisplay(name);
+            return { ok: true, via: 'standin-datepicker' };
+          },
+          getDatePicker: function (name) {
+            const el = document.querySelector(
+              'input[name="' + name + '"][data-role="datepicker"]',
+            );
+            const disp = document.querySelector(
+              '[data-datepicker-display="' + name + '"]',
+            );
+            return {
+              ok: Boolean(el),
+              value: el ? el.value : undefined,
+              visible: disp ? disp.textContent : undefined,
+            };
+          },
+          setDropDownList: function (name, text) {
+            const el = document.querySelector(
+              'select[name="' + name + '"][data-role="dropdownlist"]',
+            );
+            if (!el)
+              return { ok: false, reason: 'dropdownlist not found: ' + name };
+            let found = false;
+            for (let i = 0; i < el.options.length; i++) {
+              if (
+                el.options[i].text === text ||
+                el.options[i].value === text
+              ) {
+                el.selectedIndex = i;
+                found = true;
+                break;
+              }
+            }
+            if (!found) {
+              return {
+                ok: false,
+                reason: 'no exact option match for "' + text + '"',
+              };
+            }
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            syncDropDisplay(name);
+            return { ok: true, via: 'standin-dropdownlist' };
+          },
+          getDropDownList: function (name) {
+            const el = document.querySelector(
+              'select[name="' + name + '"][data-role="dropdownlist"]',
+            );
+            const disp = document.querySelector(
+              '[data-dropdown-display="' + name + '"]',
+            );
+            if (!el) return { ok: false };
+            const opt = el.options[el.selectedIndex];
+            return {
+              ok: true,
+              value: opt ? opt.value : '',
+              text: opt ? opt.text : '',
+              visible: disp ? disp.textContent : undefined,
+            };
+          },
+        };
+
+        document
+          .getElementById('btnVerify')
+          ?.addEventListener('click', function () {
+            document.getElementById('otpSection').style.display = 'block';
+          });
+      })();
+    </script>
+  </body>
+</html>

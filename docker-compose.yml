@@ -1,10 +1,8 @@
 services:
   db:
     image: postgres:18.6-alpine
-    environment:
-      POSTGRES_USER: vises
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vises}
-      POSTGRES_DB: vises
+    env_file:
+      - backend/.env
     volumes:
       - ./backend/vises_pg:/var/lib/postgresql
     restart: unless-stopped
@@ -16,20 +14,11 @@ services:
       timeout: 5s
       retries: 10
 
-  # Default api image has no Patchright browser binaries (DEC-010 / DEC-005).
-  # Portal autofill: host Nest Dev + HTTP POST /api/apps/:id/portal-autofill
-  # (not Nest-DI CLI). See .env.example for VISES_PORTAL_* and :5500 stand-in.
   api:
     build: ./backend
+    image: vises-api:local
     env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql://vises:${POSTGRES_PASSWORD:-vises}@db:5432/vises
-      # Must not be dev-change-me: Nest image runs NODE_ENV=production (DEC-007).
-      JWT_SECRET: ${JWT_SECRET:-vises-local-dev-only}
-      # Local demo UX default on; production hosts should set false / omit (DEC-001).
-      DEMO_AUTH_ENABLED: ${DEMO_AUTH_ENABLED:-true}
-      UPLOAD_DIR: /data/uploads
+      - backend/.env
     ports:
       - "8100:8100"
     volumes:
@@ -37,6 +26,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    image: vises-web:local
+    env_file:
+      - web/.env
+    ports:
+      - "8090:80"
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:
