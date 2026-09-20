@@ -1,9 +1,10 @@
 import type { PortalAutofillCrmOutcome, PortalAutofillRunResult } from '../types'
 
 /**
- * Map autofill result → CRM status, or null when there is no fill report
- * (pre-report proxy/config/auth/network failures must not change CRM).
- * With a report: review only when fill ok + screenshot captured; otherwise declined.
+ * Map autofill result → CRM status, or null when CRM must stay unchanged.
+ * Pre-report failures never change CRM.
+ * With a report: `review` only when fill ok + screenshot captured;
+ * autofill failure MUST NOT set `declined` (REQ-012 / DEC-003 / A-CRM-1).
  */
 export const resolveCrmStatusAfterPortalAutofill = (
   result: PortalAutofillRunResult,
@@ -20,8 +21,7 @@ export const resolveCrmStatusAfterPortalAutofill = (
       note: 'После автозаполнения: поля заполнены, скриншот сохранён — статус «На рассмотрении»',
     }
   }
-  return {
-    status: 'declined',
-    note: 'После автозаполнения: ошибка или скриншот не сохранён — статус «Отклонено»',
-  }
+
+  // Leave CRM unchanged on autofill failure — do not imply portal rejection.
+  return null
 }

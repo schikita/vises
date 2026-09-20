@@ -40,17 +40,17 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const loadAll = useCallback(async (role?: Role) => {
-    const [nextApps, nextSettings] = await Promise.all([
-      apiRequest<Application[]>('/apps'),
-      apiRequest<SystemSettings>('/settings'),
-    ])
-    setApps(nextApps)
+    const effectiveRole = role ?? session?.role
+    const nextSettings = await apiRequest<SystemSettings>('/settings')
     setSettings(nextSettings)
-    if ((role ?? session?.role) === 'admin') {
-      setUsers(await apiRequest<User[]>('/users'))
+    // DEC-007: client keeps full GET /apps array; staff lists self-fetch paged APIs.
+    if (effectiveRole === 'client') {
+      setApps(await apiRequest<Application[]>('/apps'))
     } else {
-      setUsers([])
+      setApps([])
     }
+    // Staff users admin is page-local; do not download full /users for bootstrap.
+    setUsers([])
   }, [session?.role])
 
   useEffect(() => {
@@ -126,6 +126,14 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     setUsers([])
   }, [])
 
+  const cacheApp = useCallback((application: Application) => {
+    setApps((cur) =>
+      cur.some((a) => a.id === application.id)
+        ? cur.map((a) => (a.id === application.id ? application : a))
+        : [application, ...cur],
+    )
+  }, [])
+
   const upsert = useCallback(async (app: Application): Promise<UpsertAppResult> => {
     const saved = await apiRequest<UpsertAppResult>('/apps', {
       method: 'POST',
@@ -185,7 +193,11 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       method: 'POST',
       data: body,
     })
-    setApps((cur) => cur.map((a) => (a.id === saved.id ? saved : a)))
+    setApps((cur) =>
+      cur.some((a) => a.id === saved.id)
+        ? cur.map((a) => (a.id === saved.id ? saved : a))
+        : [saved, ...cur],
+    )
   }, [])
 
   const openDoc = useCallback(async (appId: string, docId: string) => {
@@ -197,12 +209,18 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  const listPortalAutofillRuns = useCallback(async (applicationId: string) => {
-    const data = await apiRequest<PortalAutofillRunListResponse>(
-      `/apps/${applicationId}/portal-autofill-runs`,
-    )
-    return data.runs
-  }, [])
+  const listPortalAutofillRuns = useCallback(
+    async (applicationId: string, applicantId?: string) => {
+      const query =
+        applicantId != null && applicantId !== ''
+          ? `?applicantId=${encodeURIComponent(applicantId)}`
+          : ''
+      return apiRequest<PortalAutofillRunListResponse>(
+        `/apps/${applicationId}/portal-autofill-runs${query}`,
+      )
+    },
+    [],
+  )
 
   const openPortalAutofillScreenshot = useCallback(async (runId: string) => {
     try {
@@ -214,8 +232,12 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const runPortalAutofill = useCallback(
-    async (applicationId: string, applicantId: string): Promise<PortalAutofillRunResult> =>
-      runPortalAutofillRequest(applicationId, applicantId),
+    async (
+      applicationId: string,
+      applicantId: string,
+      options?: { supersede?: boolean },
+    ): Promise<PortalAutofillRunResult> =>
+      runPortalAutofillRequest(applicationId, applicantId, options),
     [],
   )
 
@@ -266,14 +288,8 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  /** Reload users from API (admin). Users page remount should pick up clients minted via app create. */
-  const refreshUsers = useCallback(async () => {
-    if (session?.role !== 'admin') {
-      setUsers([])
-      return
-    }
-    setUsers(await apiRequest<User[]>('/users'))
-  }, [session?.role])
+  /** Users list is page-local (DEC-007); no full-collection refresh. */
+  const refreshUsers = useCallback(async () => {}, [])
 
   const saveSettings = useCallback(async (patch: Partial<SystemSettings>) => {
     const saved = await apiRequest<SystemSettings>('/settings', {
@@ -312,6 +328,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       reissueAccess,
       removeUser,
       refreshUsers,
+      cacheApp,
       saveSettings,
       resetDemo,
     }),
@@ -338,6 +355,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       reissueAccess,
       removeUser,
       refreshUsers,
+      cacheApp,
       saveSettings,
       resetDemo,
     ],

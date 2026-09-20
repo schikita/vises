@@ -1,4 +1,9 @@
+import type { DeleteMailTmAccountInput } from '../../mailtm';
 import type { PatchrightProxyConfig } from '../../webshare';
+import type {
+  PortalAutofillCaptchaRestore,
+  PortalAutofillPipelineCheckpointCallbacks,
+} from './portal-autofill-checkpoint.types';
 import type { FieldResult } from './portal-field.types';
 import type { MappingResult } from './portal-mapping.types';
 
@@ -20,16 +25,20 @@ export interface FillRegisterFormOptions {
    */
   browserProxy?: PatchrightProxyConfig;
   /**
-   * MailSlurp API key for OTP wait/extract when OTP path armed (DEC-008).
-   * Empty/undefined ⇒ OTP UI skipped.
+   * When true, pipeline creates Mail.tm account after CapMonster success and
+   * runs OTP UI (DEC-001). Account create is not done before mapping.
    */
-  mailSlurpApiKey?: string;
+  otpPathArmed?: boolean;
   /**
-   * Disposable inbox id for this run (created by AutofillService before fill).
-   * Required with mailSlurpApiKey to arm OTP UI in the pipeline.
+   * Autofill run id once allocated (nestjs-winston-logger DEC-006).
+   * applicationId / applicantId come from mapping for log correlation.
    */
-  mailSlurpInboxId?: string;
-}
+  runId?: string;
+  /** Durable checkpoint / heartbeat sinks (portal-autofill-durable-resume DEC-008). */
+  checkpoint?: PortalAutofillPipelineCheckpointCallbacks;
+  /** Restored captcha budgets/CB on resume (DEC-003); does not skip Verified loop (DEC-005). */
+  captchaRestore?: PortalAutofillCaptchaRestore;
+};
 
 export interface FillRegisterFormResult {
   navigationOk: boolean;
@@ -46,10 +55,19 @@ export interface FillRegisterFormResult {
   capMonsterAttempted?: boolean;
   /** True only when CapMonster returned a valid answer and cells were applied. */
   capMonsterOk?: boolean;
-  /** OTP UI phase started (Generate → fill) after CapMonster success. */
-  mailSlurpOtpAttempted?: boolean;
+  /** OTP UI phase started (create → Generate → fill) after CapMonster success. */
+  emailOtpAttempted?: boolean;
   /** OTP wait/extract/`#EmailOtp` fill succeeded. */
-  mailSlurpOtpOk?: boolean;
+  emailOtpOk?: boolean;
+  /** `#btnReGenerate` clicks this run (0|1); set when OTP phase started. */
+  mailTmResendAttempts?: number;
+  /** True when Mail.tm CB refused a call or opened during this run. */
+  mailTmCircuitOpen?: boolean;
+  /**
+   * Soft-fail delete handle when a Mail.tm account was created post-captcha
+   * (DEC-010). Never log token.
+   */
+  mailTmCleanup?: DeleteMailTmAccountInput;
 }
 
 export type WidgetOpResult = {

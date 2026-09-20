@@ -4,12 +4,13 @@ import * as jwt from 'jsonwebtoken';
 import type { AppEnv } from '../config';
 import { User } from '../database/entities/user.entity';
 import { JWT_TTL_HOURS } from './constants';
+import type { IAccessToken } from './interfaces';
 import type { JwtPayload } from './types';
 import { resolveJwtSecret } from './utils';
 
 /** HS256 JWT parity with Python `auth.py` (REQ-003, DEC-005). */
 @Injectable()
-export class JwtTokenService {
+export class JwtTokenService implements IAccessToken {
   private readonly secret: string;
   private readonly hours = JWT_TTL_HOURS;
 

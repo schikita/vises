@@ -6,6 +6,7 @@ import { SettingsEditFormRender } from './SettingsEditFormRender'
 
 export const SettingsEditForm = ({
   defaultValues,
+  lockedCitiesLabel,
   saved,
   onValidSubmit,
 }: SettingsEditFormProps) => {
@@ -21,6 +22,7 @@ export const SettingsEditForm = ({
   return (
     <SettingsEditFormRender
       saved={saved}
+      lockedCitiesLabel={lockedCitiesLabel}
       register={register}
       errors={errors}
       onSubmit={handleSubmit((values) => onValidSubmit(values))}

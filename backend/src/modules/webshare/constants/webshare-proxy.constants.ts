@@ -33,7 +33,7 @@ export const WEBSHARE_PROXY_BACKBONE_HOST = 'p.webshare.io';
 
 /** Operator-facing Russian messages (fail closed; no secrets). */
 export const WEBSHARE_PROXY_MSG_MISCONFIGURED =
-  'Прокси Webshare включены в настройках, но WEBSHARE_API_KEY пуст';
+  'WEBSHARE_API_KEY не задан — список прокси Webshare недоступен';
 export const WEBSHARE_PROXY_MSG_AUTH =
   'Ошибка авторизации Webshare (проверьте API-ключ или план)';
 export const WEBSHARE_PROXY_MSG_RATE_LIMITED =

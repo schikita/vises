@@ -1,3 +1,6 @@
+import type { ICaptchaSolver } from '../../capmonster';
+import type { PortalLogContext } from './portal-log-context.types';
+
 /**
  * Portal BLS CAPTCHA extract / apply / solve types (REQ-003 / REQ-005).
  */
@@ -20,6 +23,13 @@ export type SolvePortalBlsCaptchaInput = {
   pollIntervalMs: number;
   /** UI wait after Verify for challenge root (prefer CapMonster timeout). */
   waitTimeoutMs?: number;
+  /** Nest captcha solver (createTask + poll). */
+  capMonster: Pick<ICaptchaSolver, 'solveBls3x3'>;
+  /**
+   * Optional Nest Logger correlation prefix parts (nestjs-winston-logger DEC-006).
+   * Never includes API keys.
+   */
+  logContext?: PortalLogContext;
 };
 
 export type SolvePortalBlsCaptchaResult = {
@@ -34,7 +44,10 @@ export type ExtractBlsChallengeInPageArg = {
   cellImages: string;
   taskArgument: string;
   cellCount: number;
-  decoyLabelColorRgb: string;
+  /** Near-white camouflage floors for decoy `.box-label` text color. */
+  camouflagedLabelMinR: number;
+  camouflagedLabelMinG: number;
+  camouflagedLabelMinB: number;
   rowTolerancePx: number;
   taskArgumentPatternSource: string;
   taskArgumentPatternFlags: string;

@@ -24,6 +24,7 @@ export interface ApplicantInput {
 export interface ApplicationInput {
   id: string;
   clientEmail?: string;
+  submitCountry?: string;
   applicants?: ApplicantInput[];
   [key: string]: unknown;
 }
@@ -54,9 +55,11 @@ export interface LoadApplicationOptions {
 
 /**
  * Options for PortalFieldMapperService.mapFields.
- * When `emailOverride` is set (OTP path armed), portal `#Email` uses that
- * address and CRM email is not required for Email (REQ-003 / DEC-008).
+ * Primary OTP path creates Mail.tm after captcha and fills `#Email` in the
+ * pipeline (DEC-001). `emailOverride` is optional legacy map-time override only.
+ * `otpPathArmed` marks EmailOtp as deferred to post-CapMonster Mail.tm fill.
  */
 export interface MapFieldsOptions {
   emailOverride?: string;
+  otpPathArmed?: boolean;
 }

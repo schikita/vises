@@ -7,11 +7,12 @@ import type { PortalRegisterUserSelectors } from '../types';
  * CountryCode live id is `inputGroup-sizing-default` (not `CountryCode`);
  * fixture HTML must use the same id (DEC-003). No name= fallback.
  * CAPTCHA selectors stay in `portal-captcha-selectors.constants.ts` (REQ-006).
- * OTP Generate / Submit / Resend: portal-email-otp-mailslurp REQ-015.
+ * OTP Generate / Submit / Resend: portal-email-otp-mailtm (REQ-005 / DEC-005).
  */
 export const PORTAL_REGISTER_USER_SELECTORS: PortalRegisterUserSelectors = {
   formRoot: '#myForm',
   verifyControl: '#btnVerify',
+  verifiedControl: '#btnVerified',
   generateControl: '#btnGenerate',
   submitControl: '#btnSubmit',
   regenerateControl: '#btnReGenerate',

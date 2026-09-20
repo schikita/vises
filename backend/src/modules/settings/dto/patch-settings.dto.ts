@@ -33,4 +33,8 @@ export class PatchSettingsDto {
   @IsOptional()
   @IsString()
   websharePlanId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  emailOtpEnabled?: boolean;
 }

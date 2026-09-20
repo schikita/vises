@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule } from './modules/config';
+import { LoggerModule } from './modules/logger';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { AppsModule } from './modules/apps/apps.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { StatsModule } from './modules/stats';
 import { DatabaseModule } from './modules/database/database.module';
 import { SeedModule } from './modules/seed/seed.module';
 import { PortalScrapeModule } from './modules/portal-scrape/portal-scrape.module';
@@ -12,6 +14,7 @@ import { PortalScrapeModule } from './modules/portal-scrape/portal-scrape.module
 @Module({
   imports: [
     AppConfigModule,
+    LoggerModule,
     DatabaseModule,
     SeedModule,
     HealthModule,
@@ -19,6 +22,7 @@ import { PortalScrapeModule } from './modules/portal-scrape/portal-scrape.module
     UsersModule,
     AppsModule,
     SettingsModule,
+    StatsModule,
     PortalScrapeModule,
   ],
 })

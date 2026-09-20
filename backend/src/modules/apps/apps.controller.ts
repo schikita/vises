@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   StreamableFile,
   UploadedFile,
   UseGuards,
@@ -20,8 +21,14 @@ import { Roles } from '../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { User } from '../database/entities/user.entity';
 import { MAX_UPLOAD_BYTES } from '../../shared/constants';
+import { isPaginationRequested } from '../../shared/utils';
 import { UpsertAppDto } from './dto/upsert-app.dto';
-import type { AppOut, UpsertAppResult } from './types';
+import type {
+  AppOutWithPortalProgress,
+  AppsPaginatedList,
+  UpsertAppResult,
+} from './types';
+import { parseAppsListQuery } from './utils';
 import { AppsService } from './apps.service';
 
 @Controller('apps')
@@ -30,7 +37,22 @@ export class AppsController {
   constructor(private readonly apps: AppsService) {}
 
   @Get()
-  list(@CurrentUser() user: User): Promise<AppOut[]> {
+  list(
+    @CurrentUser() user: User,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('q') q?: string,
+    @Query('status') status?: string,
+    @Query('city') city?: string,
+    @Query('sort') sort?: string,
+    @Query('sortDir') sortDir?: string,
+  ): Promise<AppOutWithPortalProgress[] | AppsPaginatedList> {
+    if (isPaginationRequested(page, pageSize)) {
+      return this.apps.listPaged(
+        user,
+        parseAppsListQuery({ page, pageSize, q, status, city, sort, sortDir }),
+      );
+    }
     return this.apps.list(user);
   }
 
@@ -64,7 +86,7 @@ export class AppsController {
     @Body('type') type: string,
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: User,
-  ): Promise<AppOut> {
+  ): Promise<AppOutWithPortalProgress> {
     return this.apps.addDoc(appId, type || '', file, user);
   }
 
@@ -82,5 +104,17 @@ export class AppsController {
     return new StreamableFile(stream as import('stream').Readable, {
       disposition: `attachment; filename="${filename.replace(/"/g, '')}"`,
     });
+  }
+
+  /**
+   * Detail-by-id (DEC-007). Declared after nested `:appId/docs/…` routes so
+   * static portal-autofill paths on the sibling controller remain unambiguous.
+   */
+  @Get(':appId')
+  getById(
+    @Param('appId') appId: string,
+    @CurrentUser() user: User,
+  ): Promise<AppOutWithPortalProgress> {
+    return this.apps.getById(appId, user);
   }
 }

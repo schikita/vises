@@ -1,5 +1,7 @@
-export type { IPortalAutofillService } from './portal-autofill.service.interface';
-export type { IPortalConfigService } from './portal-config.service.interface';
-export type { IPortalDataService } from './portal-data.service.interface';
-export type { IPortalFieldMapperService } from './portal-field-mapper.service.interface';
-export type { IPortalFillService } from './portal-fill.service.interface';
+export type { IPortalAutofill } from './portal-autofill.interface';
+export type { IPortalAutofillConfig } from './portal-autofill-config.interface';
+export type { IPortalApplicationData } from './portal-application-data.interface';
+export type { IPortalFieldMapper } from './portal-field-mapper.interface';
+export type { IPortalFormFiller } from './portal-form-filler.interface';
+export type { IPortalSiteAdapter } from './portal-site-adapter.interface';
+export type { IPortalSiteAdapterRegistry } from './portal-site-adapter-registry.interface';

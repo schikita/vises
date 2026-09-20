@@ -24,7 +24,7 @@ export const TEXT_FIELDS = new Set<PortalFieldName>([
 /**
  * Fields the CRM fill loop must never write.
  * CountryCode: leave form default (REQ-008).
- * EmailOtp: skipped at CRM fill; when MailSlurp OTP path is armed, the
- * post-CapMonster phase fills it intentionally (DEC-009 / REQ-016).
+ * EmailOtp: skipped at CRM fill; when email OTP path is armed, the
+ * post-CapMonster phase fills it intentionally (DEC-007 / REQ-009).
  */
 export const NEVER_FILL = new Set<PortalFieldName>(['CountryCode', 'EmailOtp']);

@@ -6,15 +6,40 @@ import type { AppEnv } from '../config';
 import { Application } from '../database/entities/application.entity';
 import { User } from '../database/entities/user.entity';
 import { appOut } from '../../shared/mappers';
-import { assertValidUpload, safeFilename, uid, utcNow } from '../../shared/utils';
+import {
+  assertValidUpload,
+  buildPaginatedList,
+  safeFilename,
+  uid,
+  utcNow,
+} from '../../shared/utils';
+import { PortalAutofillService } from '../portal-scrape';
 import { UsersService } from '../users/users.service';
 import { DEFAULT_APP_STATUS, DEFAULT_PAYMENT_AMOUNT } from './constants';
 import { UpsertAppDto } from './dto/upsert-app.dto';
 import type { IAppsService } from './interfaces';
-import type { AppOut, DocMeta, TimelineItem, UpsertAppResult } from './types';
+import type {
+  AppOutWithPortalProgress,
+  AppsListQuery,
+  AppsPaginatedList,
+  DocMeta,
+  PaymentsListQuery,
+  PaymentsPaginatedList,
+  TimelineItem,
+  UpsertAppResult,
+  VisitsListQuery,
+  VisitsPaginatedList,
+} from './types';
 import {
   appDocumentExists,
+  applyAppsListFilters,
+  applyAppsListSort,
+  applyAppsVisibilityScope,
   applyClientPrivilegedCoerce,
+  applyVisitsEligibilityFilter,
+  applyVisitsListFilters,
+  applyVisitsListSort,
+  applyVisitsModeFilter,
   assertClientOwns,
   canSeeApp,
   copyPrimaryApplicantEmailIfBlank,
@@ -22,6 +47,7 @@ import {
   ensureUploadRoot,
   extrasIn,
   generateAppCode,
+  joinVisitsRelatedUser,
   mergeDocuments,
   openAppDocumentStream,
   resolveAppDocumentPath,
@@ -37,6 +63,7 @@ export class AppsService implements IAppsService {
     @InjectRepository(Application)
     private readonly apps: Repository<Application>,
     private readonly usersService: UsersService,
+    private readonly portalAutofill: PortalAutofillService,
     config: ConfigService<AppEnv, true>,
   ) {
     this.uploadDir = resolveUploadDir(
@@ -45,20 +72,150 @@ export class AppsService implements IAppsService {
     ensureUploadRoot(this.uploadDir);
   }
 
-  async list(user: User): Promise<AppOut[]> {
+  async list(user: User): Promise<AppOutWithPortalProgress[]> {
     const qb = this.apps
       .createQueryBuilder('a')
       .orderBy('a.created_at', 'DESC');
 
-    if (user.role === 'client') {
-      qb.where(
-        'a.client_email = :email OR a.client_email = :login',
-        { email: user.email, login: user.login },
-      );
-    }
+    applyAppsVisibilityScope(qb, user);
 
     const rows = await qb.getMany();
-    return rows.map((a) => appOut(a));
+    return this.withPortalProgress(rows);
+  }
+
+  async listPaged(
+    user: User,
+    query: AppsListQuery,
+  ): Promise<AppsPaginatedList> {
+    const citiesQb = this.apps
+      .createQueryBuilder('a')
+      .select('DISTINCT a.submit_city', 'city');
+    applyAppsVisibilityScope(citiesQb, user);
+    const cityRows = await citiesQb.getRawMany<{ city: string }>();
+    const cities = cityRows
+      .map((row) => row.city)
+      .filter((city): city is string => Boolean(city));
+
+    const countQb = this.apps.createQueryBuilder('a');
+    applyAppsVisibilityScope(countQb, user);
+    applyAppsListFilters(countQb, query);
+    const total = await countQb.getCount();
+
+    const qb = this.apps.createQueryBuilder('a');
+    applyAppsVisibilityScope(qb, user);
+    applyAppsListFilters(qb, query);
+    applyAppsListSort(qb, query.sort, query.sortDir);
+    const rows = await qb
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize)
+      .getMany();
+
+    const items = await this.withPortalProgress(rows);
+    return {
+      ...buildPaginatedList({
+        items,
+        total,
+        page: query.page,
+        pageSize: query.pageSize,
+      }),
+      cities,
+    };
+  }
+
+  async getById(
+    appId: string,
+    user: User,
+  ): Promise<AppOutWithPortalProgress> {
+    const row = await this.apps.findOne({ where: { id: appId } });
+    if (!row) {
+      throw new HttpException('Application not found', HttpStatus.NOT_FOUND);
+    }
+    if (!canSeeApp(user, row)) {
+      throw new HttpException('Not your application', HttpStatus.FORBIDDEN);
+    }
+    const [out] = await this.withPortalProgress([row]);
+    return out;
+  }
+
+  async listVisits(query: VisitsListQuery): Promise<VisitsPaginatedList> {
+    const citiesQb = this.apps
+      .createQueryBuilder('a')
+      .select('DISTINCT a.submit_city', 'city');
+    applyVisitsEligibilityFilter(citiesQb);
+    const cityRows = await citiesQb.getRawMany<{ city: string }>();
+    const cities = cityRows
+      .map((row) => row.city)
+      .filter((city): city is string => Boolean(city));
+
+    const countQb = this.apps.createQueryBuilder('a');
+    applyVisitsEligibilityFilter(countQb);
+    joinVisitsRelatedUser(countQb);
+    applyVisitsModeFilter(countQb, query.mode, query.todayIsoDate);
+    applyVisitsListFilters(countQb, query);
+    const total = await countQb.distinct(true).getCount();
+
+    const qb = this.apps.createQueryBuilder('a');
+    applyVisitsEligibilityFilter(qb);
+    joinVisitsRelatedUser(qb);
+    applyVisitsModeFilter(qb, query.mode, query.todayIsoDate);
+    applyVisitsListFilters(qb, query);
+    applyVisitsListSort(qb, query.sort, query.sortDir);
+    const rows = await qb
+      .distinct(true)
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize)
+      .getMany();
+
+    const items = await this.withPortalProgress(rows);
+    return {
+      ...buildPaginatedList({
+        items,
+        total,
+        page: query.page,
+        pageSize: query.pageSize,
+      }),
+      cities,
+    };
+  }
+
+  async listPayments(
+    query: PaymentsListQuery,
+  ): Promise<PaymentsPaginatedList> {
+    const summaryRaw = await this.apps
+      .createQueryBuilder('a')
+      .select(
+        'COALESCE(SUM(CASE WHEN a.payment_paid THEN a.payment_amount ELSE 0 END), 0)',
+        'paidTotal',
+      )
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN NOT a.payment_paid THEN a.payment_amount ELSE 0 END), 0)',
+        'unpaidTotal',
+      )
+      .getRawOne<{ paidTotal: string; unpaidTotal: string }>();
+
+    const summary = {
+      paidTotal: Number(summaryRaw?.paidTotal ?? 0),
+      unpaidTotal: Number(summaryRaw?.unpaidTotal ?? 0),
+    };
+
+    const total = await this.apps.createQueryBuilder('a').getCount();
+    const rows = await this.apps
+      .createQueryBuilder('a')
+      .orderBy('a.created_at', 'DESC')
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize)
+      .getMany();
+
+    const items = await this.withPortalProgress(rows);
+    return {
+      ...buildPaginatedList({
+        items,
+        total,
+        page: query.page,
+        pageSize: query.pageSize,
+      }),
+      summary,
+    };
   }
 
   async upsert(body: UpsertAppDto, user: User): Promise<UpsertAppResult> {
@@ -77,7 +234,7 @@ export class AppsService implements IAppsService {
       const identity = (body.clientEmail ?? '').trim();
       if (!identity) {
         throw new HttpException(
-          'Client email or login is required',
+          'Client email is required',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -159,7 +316,8 @@ export class AppsService implements IAppsService {
     }
 
     await this.apps.save(row);
-    const out: UpsertAppResult = appOut(row);
+    const [base] = await this.withPortalProgress([row]);
+    const out: UpsertAppResult = { ...base };
     if (issuedClientAccess) {
       out.issuedClientAccess = issuedClientAccess;
     }
@@ -180,7 +338,7 @@ export class AppsService implements IAppsService {
     type: string,
     file: Express.Multer.File | undefined,
     user: User,
-  ): Promise<AppOut> {
+  ): Promise<AppOutWithPortalProgress> {
     assertValidUpload(file);
 
     const row = await this.apps.findOne({ where: { id: appId } });
@@ -215,7 +373,8 @@ export class AppsService implements IAppsService {
     row.timeline = timeline;
     row.updatedAt = now;
     await this.apps.save(row);
-    return appOut(row);
+    const [out] = await this.withPortalProgress([row]);
+    return out;
   }
 
   async getDocStream(
@@ -247,5 +406,23 @@ export class AppsService implements IAppsService {
       stream: openAppDocumentStream(path),
       filename: doc.name || stored,
     };
+  }
+
+  private async withPortalProgress(
+    rows: Application[],
+  ): Promise<AppOutWithPortalProgress[]> {
+    const progressById =
+      await this.portalAutofill.getClientPortalProgressForApps(
+        rows.map((row) => ({
+          id: row.id,
+          submitCountry: row.submitCountry ?? '',
+          applicants: row.applicants,
+        })),
+      );
+
+    return rows.map((row) => ({
+      ...appOut(row),
+      portalProgress: progressById.get(row.id)!,
+    }));
   }
 }

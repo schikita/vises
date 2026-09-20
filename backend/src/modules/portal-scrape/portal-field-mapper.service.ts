@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { IPortalFieldMapperService } from './interfaces';
+import type { IPortalFieldMapper } from './interfaces';
 import type {
   ApplicantInput,
   ApplicationInput,
@@ -17,10 +17,12 @@ import { skipped } from './utils/skipped.util';
 /**
  * Map Vises applicant/application → portal field values (DEC-003, DEC-004).
  * Relocated from scripts package for Nest (REQ-016).
- * Optional `emailOverride` arms MailSlurp Email mapping (REQ-003 / DEC-008).
+ * Optional `emailOverride` is legacy map-time Email override only.
+ * Primary OTP path fills `#Email` post-captcha (REQ-003 / DEC-001).
+ * Pass `otpPathArmed` so EmailOtp skip notes defer to Mail.tm fill.
  */
 @Injectable()
-export class PortalFieldMapperService implements IPortalFieldMapperService {
+export class PortalFieldMapperService implements IPortalFieldMapper {
   mapFields(
     application: ApplicationInput,
     applicant: ApplicantInput,
@@ -154,8 +156,15 @@ export class PortalFieldMapperService implements IPortalFieldMapperService {
     if (emailOverride) {
       fields.push(
         filled('Email', emailOverride, {
-          reason: 'from MailSlurp inbox',
+          reason: 'from Mail.tm disposable account',
         }),
+      );
+    } else if (options?.otpPathArmed === true) {
+      fields.push(
+        skipped(
+          'Email',
+          'skipped at map; filled post-captcha via Mail.tm (DEC-001)',
+        ),
       );
     } else {
       const email =
@@ -180,13 +189,15 @@ export class PortalFieldMapperService implements IPortalFieldMapperService {
     );
 
     // EmailOtp is never written at map time; pipeline fills it after CapMonster
-    // when OTP path is armed (REQ-008 / DEC-009).
+    // when OTP path is armed (REQ-009 / DEC-001).
+    const otpDeferred =
+      Boolean(emailOverride) || options?.otpPathArmed === true;
     fields.push(
       skipped(
         'EmailOtp',
-        emailOverride
-          ? 'skipped at map; filled later via MailSlurp OTP after CapMonster'
-          : 'not filled (MailSlurp OTP path unarmed)',
+        otpDeferred
+          ? 'skipped at map; filled later via Mail.tm OTP after CapMonster'
+          : 'not filled (email OTP path unarmed)',
       ),
     );
 

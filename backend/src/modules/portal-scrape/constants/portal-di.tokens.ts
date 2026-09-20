@@ -1,6 +1,7 @@
-/** Nest DI Symbol tokens for portal I*Service bindings (DEC-008). */
-export const PORTAL_AUTOFILL_SERVICE = Symbol('PORTAL_AUTOFILL_SERVICE');
-export const PORTAL_CONFIG_SERVICE = Symbol('PORTAL_CONFIG_SERVICE');
-export const PORTAL_DATA_SERVICE = Symbol('PORTAL_DATA_SERVICE');
-export const PORTAL_FIELD_MAPPER_SERVICE = Symbol('PORTAL_FIELD_MAPPER_SERVICE');
-export const PORTAL_FILL_SERVICE = Symbol('PORTAL_FILL_SERVICE');
+/** Nest DI Symbol tokens for portal capability ports. */
+export const PORTAL_AUTOFILL = Symbol('PORTAL_AUTOFILL');
+export const PORTAL_AUTOFILL_CONFIG = Symbol('PORTAL_AUTOFILL_CONFIG');
+export const PORTAL_APPLICATION_DATA = Symbol('PORTAL_APPLICATION_DATA');
+export const PORTAL_FIELD_MAPPER = Symbol('PORTAL_FIELD_MAPPER');
+export const PORTAL_FORM_FILLER = Symbol('PORTAL_FORM_FILLER');
+export const PORTAL_SITE_ADAPTER_REGISTRY = Symbol('PORTAL_SITE_ADAPTER_REGISTRY');

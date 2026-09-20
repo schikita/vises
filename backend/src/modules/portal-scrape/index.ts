@@ -18,17 +18,25 @@ export type {
 } from './types';
 
 export {
-  PORTAL_AUTOFILL_SERVICE,
-  PORTAL_CONFIG_SERVICE,
-  PORTAL_DATA_SERVICE,
-  PORTAL_FIELD_MAPPER_SERVICE,
-  PORTAL_FILL_SERVICE,
+  PORTAL_AUTOFILL,
+  PORTAL_AUTOFILL_CONFIG,
+  PORTAL_APPLICATION_DATA,
+  PORTAL_FIELD_MAPPER,
+  PORTAL_FORM_FILLER,
+  PORTAL_SITE_ADAPTER_REGISTRY,
 } from './constants';
 
 export type {
-  IPortalAutofillService,
-  IPortalConfigService,
-  IPortalDataService,
-  IPortalFieldMapperService,
-  IPortalFillService,
+  IPortalAutofill,
+  IPortalAutofillConfig,
+  IPortalApplicationData,
+  IPortalFieldMapper,
+  IPortalFormFiller,
+  IPortalSiteAdapter,
+  IPortalSiteAdapterRegistry,
 } from './interfaces';
+
+export type {
+  PortalClientPortalProgress,
+  PortalSiteOutcome,
+} from './types';

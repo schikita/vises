@@ -1,6 +1,7 @@
 export { WebshareModule } from './webshare.module';
 export { WebshareProxyListService } from './webshare-proxy-list.service';
 export { PortalProxyLeaseService } from './portal-proxy-lease.service';
+export type { IProxyList, IProxyLease } from './interfaces';
 export {
   WEBSHARE_PROXY_LIST_BASE_URL,
   WEBSHARE_PROXY_MODE,

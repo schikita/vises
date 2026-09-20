@@ -1,16 +1,14 @@
 import type { ReactNode } from 'react'
-import { ArrowRight, Check, FileCheck, Shield, Timer } from 'lucide-react'
+import { FileCheck, Shield, Timer } from 'lucide-react'
 import { homePath, type Session } from '@/entities/session'
-import type { Role } from '@/entities/user'
 import { Btn, Logo } from '@/shared/ui'
 
 type LandingRenderProps = {
   session: Session | null
-  onEnter: (role: Role) => void
   loginForm: ReactNode
 }
 
-export const LandingRender = ({ session, onEnter, loginForm }: LandingRenderProps) => (
+export const LandingRender = ({ session, loginForm }: LandingRenderProps) => (
   <div className="min-h-screen">
     <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
       <Logo />
@@ -19,7 +17,9 @@ export const LandingRender = ({ session, onEnter, loginForm }: LandingRenderProp
           В кабинет
         </Btn>
       ) : (
-        <p className="hidden text-sm text-muted sm:block">Вход по логину или по ссылке от админа</p>
+        <p className="hidden text-sm text-muted sm:block">
+          Вход по логину или по ссылке от админа/менеджера
+        </p>
       )}
     </header>
 
@@ -34,18 +34,9 @@ export const LandingRender = ({ session, onEnter, loginForm }: LandingRenderProp
           Статус — в кабинете.
         </h1>
         <p className="mt-5 max-w-lg text-base leading-relaxed text-muted">
-          Клиент заполняет анкету и загружает файлы. Агент ведёт заявки. Админ выдаёт доступы
-          ссылкой с логином и паролем.
+          Клиент заполняет анкету и загружает файлы. Агент ведёт заявки. Админ или менеджер выдаёт
+          доступы логином и паролем.
         </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Btn className="h-12 px-6" onClick={() => onEnter('admin')}>
-            Кабинет админа
-            <ArrowRight size={16} />
-          </Btn>
-          <Btn variant="ghost" className="h-12 px-6 bg-white" onClick={() => onEnter('manager')}>
-            Кабинет агента
-          </Btn>
-        </div>
       </div>
 
       {loginForm}
@@ -54,9 +45,21 @@ export const LandingRender = ({ session, onEnter, loginForm }: LandingRenderProp
     <section className="border-t border-line bg-card">
       <div className="mx-auto grid max-w-6xl gap-6 px-5 py-12 sm:grid-cols-3">
         {[
-          [Timer, 'Меньше кликов', 'Плоский список заявок, поиск, статусы-чипсы. Не три уровня меню.'],
-          [FileCheck, 'Понятный прогресс', 'Не Waiting / Recorded, а «Документы», «Проверка», «Визит назначен».'],
-          [Shield, 'Данные в кабинете', 'Клиент сам видит, что загружено и что ещё нужно. Агент не ищет это в чате.'],
+          [
+            FileCheck,
+            'Анкета и документы',
+            'Клиент заполняет анкету и загружает файлы. Офис ведёт заявку и проверяет комплект.',
+          ],
+          [
+            Shield,
+            'Помощь с порталом',
+            'Сотрудники могут отправлять данные заявки на визовый портал с автозаполнением — без гарантии одобрения визы.',
+          ],
+          [
+            Timer,
+            'Статус в кабинете',
+            'В кабинете видны статус в офисе и, где доступно, прогресс и решение сайта (например, одобрено или отклонено).',
+          ],
         ].map(([Icon, title, text]) => (
           <div key={String(title)}>
             <Icon className="text-leaf" size={22} />
@@ -66,10 +69,5 @@ export const LandingRender = ({ session, onEnter, loginForm }: LandingRenderProp
         ))}
       </div>
     </section>
-
-    <footer className="mx-auto flex max-w-6xl items-center gap-2 px-5 py-8 text-sm text-muted">
-      <Check size={14} className="text-leaf" />
-      Демо. Пользователи и заявки хранятся на сервере (база данных).
-    </footer>
   </div>
 )

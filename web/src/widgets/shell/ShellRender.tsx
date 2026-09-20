@@ -20,14 +20,14 @@ export const ShellRender = ({
   onLogout,
 }: ShellRenderProps) => (
   <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
-    <aside className="flex flex-col bg-forest text-[#d7e6e0]">
-      <div className="flex items-center justify-between px-5 py-5">
+    <aside className="flex flex-col bg-forest text-[#d7e6e0] lg:sticky lg:top-0 lg:h-screen lg:self-start">
+      <div className="flex shrink-0 items-center justify-between px-5 py-5">
         <Logo light />
         <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sand">
           {SHELL_BADGE[kind]}
         </span>
       </div>
-      <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:overflow-visible">
+      <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -44,7 +44,7 @@ export const ShellRender = ({
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto hidden border-t border-white/10 px-5 py-4 lg:block">
+      <div className="mt-auto hidden shrink-0 border-t border-white/10 px-5 py-4 lg:block">
         <p className="text-sm font-bold text-white">{sessionName}</p>
         <p className="text-xs text-[#9fb6ae]">{sessionLogin}</p>
         <button

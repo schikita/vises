@@ -12,7 +12,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { PatchSettingsDto } from './dto/patch-settings.dto';
-import type { SettingsOut } from './types';
+import type { SettingsOut, WebshareProxiesOut } from './types';
 import { SettingsService } from './settings.service';
 
 @Controller('settings')
@@ -41,5 +41,22 @@ export class SettingsController {
   @Roles('admin')
   resetDemo(): Promise<{ ok: true }> {
     return this.settings.resetDemo();
+  }
+
+  /** Admin: cached Webshare proxies (masked) + last refresh (DEC-003). */
+  @Get('webshare-proxies')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  listWebshareProxies(): WebshareProxiesOut {
+    return this.settings.listWebshareProxies();
+  }
+
+  /** Admin: force-refresh Webshare proxy list (DEC-003). */
+  @Post('webshare-proxies/refresh')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  refreshWebshareProxies(): Promise<WebshareProxiesOut> {
+    return this.settings.refreshWebshareProxies();
   }
 }

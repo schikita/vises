@@ -1,4 +1,6 @@
-/** DEC-001: truthy 1/true/yes; falsy 0/false/no; unset → on iff not production. */
+import { isProdNodeEnv } from '../../config/utils';
+
+/** DEC-001: truthy 1/true/yes; falsy 0/false/no; unset → on iff not prod. */
 export const isDemoAuthEnabled = (
   demoAuthEnabled: string | undefined,
   nodeEnv: string,
@@ -9,5 +11,5 @@ export const isDemoAuthEnabled = (
     if (['1', 'true', 'yes'].includes(v)) return true;
     if (['0', 'false', 'no'].includes(v)) return false;
   }
-  return nodeEnv !== 'production';
+  return !isProdNodeEnv(nodeEnv);
 };

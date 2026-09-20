@@ -5,6 +5,7 @@ import {
   WEBSHARE_PROXY_MSG_EMPTY_POOL,
   WEBSHARE_PROXY_MSG_MISCONFIGURED,
 } from './constants';
+import type { IProxyLease } from './interfaces';
 import type {
   PortalProxyLease,
   UsableWebshareProxy,
@@ -21,7 +22,7 @@ import { WebshareProxyListService } from './webshare-proxy-list.service';
  * One lease per autofill browser session; fail closed when none free (REQ-011).
  */
 @Injectable()
-export class PortalProxyLeaseService {
+export class PortalProxyLeaseService implements IProxyLease {
   private readonly logger = new Logger(PortalProxyLeaseService.name);
   private readonly leasedIds = new Set<string>();
   private readonly withMutex = createAsyncMutex();

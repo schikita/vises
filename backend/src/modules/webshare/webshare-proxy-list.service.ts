@@ -10,6 +10,7 @@ import {
   WEBSHARE_PROXY_MSG_MISCONFIGURED,
   WEBSHARE_PROXY_MSG_RATE_LIMITED,
 } from './constants';
+import type { IProxyList } from './interfaces';
 import type {
   UsableWebshareProxy,
   WebshareProxyListRow,
@@ -25,7 +26,7 @@ import { webshareListSleep } from './utils/webshare-list-sleep.util';
  * CapMonster / other Nest egress is unaffected (DEC-005 / CON-006).
  */
 @Injectable()
-export class WebshareProxyListService {
+export class WebshareProxyListService implements IProxyList {
   private readonly logger = new Logger(WebshareProxyListService.name);
 
   private cachedProxies = new Map<string, UsableWebshareProxy>();

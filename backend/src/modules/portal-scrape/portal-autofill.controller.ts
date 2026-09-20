@@ -51,16 +51,21 @@ export class PortalAutofillController {
   }
 
   /**
-   * GET /api/apps/:applicationId/portal-autofill-runs?limit=
-   * Staff list of durable run metadata (DEC-001 / DEC-004).
+   * GET /api/apps/:applicationId/portal-autofill-runs?limit=&applicantId=
+   * Staff list of durable run metadata incl. in_progress + eligibility (DEC-007).
    */
   @Get(':applicationId/portal-autofill-runs')
   async listRuns(
     @Param('applicationId') applicationId: string,
     @Query('limit') limitRaw?: string,
+    @Query('applicantId') applicantId?: string,
   ): Promise<PortalAutofillRunListResponse> {
     const limit = clampPortalAutofillRunListLimit(limitRaw);
-    return this.autofill.listRunsForApplication(applicationId, limit);
+    return this.autofill.listRunsForApplication(
+      applicationId,
+      limit,
+      applicantId,
+    );
   }
 
   @Post(':applicationId/portal-autofill')
@@ -75,6 +80,7 @@ export class PortalAutofillController {
       applicationId,
       applicantId: body.applicantId,
       triggeredByUserId: user.id,
+      supersede: body.supersede === true,
     });
 
     if (outcome.httpStatus !== HttpStatus.OK) {

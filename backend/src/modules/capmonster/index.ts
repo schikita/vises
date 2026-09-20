@@ -1,5 +1,7 @@
 export { CapMonsterModule } from './capmonster.module';
+export { CapMonsterService } from './capmonster.service';
 export {
+  CAPTCHA_SOLVER,
   CAPMONSTER_API_BASE_URL,
   CAPMONSTER_CREATE_TASK_PATH,
   CAPMONSTER_GET_TASK_RESULT_PATH,
@@ -11,7 +13,13 @@ export {
   CAPMONSTER_STATUS_PROCESSING,
   PORTAL_CAPMONSTER_TIMEOUT_MS,
   PORTAL_CAPMONSTER_POLL_INTERVAL_MS,
+  CAPMONSTER_TRANSIENT_ERROR_CODES,
+  CAPMONSTER_PERMANENT_ERROR_CODES,
+  CAPMONSTER_TRANSIENT_HTTP_STATUSES,
+  CAPMONSTER_PERMANENT_HTTP_STATUSES,
+  CAPMONSTER_CLIENT_ERROR_NAME,
 } from './constants';
+export type { ICaptchaSolver } from './interfaces';
 export type {
   CapMonsterBlsCreateTaskBody,
   CapMonsterCreateTaskResponse,
@@ -20,13 +28,19 @@ export type {
   CapMonsterGetTaskResultResponse,
   SolveBls3x3ViaCapMonsterInput,
   SolveBls3x3ViaCapMonsterResult,
+  CapMonsterFailureClass,
+  CapMonsterFailureClassifyInput,
+  CreateCapMonsterClientErrorInput,
+  CapMonsterClientError,
 } from './types';
 export {
   postCapMonsterJson,
-  solveBls3x3ViaCapMonster,
   capMonsterSleep,
   formatCapMonsterError,
   assertNineRawBase64,
   validateBlsAnswer,
   stripDataUriPrefix,
+  classifyCapMonsterFailure,
+  createCapMonsterClientError,
+  isCapMonsterClientError,
 } from './utils';

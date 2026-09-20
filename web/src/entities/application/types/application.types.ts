@@ -1,3 +1,5 @@
+import type { PortalClientPortalProgress } from '@/entities/portal-autofill'
+
 export type Status =
   | 'new'
   | 'docs'
@@ -92,4 +94,6 @@ export type Application = {
   timeline: TimelineItem[]
   createdAt: string
   updatedAt: string
+  /** Client-safe portal progress when API embeds it (DEC-007); staff may omit. */
+  portalProgress?: PortalClientPortalProgress
 }

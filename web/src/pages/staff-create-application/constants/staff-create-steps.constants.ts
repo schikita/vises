@@ -1,1 +1,1 @@
-export const STAFF_CREATE_STEPS = ['Подача', 'Анкета'] as const
+export const STAFF_CREATE_STEP_KEYS = ['submission', 'questionnaire'] as const

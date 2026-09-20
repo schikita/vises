@@ -1,9 +1,22 @@
 import type { User } from '../../database/entities/user.entity';
 import type { UpsertAppDto } from '../dto/upsert-app.dto';
-import type { AppOut, UpsertAppResult } from '../types';
+import type {
+  AppOutWithPortalProgress,
+  AppsListQuery,
+  AppsPaginatedList,
+  PaymentsListQuery,
+  PaymentsPaginatedList,
+  UpsertAppResult,
+  VisitsListQuery,
+  VisitsPaginatedList,
+} from '../types';
 
 export interface IAppsService {
-  list(user: User): Promise<AppOut[]>;
+  list(user: User): Promise<AppOutWithPortalProgress[]>;
+  listPaged(user: User, query: AppsListQuery): Promise<AppsPaginatedList>;
+  getById(appId: string, user: User): Promise<AppOutWithPortalProgress>;
+  listVisits(query: VisitsListQuery): Promise<VisitsPaginatedList>;
+  listPayments(query: PaymentsListQuery): Promise<PaymentsPaginatedList>;
   upsert(body: UpsertAppDto, user: User): Promise<UpsertAppResult>;
   remove(appId: string): Promise<{ ok: true }>;
   addDoc(
@@ -11,7 +24,7 @@ export interface IAppsService {
     type: string,
     file: Express.Multer.File | undefined,
     user: User,
-  ): Promise<AppOut>;
+  ): Promise<AppOutWithPortalProgress>;
   getDocStream(
     appId: string,
     docId: string,

@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { useStore } from '@/app/providers'
+import { LOCKED_SUBMIT_CITIES } from '@/entities/settings'
 import { SettingsEditForm } from '@/features/settings-edit'
+import { WebshareProxiesPanel } from '@/features/webshare-proxies'
 import { SettingsRender } from './SettingsRender'
 
 export const SettingsPage = () => {
@@ -8,11 +10,14 @@ export const SettingsPage = () => {
   const isAdmin = session?.role === 'admin'
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [editFormKey, setEditFormKey] = useState(0)
 
   const onResetDemo = async () => {
     setError('')
     try {
       await resetDemo()
+      setSaved(false)
+      setEditFormKey((key) => key + 1)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось сбросить демо')
     }
@@ -20,38 +25,27 @@ export const SettingsPage = () => {
 
   const settingsForm: ReactNode = isAdmin ? (
     <SettingsEditForm
+      key={editFormKey}
+      lockedCitiesLabel={LOCKED_SUBMIT_CITIES.join(', ')}
       defaultValues={{
         company: settings.company,
         price: String(settings.defaultPrice),
-        cities: settings.cities.join(', '),
         destinations: settings.destinations.join(', '),
-        webshareProxyEnabled: settings.webshareProxyEnabled,
         websharePlanId: settings.websharePlanId ?? '',
       }}
       saved={saved}
-      onValidSubmit={async ({
-        company,
-        price,
-        cities,
-        destinations,
-        webshareProxyEnabled,
-        websharePlanId,
-      }) => {
+      onValidSubmit={async ({ company, price, destinations, websharePlanId }) => {
         setError('')
         setSaved(false)
         try {
           await saveSettings({
             company: company.trim() || 'Vises',
             defaultPrice: Number(price) || 0,
-            cities: cities
-              .split(',')
-              .map((x) => x.trim())
-              .filter(Boolean),
+            cities: [...LOCKED_SUBMIT_CITIES],
             destinations: destinations
               .split(',')
               .map((x) => x.trim())
               .filter(Boolean),
-            webshareProxyEnabled,
             websharePlanId: websharePlanId.trim(),
           })
           setSaved(true)
@@ -62,13 +56,17 @@ export const SettingsPage = () => {
     />
   ) : null
 
+  const websharePanel: ReactNode = isAdmin ? <WebshareProxiesPanel /> : null
+
   return (
     <SettingsRender
       isAdmin={isAdmin}
       settingsForm={settingsForm}
+      websharePanel={websharePanel}
       error={error}
       settingsCompany={settings.company}
       settingsCities={settings.cities}
+      demoControlsEnabled={Boolean(settings.demoControlsEnabled)}
       onResetDemo={() => void onResetDemo()}
     />
   )

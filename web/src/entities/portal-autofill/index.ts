@@ -1,11 +1,26 @@
 ﻿export type {
   PortalAutofillCaptureStatus,
+  PortalAutofillRunStatus,
+  PortalAutofillCapMonsterCbState,
+  PortalFieldProgressSummary,
+  PortalAutofillCaptchaSummary,
+  PortalAutofillRetryImpliedMode,
+  PortalAutofillRetryEligibility,
   PortalAutofillRunListItem,
   PortalAutofillRunListResponse,
+  PortalAutofillRunOptions,
   AutofillReportSummary,
   PortalAutofillRunResult,
   PortalAutofillCrmOutcome,
+  PortalClientPortalSendState,
+  PortalSiteOutcome,
+  PortalClientPortalProgress,
 } from './types'
+export {
+  PORTAL_AUTOFILL_REQUIRED_FIELDS,
+  PORTAL_AUTOFILL_PIPELINE_STAGE_ORDER,
+  PORTAL_AUTOFILL_ACTION_LABEL_RU,
+} from './constants'
 export {
   portalCaptureStatusLabel,
   portalReportOkLabel,
@@ -13,4 +28,14 @@ export {
   portalAutofillPhoneDigits,
   isPortalAutofillApplicantReady,
   runPortalAutofillRequest,
+  portalRunStatusLabel,
+  portalPipelineStageLabel,
+  listPortalPassedPipelineStageLabels,
+  portalCaptchaCbStateLabel,
+  portalAutofillActionLabel,
+  resolvePortalAutofillSupersede,
+  isPortalAutofillActionEligible,
+  portalClientSendLabel,
+  portalSiteOutcomeLabel,
+  formatPortalFillSummaryRu,
 } from './utils'

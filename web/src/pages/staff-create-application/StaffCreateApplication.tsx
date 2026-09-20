@@ -13,13 +13,15 @@ import {
   staffApplicationFormSchema,
 } from '@/features/application-form'
 import { nowIso } from '@/shared/lib'
+import { STAFF_ANKETA_TABS } from './constants'
+import type { StaffAnketaTab } from './types'
 import { StaffCreateApplicationRender } from './StaffCreateApplicationRender'
 
 export const StaffCreateApplication = () => {
-  const { session, upsert, addDoc, settings } = useStore()
+  const { session, upsert, settings } = useStore()
   const nav = useNavigate()
   const [step, setStep] = useState(0)
-  const [video, setVideo] = useState<File | null>(null)
+  const [anketaTab, setAnketaTab] = useState<StaffAnketaTab>(STAFF_ANKETA_TABS[0])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [issued, setIssued] = useState<IssuedAccess | null>(null)
@@ -88,21 +90,6 @@ export const StaffCreateApplication = () => {
     }
     try {
       const saved = await upsert(next)
-      if (video) {
-        try {
-          await addDoc(
-            saved.id,
-            { id: `doc-${Date.now()}`, type: 'video', name: video.name, uploadedAt: nowIso() },
-            video,
-          )
-        } catch (docErr) {
-          setError(
-            docErr instanceof Error
-              ? `Заявка создана, но видео не загружено: ${docErr.message}`
-              : 'Заявка создана, но видео не загружено',
-          )
-        }
-      }
       if (saved.issuedClientAccess) {
         setIssued(saved.issuedClientAccess)
         setCreatedAppId(saved.id)
@@ -120,8 +107,8 @@ export const StaffCreateApplication = () => {
     <FormProvider {...form}>
       <StaffCreateApplicationRender
         step={step}
+        anketaTab={anketaTab}
         cities={cities}
-        video={video}
         saving={saving}
         error={error}
         issued={issued}
@@ -133,17 +120,20 @@ export const StaffCreateApplication = () => {
         watch={form.watch}
         errors={form.formState.errors}
         applicantFields={applicantsArray.fields}
+        onAnketaTabChange={setAnketaTab}
         onAddApplicant={() => applicantsArray.append(emptyApplicant('Spouse'))}
         onRemoveApplicant={(index) => {
           if (applicantsArray.fields.length <= 1) return
           applicantsArray.remove(index)
         }}
-        onVideoChange={setVideo}
         onSubmit={(e) => {
           e.preventDefault()
           if (step === 0) {
             void form.trigger([...STAFF_TRIP_STEP_FIELDS]).then((ok) => {
-              if (ok) setStep(1)
+              if (ok) {
+                setStep(1)
+                setAnketaTab(STAFF_ANKETA_TABS[0])
+              }
             })
             return
           }

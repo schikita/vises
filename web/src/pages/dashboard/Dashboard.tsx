@@ -1,34 +1,50 @@
-import { useStore } from '@/app/providers'
+import { useEffect, useState } from 'react'
 import { money, type Status } from '@/entities/application'
+import type { OwnerDashboardStatsOut } from '@/features/owner-stats'
 import { staffBase } from '@/entities/session'
+import { useStore } from '@/app/providers'
+import { apiRequest } from '@/shared/api'
 import { DashboardRender } from './DashboardRender'
 
+const statusCount = (stats: OwnerDashboardStatsOut | null, id: Status): number =>
+  stats?.appsByStatus.find((row) => row.status === id)?.count ?? 0
+
 export const Dashboard = () => {
-  const { apps, session } = useStore()
-  const unpaid = apps.filter((a) => !a.paymentPaid).reduce((s, a) => s + a.paymentAmount, 0)
-  const paid = apps.filter((a) => a.paymentPaid).reduce((s, a) => s + a.paymentAmount, 0)
-  const byStatus = (id: Status) => apps.filter((a) => a.status === id).length
-  const cities = [...new Set(apps.map((a) => a.submitCity))]
-  const upcoming = apps
-    .filter((a) => a.status === 'booked' && a.visitDate)
-    .sort((a, b) => a.visitDate.localeCompare(b.visitDate))
+  const { session } = useStore()
+  const [stats, setStats] = useState<OwnerDashboardStatsOut | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void apiRequest<OwnerDashboardStatsOut>('/stats/dashboard')
+      .then((next) => {
+        if (!cancelled) setStats(next)
+      })
+      .catch(() => {
+        if (!cancelled) setStats(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const visitCount =
+    statusCount(stats, 'booked') + statusCount(stats, 'done')
 
   const kpis = [
-    ['Заявки', String(apps.length)],
-    ['Заявители', String(apps.reduce((s, a) => s + a.applicants.length, 0))],
-    ['Визиты', String(apps.filter((a) => a.status === 'booked' || a.status === 'done').length)],
-    ['Оплачено', money(paid)],
-    ['Не оплачено', money(unpaid)],
+    ['Заявки', String(stats?.appsTotal ?? 0)],
+    ['Заявители', String(stats?.applicantsTotal ?? 0)],
+    ['Визиты', String(visitCount)],
+    ['Оплачено', money(stats?.paidTotal ?? 0)],
+    ['Не оплачено', money(stats?.unpaidTotal ?? 0)],
   ]
 
   return (
     <DashboardRender
-      apps={apps}
-      appsCount={apps.length}
+      appsCount={stats?.appsTotal ?? 0}
       kpis={kpis}
-      cities={cities}
-      upcoming={upcoming}
-      byStatus={byStatus}
+      cities={stats?.cities ?? []}
+      upcoming={stats?.upcomingVisits ?? []}
+      byStatus={(id) => statusCount(stats, id)}
       appsBase={`${staffBase(session?.role)}/apps`}
     />
   )

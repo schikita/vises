@@ -1,2 +1,6 @@
 ﻿export type { Role, User } from './user.types'
 export type { IssuedAccess } from './issued-access.types'
+export type { UserListItem } from './user-list-item.types'
+export type { UsersPaginatedList } from './users-paginated-list.types'
+export type { FetchUsersPageParams } from './fetch-users-page-params.types'
+export type { ManagerNamesOut } from './manager-names-out.types'

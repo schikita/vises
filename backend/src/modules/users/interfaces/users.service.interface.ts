@@ -3,12 +3,17 @@ import type { CreateUserDto } from '../dto/create-user.dto';
 import type { PatchUserDto } from '../dto/patch-user.dto';
 import type {
   EnsureClientResult,
+  ManagerNamesOut,
   UserCredentialsOut,
   UserOut,
+  UsersListQuery,
+  UsersPaginatedList,
 } from '../types';
 
 export interface IUsersService {
   list(): Promise<UserOut[]>;
+  listPaged(query: UsersListQuery): Promise<UsersPaginatedList>;
+  listActiveManagerNames(): Promise<ManagerNamesOut>;
   create(body: CreateUserDto): Promise<UserCredentialsOut>;
   ensureClientForIdentity(
     identity: string,

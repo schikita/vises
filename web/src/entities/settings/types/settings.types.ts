@@ -5,4 +5,7 @@ export type SystemSettings = {
   destinations: string[]
   webshareProxyEnabled: boolean
   websharePlanId: string
+  emailOtpEnabled: boolean
+  /** From API: show demo reset only when true (DEC-010). */
+  demoControlsEnabled: boolean
 }

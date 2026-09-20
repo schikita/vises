@@ -7,8 +7,10 @@ import {
   stripDataUriPrefix,
 } from '../../capmonster';
 import {
+  PORTAL_CAPTCHA_CAMOUFLAGED_LABEL_MIN_B,
+  PORTAL_CAPTCHA_CAMOUFLAGED_LABEL_MIN_G,
+  PORTAL_CAPTCHA_CAMOUFLAGED_LABEL_MIN_R,
   PORTAL_CAPTCHA_CELL_SORT_ROW_TOLERANCE_PX,
-  PORTAL_CAPTCHA_DECOY_LABEL_COLOR_RGB,
   PORTAL_CAPTCHA_SELECTORS,
   PORTAL_CAPTCHA_TASK_ARGUMENT_PATTERN,
   type PortalCaptchaSelectorSet,
@@ -49,7 +51,9 @@ export const extractBlsChallenge = async (
     cellImages: selectors.cellImages,
     taskArgument: selectors.taskArgument,
     cellCount: CAPMONSTER_BLS_CELL_COUNT,
-    decoyLabelColorRgb: PORTAL_CAPTCHA_DECOY_LABEL_COLOR_RGB,
+    camouflagedLabelMinR: PORTAL_CAPTCHA_CAMOUFLAGED_LABEL_MIN_R,
+    camouflagedLabelMinG: PORTAL_CAPTCHA_CAMOUFLAGED_LABEL_MIN_G,
+    camouflagedLabelMinB: PORTAL_CAPTCHA_CAMOUFLAGED_LABEL_MIN_B,
     rowTolerancePx: PORTAL_CAPTCHA_CELL_SORT_ROW_TOLERANCE_PX,
     taskArgumentPatternSource: PORTAL_CAPTCHA_TASK_ARGUMENT_PATTERN.source,
     taskArgumentPatternFlags: PORTAL_CAPTCHA_TASK_ARGUMENT_PATTERN.flags,

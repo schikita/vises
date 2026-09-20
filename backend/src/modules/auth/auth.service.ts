@@ -10,7 +10,7 @@ import type { UserOut } from '../users/types';
 import { USER_ROLES } from './constants';
 import type { IAuthService } from './interfaces';
 import { JwtTokenService } from './jwt.service';
-import type { AuthSession } from './types';
+import type { AuthSession, UserMeOut } from './types';
 import { isDemoAuthEnabled } from './utils';
 
 @Injectable()
@@ -68,8 +68,9 @@ export class AuthService implements IAuthService {
     return { token: this.jwt.makeToken(user), user: userOut(user) };
   }
 
-  me(user: User): UserOut {
-    return userOut(user);
+  me(user: User): UserMeOut {
+    const { password: _password, ...rest } = userOut(user);
+    return rest;
   }
 
   /** DEC-002: one-time plaintext reveal; clear invite_password after first non-empty GET. */

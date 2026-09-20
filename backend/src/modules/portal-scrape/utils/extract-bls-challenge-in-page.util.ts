@@ -11,7 +11,11 @@ import type {
 export const extractBlsChallengeInPage = (
   arg: ExtractBlsChallengeInPageArg,
 ): ExtractBlsChallengeInPageResult => {
-  const isDisplayed = (el: Element): boolean => {
+  /**
+   * Geometry gate for stacked captcha-img decoys (not used for `.box-label`).
+   * Label readability is color-based — see isCamouflagedColor.
+   */
+  const hasPaintedBox = (el: Element): boolean => {
     let node: Element | null = el;
     while (node) {
       const style = window.getComputedStyle(node);
@@ -28,6 +32,40 @@ export const extractBlsChallengeInPage = (
     return rect.width >= 8 && rect.height >= 8;
   };
 
+  const parseRgb = (
+    color: string,
+  ): { r: number; g: number; b: number; a: number } | null => {
+    const match = String(color).match(
+      /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/i,
+    );
+    if (!match) return null;
+    return {
+      r: Number(match[1]),
+      g: Number(match[2]),
+      b: Number(match[3]),
+      a: match[4] == null ? 1 : Number(match[4]),
+    };
+  };
+
+  /**
+   * Portal hides decoy labels with floral-white / near-white text (#fffaf0),
+   * not display:none. Transparent or near-white = unreadable decoy.
+   */
+  const isCamouflagedColor = (color: string): boolean => {
+    const rgb = parseRgb(color);
+    if (!rgb || rgb.a === 0) return true;
+    return (
+      rgb.r >= arg.camouflagedLabelMinR &&
+      rgb.g >= arg.camouflagedLabelMinG &&
+      rgb.b >= arg.camouflagedLabelMinB
+    );
+  };
+
+  const isReadableLabel = (el: Element): boolean => {
+    const color = window.getComputedStyle(el).color;
+    return !isCamouflagedColor(color);
+  };
+
   /**
    * Keep only the topmost painted captcha-img per snapped grid slot
    * (decoys stack under the real cell).
@@ -37,7 +75,7 @@ export const extractBlsChallengeInPage = (
       document.querySelectorAll(arg.cellImages),
     ).filter(
       (el): el is HTMLImageElement =>
-        el instanceof HTMLImageElement && isDisplayed(el),
+        el instanceof HTMLImageElement && hasPaintedBox(el),
     );
 
     const slots = new Map<string, HTMLImageElement>();
@@ -126,19 +164,15 @@ export const extractBlsChallengeInPage = (
     arg.taskArgumentPatternSource,
     arg.taskArgumentPatternFlags,
   );
-  const labels = Array.from(document.querySelectorAll(arg.taskArgument)).filter(
-    (el) => {
-      if (!isDisplayed(el)) return false;
-      const color = window.getComputedStyle(el).color;
-      if (color === arg.decoyLabelColorRgb) return false;
-      return true;
-    },
-  );
+  const labels = Array.from(
+    document.querySelectorAll(arg.taskArgument),
+  ).filter(isReadableLabel);
 
   if (labels.length === 0) {
     return {
       ok: false,
-      error: 'TaskArgument label not found (no visible non-decoy .box-label)',
+      error:
+        'TaskArgument label not found (no readable non-camouflaged .box-label)',
     };
   }
 

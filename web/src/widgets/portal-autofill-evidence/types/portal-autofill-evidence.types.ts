@@ -20,7 +20,12 @@ export type PortalAutofillEvidenceSectionRenderProps = {
   effectiveApplicantId: string
   ready: boolean
   applicantPersisted: boolean
-  canStart: boolean
+  /** Local readiness + persistence allow attempting a trigger. */
+  localCanTrigger: boolean
+  /** Server eligibility allows the action (DEC-008). */
+  actionEligible: boolean
+  actionLabel: string
+  blockedReasonRu: string | null
   busy: boolean
   loading: boolean
   error: string

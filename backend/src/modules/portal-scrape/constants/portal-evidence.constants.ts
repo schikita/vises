@@ -5,8 +5,12 @@
  */
 export const PORTAL_AUTOFILL_EVIDENCE_SUBDIR = 'portal-autofill';
 
-/** Capture outcome literals for `portal_autofill_runs.capture_status` (DEC-001). */
+/**
+ * Capture outcome literals for `portal_autofill_runs.capture_status`.
+ * `pending` = mid-run / no PNG yet (portal-autofill-durable-resume REQ-012).
+ */
 export const PORTAL_AUTOFILL_CAPTURE_STATUS = {
+  PENDING: 'pending',
   CAPTURED: 'captured',
   CAPTURE_FAILED: 'capture_failed',
 } as const;

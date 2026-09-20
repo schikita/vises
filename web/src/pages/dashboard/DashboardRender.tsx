@@ -1,20 +1,19 @@
 import { Link } from 'react-router-dom'
-import type { Application, Status } from '@/entities/application'
+import type { Status } from '@/entities/application'
 import { statusLabel } from '@/entities/application'
+import type { DashboardCityCount, DashboardUpcomingVisit } from '@/features/owner-stats'
 import { Card, StatusBadge } from '@/shared/ui'
 
 type DashboardRenderProps = {
-  apps: Application[]
   appsCount: number
   kpis: string[][]
-  cities: string[]
-  upcoming: Application[]
+  cities: DashboardCityCount[]
+  upcoming: DashboardUpcomingVisit[]
   byStatus: (id: Status) => number
   appsBase: string
 }
 
 export const DashboardRender = ({
-  apps,
   appsCount,
   kpis,
   cities,
@@ -75,15 +74,12 @@ export const DashboardRender = ({
       <Card>
         <p className="font-bold">Города подачи</p>
         <ul className="mt-4 space-y-3">
-          {cities.map((city) => {
-            const n = apps.filter((a) => a.submitCity === city).length
-            return (
-              <li key={city} className="flex items-center justify-between text-sm">
-                <span className="font-semibold">{city}</span>
-                <span className="text-muted">{n} заявок</span>
-              </li>
-            )
-          })}
+          {cities.map((row) => (
+            <li key={row.city} className="flex items-center justify-between text-sm">
+              <span className="font-semibold">{row.city}</span>
+              <span className="text-muted">{row.count} заявок</span>
+            </li>
+          ))}
         </ul>
         <p className="mt-6 font-bold">Ближайшие визиты</p>
         {upcoming.length === 0 ? (
@@ -93,7 +89,7 @@ export const DashboardRender = ({
             {upcoming.map((a) => (
               <li key={a.id}>
                 <Link to={`${appsBase}/${a.id}`} className="text-sm font-semibold text-forest">
-                  {a.visitDate} {a.visitTime} · {a.applicants[0]?.lastName} · {statusLabel(a.status)}
+                  {a.visitDate} {a.visitTime} · {a.primaryLastName} · {statusLabel(a.status as Status)}
                 </Link>
               </li>
             ))}

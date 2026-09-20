@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from '../database/entities/application.entity';
-import type { IPortalDataService } from './interfaces';
+import type { IPortalApplicationData } from './interfaces';
 import type {
   ApplicantInput,
   ApplicationInput,
@@ -22,7 +22,7 @@ import { findApplicant } from './utils/find-applicant.util';
  * Offline JSON fixture path removed (DEC-003).
  */
 @Injectable()
-export class PortalDataService implements IPortalDataService {
+export class PortalDataService implements IPortalApplicationData {
   constructor(
     @Optional()
     @InjectRepository(Application)
@@ -70,6 +70,7 @@ export class PortalDataService implements IPortalDataService {
     const application: ApplicationInput = {
       id: row.id,
       clientEmail: row.clientEmail,
+      submitCountry: row.submitCountry ?? '',
       applicants,
     };
 

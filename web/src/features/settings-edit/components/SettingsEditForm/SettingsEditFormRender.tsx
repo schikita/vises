@@ -5,6 +5,7 @@ import type { SettingsEditFormValues } from '../../types'
 
 type SettingsEditFormRenderProps = {
   saved: boolean
+  lockedCitiesLabel: string
   register: UseFormRegister<SettingsEditFormValues>
   errors: FieldErrors<SettingsEditFormValues>
   onSubmit: (e: FormEvent) => void
@@ -12,6 +13,7 @@ type SettingsEditFormRenderProps = {
 
 export const SettingsEditFormRender = ({
   saved,
+  lockedCitiesLabel,
   register,
   errors,
   onSubmit,
@@ -26,24 +28,20 @@ export const SettingsEditFormRender = ({
     <Field label="Цена заявки по умолчанию, ₽" error={errors.price?.message}>
       <input className="field" type="number" {...register('price')} />
     </Field>
-    <Field label="Города подачи" error={errors.cities?.message}>
-      <input className="field" {...register('cities')} />
+    <Field label="Города подачи">
+      <input
+        className="field bg-[#f7f4ee] text-muted"
+        value={lockedCitiesLabel}
+        readOnly
+        tabIndex={-1}
+        aria-readonly="true"
+      />
+      <p className="mt-1 text-xs text-muted">
+        Город подачи зафиксирован: только Минск. Москва и другие города недоступны.
+      </p>
     </Field>
     <Field label="Направления" error={errors.destinations?.message}>
       <input className="field" {...register('destinations')} />
-    </Field>
-    <Field
-      label="Прокси Webshare для автозаполнения"
-      error={errors.webshareProxyEnabled?.message}
-    >
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" {...register('webshareProxyEnabled')} />
-        Использовать разные IP из Webshare при автозаполнении
-      </label>
-      <p className="mt-1 text-xs text-muted">
-        Нужен непустой WEBSHARE_API_KEY на сервере. Список IP обновляется по TTL
-        из окружения.
-      </p>
     </Field>
     <Field label="ID плана Webshare (необязательно)" error={errors.websharePlanId?.message}>
       <input
@@ -53,6 +51,11 @@ export const SettingsEditFormRender = ({
         {...register('websharePlanId')}
       />
     </Field>
+    <p className="text-xs text-muted">
+      Прокси Webshare и Mail.tm OTP включаются автоматически при наличии ключей
+      в окружении сервера (WEBSHARE_API_KEY / MAILTM_API_BASE_URL). Переключатели
+      на этом экране убраны.
+    </p>
     <Btn type="submit">{saved ? 'Сохранено' : 'Сохранить'}</Btn>
   </form>
 )

@@ -1,8 +1,18 @@
 ﻿export type {
   PortalAutofillCaptureStatus,
+  PortalAutofillRunStatus,
+  PortalAutofillCapMonsterCbState,
+  PortalFieldProgressSummary,
+  PortalAutofillCaptchaSummary,
+  PortalAutofillRetryImpliedMode,
+  PortalAutofillRetryEligibility,
   PortalAutofillRunListItem,
   PortalAutofillRunListResponse,
+  PortalAutofillRunOptions,
   AutofillReportSummary,
   PortalAutofillRunResult,
   PortalAutofillCrmOutcome,
+  PortalClientPortalSendState,
+  PortalSiteOutcome,
+  PortalClientPortalProgress,
 } from './portal-autofill.types'

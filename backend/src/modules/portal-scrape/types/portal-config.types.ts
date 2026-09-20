@@ -10,8 +10,14 @@ export interface AutofillConfig extends WebshareProxyRuntimeConfig {
    */
   capMonsterApiKey?: string;
   /**
-   * MailSlurp API key. Non-empty after trim is required (with CapMonster) to
-   * arm the email-OTP path (DEC-001 / REQ-001). Empty ⇒ undefined ⇒ unarmed.
+   * Product OTP path enabled for this run. Hardcoded true in portal-config
+   * (portal-email-otp-mailtm DEC-004). Full arming still requires CapMonster
+   * key ∧ non-empty MAILTM_API_BASE_URL at autofill (REQ-002).
    */
-  mailSlurpApiKey?: string;
+  emailOtpEnabled: boolean;
+  /**
+   * Trimmed Mail.tm API origin from MAILTM_API_BASE_URL. Empty/undefined
+   * leaves the OTP path unarmed even when CapMonster + product enable are on.
+   */
+  mailTmApiBaseUrl?: string;
 }

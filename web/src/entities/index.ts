@@ -13,7 +13,10 @@ export type {
   PortalAutofillCaptureStatus,
   PortalAutofillRunListItem,
   PortalAutofillRunListResponse,
+  PortalAutofillRetryEligibility,
+  PortalAutofillRunOptions,
   AutofillReportSummary,
   PortalAutofillRunResult,
   PortalAutofillCrmOutcome,
+  PortalClientPortalProgress,
 } from './portal-autofill'

@@ -1,10 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { WinstonLoggerService } from './modules/logger';
 import { DetailExceptionFilter } from './shared/filters/detail-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    logger: ['fatal', 'error', 'warn', 'log', 'debug', 'verbose'],
+  });
+  app.useLogger(app.get(WinstonLoggerService));
 
   app.setGlobalPrefix('api');
   app.enableCors({

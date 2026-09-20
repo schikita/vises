@@ -4,9 +4,7 @@ import { z } from 'zod'
 export const settingsEditFormSchema = z.object({
   company: z.string(),
   price: z.string(),
-  cities: z.string(),
   destinations: z.string(),
-  webshareProxyEnabled: z.boolean(),
   websharePlanId: z
     .string()
     .max(120, 'Не более 120 символов'),

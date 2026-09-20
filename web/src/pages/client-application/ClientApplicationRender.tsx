@@ -1,15 +1,9 @@
 import { Upload } from 'lucide-react'
-import type { Application, DocType } from '@/entities/application'
 import { DOC_TYPES, requiredDocsOk, statusLabel } from '@/entities/application'
 import { formatDate, formatDateTime } from '@/shared/lib'
 import { Avatar, Card, Empty, StatusBadge } from '@/shared/ui'
-
-type ClientApplicationRenderProps = {
-  app: Application | undefined
-  docError: string
-  uploading: DocType | null
-  onFile: (type: DocType, file: File) => void
-}
+import { ClientPortalProgressPanel } from './ClientPortalProgressPanel'
+import type { ClientApplicationRenderProps } from './types'
 
 export const ClientApplicationRender = ({
   app,
@@ -108,6 +102,7 @@ export const ClientApplicationRender = ({
       </div>
 
       <div className="space-y-5">
+        <ClientPortalProgressPanel portalProgress={app.portalProgress} />
         <Card>
           <p className="font-bold">Поездка</p>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">

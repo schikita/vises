@@ -7,12 +7,13 @@ import type { WebshareProxyMode } from './webshare-proxy.types';
 
 export type WebshareProxyRuntimeConfig = {
   /**
-   * Effective Webshare portal proxying: settings.webshareProxyEnabled ∧
-   * non-empty WEBSHARE_API_KEY.
+   * Effective Webshare portal proxying: non-empty WEBSHARE_API_KEY
+   * (owner-console-ux DEC-002; settings checkbox no longer required).
    */
   webshareProxyEnabled: boolean;
   /**
-   * Admin enabled proxies but API key empty — fail closed; do not silent-disable.
+   * Legacy misconfig signal (enabled-without-key). Under DEC-002 credentials-only
+   * model this stays false; missing key ⇒ webshareProxyEnabled false.
    */
   webshareProxyMisconfigured: boolean;
   webshareApiKey?: string;

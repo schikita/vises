@@ -4,33 +4,29 @@ import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import { Application } from '../database/entities/application.entity';
 import { Setting } from '../database/entities/setting.entity';
-import { hashPassword, utcNow } from '../../shared/utils';
+import { utcNow } from '../../shared/utils';
 import {
-  SEED_ADMIN_INVITE_TOKEN,
-  SEED_ADMIN_PASSWORD,
-  SEED_ADMIN_USER_ID,
   SEED_CITIES,
-  SEED_CLIENT_INVITE_TOKEN,
-  SEED_CLIENT_PASSWORD,
-  SEED_CLIENT_USER_ID,
   SEED_COMPANY,
   SEED_DEFAULT_PRICE,
   SEED_DESTINATIONS,
-  SEED_MANAGER_INVITE_TOKEN,
-  SEED_MANAGER_PASSWORD,
-  SEED_MANAGER_USER_ID,
+  SEED_EMAIL_OTP_ENABLED,
+  SEED_EXTRA_APP_COUNT,
+  SEED_EXTRA_CLIENT_COUNT,
+  SEED_EXTRA_MANAGER_COUNT,
   SEED_SETTINGS_ID,
   SEED_WEBSHARE_PLAN_ID,
   SEED_WEBSHARE_PROXY_ENABLED,
 } from './constants';
-import { buildSampleApps } from './utils';
+import { buildExtraSeedApps, buildSampleApps, buildSeedUsers } from './utils';
+import type { IDemoDataSeeder } from './interfaces';
 
 /**
  * Seed-if-empty parity with `backend/app/seed.py` (REQ-015 / DEC-003).
  * `resetDemo` shared with settings reset (TASK-009).
  */
 @Injectable()
-export class SeedService implements OnModuleInit {
+export class SeedService implements OnModuleInit, IDemoDataSeeder {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(
@@ -46,53 +42,25 @@ export class SeedService implements OnModuleInit {
 
   async seedIfEmpty(): Promise<void> {
     const userCount = await this.users.count();
-    if (userCount === 0) {
-      const now = utcNow();
-      await this.users.save([
-        this.users.create({
-          id: SEED_ADMIN_USER_ID,
-          name: 'Vises Admin',
-          login: 'admin',
-          email: 'admin@vises.app',
-          passwordHash: hashPassword(SEED_ADMIN_PASSWORD),
-          invitePassword: SEED_ADMIN_PASSWORD,
-          role: 'admin',
-          active: true,
-          inviteToken: SEED_ADMIN_INVITE_TOKEN,
-          createdAt: now,
-          updatedAt: now,
-        }),
-        this.users.create({
-          id: SEED_MANAGER_USER_ID,
-          name: 'Maria',
-          login: 'maria@vises.app',
-          email: 'maria@vises.app',
-          passwordHash: hashPassword(SEED_MANAGER_PASSWORD),
-          invitePassword: SEED_MANAGER_PASSWORD,
-          role: 'manager',
-          active: true,
-          inviteToken: SEED_MANAGER_INVITE_TOKEN,
-          createdAt: now,
-          updatedAt: now,
-        }),
-        this.users.create({
-          id: SEED_CLIENT_USER_ID,
-          name: 'Anna Volkova',
-          login: 'anna@example.com',
-          email: 'anna@example.com',
-          passwordHash: hashPassword(SEED_CLIENT_PASSWORD),
-          invitePassword: SEED_CLIENT_PASSWORD,
-          role: 'client',
-          active: true,
-          inviteToken: SEED_CLIENT_INVITE_TOKEN,
-          createdAt: now,
-          updatedAt: now,
-        }),
-      ]);
-      this.logger.log('Seeded users (u-admin, u-maria, u-anna)');
+    const settingCount = await this.settings.count();
+    const appCount = await this.applications.count();
+
+    if (userCount > 0 && settingCount > 0 && appCount > 0) {
+      this.logger.log('Seed skipped — tables already populated');
+      return;
     }
 
-    const settingCount = await this.settings.count();
+    const seededUsers = buildSeedUsers(this.users, utcNow());
+
+    if (userCount === 0) {
+      await this.users.save(seededUsers.users);
+      const managerCount = 1 + SEED_EXTRA_MANAGER_COUNT;
+      const clientCount = 2 + SEED_EXTRA_CLIENT_COUNT;
+      this.logger.log(
+        `Seeded users (${seededUsers.users.length}: 1 admin, ${managerCount} managers, ${clientCount} clients)`,
+      );
+    }
+
     if (settingCount === 0) {
       await this.settings.save(
         this.settings.create({
@@ -103,19 +71,23 @@ export class SeedService implements OnModuleInit {
           destinations: [...SEED_DESTINATIONS],
           webshareProxyEnabled: SEED_WEBSHARE_PROXY_ENABLED,
           websharePlanId: SEED_WEBSHARE_PLAN_ID,
+          emailOtpEnabled: SEED_EMAIL_OTP_ENABLED,
         }),
       );
       this.logger.log('Seeded settings id=1');
     }
 
-    const appCount = await this.applications.count();
     if (appCount === 0) {
-      await this.applications.save(buildSampleApps(this.applications));
-      this.logger.log('Seeded sample applications (a1, a2, a5)');
-    }
-
-    if (userCount > 0 && settingCount > 0 && appCount > 0) {
-      this.logger.log('Seed skipped — tables already populated');
+      const sample = buildSampleApps(this.applications);
+      const extras = buildExtraSeedApps(
+        this.applications,
+        seededUsers.clients,
+        seededUsers.managerNames,
+      );
+      await this.applications.save([...sample, ...extras]);
+      this.logger.log(
+        `Seeded applications (${sample.length} fixed + ${SEED_EXTRA_APP_COUNT} random)`,
+      );
     }
   }
 

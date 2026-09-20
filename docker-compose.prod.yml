@@ -1,0 +1,28 @@
+# Prod overrides. Use with the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requires:
+#   backend/.env.prod  (from .env.prod.example)
+#   web/.env.prod      (from .env.prod.example)
+#
+# DB port is not published (dev-only). Uploads/logs use named volumes.
+
+services:
+  db:
+    env_file:
+      - backend/.env.prod
+
+  api:
+    env_file:
+      - backend/.env.prod
+    volumes:
+      - vises_uploads:/uploads
+      - vises_logs:/logs
+
+  web:
+    env_file:
+      - web/.env.prod
+
+volumes:
+  vises_uploads:
+  vises_logs:

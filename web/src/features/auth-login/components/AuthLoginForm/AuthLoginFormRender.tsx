@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import type { FieldErrors, UseFormRegister } from 'react-hook-form'
 import { Btn, Field } from '@/shared/ui'
+import { AUTH_LOGIN_MESSAGES } from '../../constants'
 import type { AuthLoginFormValues } from '../../types'
 
 type AuthLoginFormRenderProps = {
@@ -21,7 +22,7 @@ export const AuthLoginFormRender = ({
     className="rounded-[28px] border border-line bg-card p-6 shadow-[0_20px_50px_rgba(18,24,20,0.06)]"
   >
     <p className="text-sm font-bold">Вход</p>
-    <p className="mt-1 text-sm text-muted">Логин и пароль из ссылки, которую выдал админ.</p>
+    <p className="mt-1 text-sm text-muted">{AUTH_LOGIN_MESSAGES.subtitle}</p>
     <div className="mt-5 space-y-3">
       <Field label="Логин" error={errors.login?.message}>
         <input className="field" autoComplete="username" {...register('login')} />
@@ -41,8 +42,5 @@ export const AuthLoginFormRender = ({
         Войти
       </Btn>
     </div>
-    <p className="mt-4 text-xs text-muted">
-      Демо: admin / VisesAdmin1 · maria@vises.app / VisesOffice1 · anna@example.com / VisesClient1
-    </p>
   </form>
 )

@@ -6,45 +6,63 @@ import {
   PORTAL_CAPMONSTER_TIMEOUT_MS,
 } from '../../capmonster';
 import {
-  extractMailSlurpOtp,
-  MAILSLURP_WAIT_FOR_EMAIL_MS,
-  waitMailSlurpLatestEmail,
-} from '../../mailslurp';
+  MAILTM_CIRCUIT_OPEN_REASON,
+  MAILTM_WAIT_FOR_EMAIL_MS,
+  createMailTmCircuitBreaker,
+  isMailTmClientError,
+  recordMailTmCircuitFailure,
+  recordMailTmCircuitSuccess,
+} from '../../mailtm';
 import {
   DATE_FIELDS,
   DROPDOWN_FIELDS,
   NEVER_FILL,
+  PORTAL_AUTOFILL_PIPELINE_STAGE,
+  PORTAL_CAPTCHA_VERIFIED_LOOP_MAX_MS,
   PORTAL_NAV_TIMEOUT_MS,
+  PORTAL_OTP_RESEND_MAX_ATTEMPTS,
   PORTAL_REGISTER_USER_SELECTORS,
   PORTAL_SKIP_CAPTCHA_GUARD,
   TEXT_FIELDS,
 } from '../constants';
 import type {
   FieldResult,
+  PortalAutofillCheckpointPatch,
+  PortalAutofillFieldProgressMap,
   RunPortalFillPipelineOptions,
   RunPortalFillPipelineResult,
   WidgetOpResult,
 } from '../types';
 import { assertMyForm } from './assert-my-form.util';
 import { clickPortalGenerateOtp } from './click-portal-generate-otp.util';
+import { clickPortalResendOtp } from './click-portal-resend-otp.util';
 import { detectBlockingPage } from './detect-blocking-page.util';
 import { dismissConsentModalsInOrder } from './dismiss-consent-modals-in-order.util';
 import { dismissPortalOtpOkModal } from './dismiss-portal-otp-ok-modal.util';
+import { fillPortalEmail } from './fill-portal-email.util';
 import { fillPortalEmailOtp } from './fill-portal-email-otp.util';
+import { formatPortalLogContext } from './format-portal-log-context.util';
 import { logAllFieldErrors } from './log-all-field-errors.util';
 import { logFieldFailure } from './log-field-failure.util';
 import { logHardFailure } from './log-hard-failure.util';
+import { mapFieldResultToProgressEntry } from './map-field-result-to-progress-entry.util';
+import { mergePortalAutofillFieldProgress } from './merge-portal-autofill-field-progress.util';
 import { readCountryCode } from './read-country-code.util';
+import { restoreCapMonsterCircuitFromCheckpoint } from './restore-capmonster-circuit-from-checkpoint.util';
+import { serializeCapMonsterCircuitForCheckpoint } from './serialize-capmonster-circuit-for-checkpoint.util';
 import { setDateField } from './set-date-field.util';
 import { setDropdownField } from './set-dropdown-field.util';
 import { setTextField } from './set-text-field.util';
-import { solvePortalBlsCaptcha } from './portal-captcha-solve.util';
+import { clickPortalCaptchaVerifyControl } from './click-portal-captcha-verify-control.util';
+import { runPortalCaptchaVerifiedLoop } from './run-portal-captcha-verified-loop.util';
+import { summarizeFieldFillCounts } from './summarize-field-fill-counts.util';
+
 const logger = new Logger('PortalFillPipeline');
 
 /**
  * Shared post-navigation fill pipeline (DEC-007 / DEC-010).
  * Fixture vs live differ only by the URL already opened via page.goto.
- * MailSlurp OTP phase runs only when armed + CapMonster succeeded (DEC-001/008).
+ * Email OTP phase runs only when armed + CapMonster succeeded (DEC-001 / CON-003).
  */
 export const runPortalFillPipeline = async (
   options: RunPortalFillPipelineOptions,
@@ -55,14 +73,48 @@ export const runPortalFillPipeline = async (
   let emailOtpTouched = false;
   let capMonsterAttempted = false;
   let capMonsterOk = false;
-  let mailSlurpOtpAttempted = false;
-  let mailSlurpOtpOk = false;
+  let emailOtpAttempted = false;
+  let emailOtpOk = false;
+  let mailTmResendAttempts = 0;
+  let mailTmCircuitOpen = false;
+  let mailTmCleanup: RunPortalFillPipelineResult['mailTmCleanup'];
   const capMonsterApiKey = options.capMonsterApiKey?.trim() ?? '';
   const capMonsterEnabled = capMonsterApiKey.length > 0;
-  const mailSlurpApiKey = options.mailSlurpApiKey?.trim() ?? '';
-  const mailSlurpInboxId = options.mailSlurpInboxId?.trim() ?? '';
-  const otpPathArmed =
-    mailSlurpApiKey.length > 0 && mailSlurpInboxId.length > 0;
+  const otpPathArmed = options.otpPathArmed === true;
+  const logPrefix = formatPortalLogContext({
+    applicationId: options.mapping.applicationId,
+    applicantId: options.mapping.applicantId,
+    runId: options.runId,
+  });
+  const logContext = {
+    applicationId: options.mapping.applicationId,
+    applicantId: options.mapping.applicantId,
+    runId: options.runId,
+  };
+
+  let fieldProgress: PortalAutofillFieldProgressMap = {};
+  const emitCheckpoint = async (
+    patch: PortalAutofillCheckpointPatch,
+  ): Promise<void> => {
+    await options.checkpoint?.onCheckpoint?.(patch).catch(() => undefined);
+    await options.checkpoint?.onHeartbeat?.().catch(() => undefined);
+  };
+  const checkpointStage = async (
+    stage: (typeof PORTAL_AUTOFILL_PIPELINE_STAGE)[keyof typeof PORTAL_AUTOFILL_PIPELINE_STAGE],
+  ): Promise<void> => {
+    await emitCheckpoint({ pipelineStage: stage });
+  };
+  const checkpointField = async (row: FieldResult): Promise<void> => {
+    fieldProgress = mergePortalAutofillFieldProgress(
+      fieldProgress,
+      row.field,
+      mapFieldResultToProgressEntry(row),
+    );
+    await emitCheckpoint({
+      pipelineStage: PORTAL_AUTOFILL_PIPELINE_STAGE.FIELD_FILL,
+      fieldProgress,
+    });
+  };
 
   const baseResult = (): Omit<
     RunPortalFillPipelineResult,
@@ -73,8 +125,11 @@ export const runPortalFillPipeline = async (
     emailOtpTouched,
     capMonsterAttempted,
     capMonsterOk,
-    mailSlurpOtpAttempted,
-    mailSlurpOtpOk,
+    emailOtpAttempted,
+    emailOtpOk,
+    mailTmResendAttempts: emailOtpAttempted ? mailTmResendAttempts : undefined,
+    mailTmCircuitOpen: mailTmCircuitOpen || undefined,
+    mailTmCleanup,
   });
 
   for (const row of fields) {
@@ -85,11 +140,18 @@ export const runPortalFillPipeline = async (
 
   // DEC-005: CapMonster on ⇒ ignore captcha clues, still abort on login wall.
   // CapMonster off ⇒ PORTAL_SKIP_CAPTCHA_GUARD (fixed false) runs full guard.
+  await checkpointStage(PORTAL_AUTOFILL_PIPELINE_STAGE.BLOCKING_PAGE_GUARD);
+  logger.log(
+    `${logPrefix} phase=blocking_page_guard start CapMonsterEnabled=${capMonsterEnabled}`,
+  );
   if (capMonsterEnabled) {
     const blocked = await detectBlockingPage(options.page, {
       ignoreCaptchaClues: true,
     });
     if (blocked) {
+      logger.log(
+        `${logPrefix} phase=blocking_page_guard blocked=true mode=ignore_captcha_clues`,
+      );
       logHardFailure(blocked);
       return {
         ok: false,
@@ -98,9 +160,15 @@ export const runPortalFillPipeline = async (
         ...baseResult(),
       };
     }
+    logger.log(
+      `${logPrefix} phase=blocking_page_guard clear mode=ignore_captcha_clues`,
+    );
   } else if (!PORTAL_SKIP_CAPTCHA_GUARD) {
     const blocked = await detectBlockingPage(options.page);
     if (blocked) {
+      logger.log(
+        `${logPrefix} phase=blocking_page_guard blocked=true mode=full_guard`,
+      );
       logHardFailure(blocked);
       return {
         ok: false,
@@ -109,12 +177,21 @@ export const runPortalFillPipeline = async (
         ...baseResult(),
       };
     }
+    logger.log(
+      `${logPrefix} phase=blocking_page_guard clear mode=full_guard`,
+    );
+  } else {
+    logger.log(
+      `${logPrefix} phase=blocking_page_guard skipped reason=PORTAL_SKIP_CAPTCHA_GUARD`,
+    );
   }
 
   const formRoot = PORTAL_REGISTER_USER_SELECTORS.formRoot;
   const emailOtpSelector = PORTAL_REGISTER_USER_SELECTORS.fields.EmailOtp;
   const verifyControl = PORTAL_REGISTER_USER_SELECTORS.verifyControl;
 
+  await checkpointStage(PORTAL_AUTOFILL_PIPELINE_STAGE.FORM_READY);
+  logger.log(`${logPrefix} phase=form_ready start`);
   try {
     await options.page.waitForSelector(formRoot, {
       state: 'attached',
@@ -125,6 +202,7 @@ export const runPortalFillPipeline = async (
       await assertMyForm(options.page);
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
+      logger.error(`${logPrefix} phase=form_ready failure ${error}`);
       logHardFailure(error);
       return {
         ok: false,
@@ -165,14 +243,20 @@ export const runPortalFillPipeline = async (
     );
     return hasHelper || hasRoles;
   });
+  logger.log(
+    `${logPrefix} phase=form_ready success usedStandIn=${usedStandIn}`,
+  );
 
   // Consent/attention modals before CountryCode observation + field fill (DEC-001).
+  await checkpointStage(PORTAL_AUTOFILL_PIPELINE_STAGE.CONSENT);
+  logger.log(`${logPrefix} phase=consent start`);
   const consent = await dismissConsentModalsInOrder(
     options.page,
     PORTAL_NAV_TIMEOUT_MS,
   );
   if (!consent.ok) {
     const error = consent.error ?? 'consent modal dismissal failed';
+    logger.error(`${logPrefix} phase=consent failure ${error}`);
     logHardFailure(error);
     return {
       ok: false,
@@ -181,9 +265,12 @@ export const runPortalFillPipeline = async (
       ...baseResult(),
     };
   }
+  logger.log(`${logPrefix} phase=consent success`);
 
   const countryCodeObserved = await readCountryCode(options.page);
 
+  await checkpointStage(PORTAL_AUTOFILL_PIPELINE_STAGE.FIELD_FILL);
+  logger.log(`${logPrefix} phase=field_fill start`);
   for (let i = 0; i < fields.length; i++) {
     const row = fields[i];
     if (NEVER_FILL.has(row.field)) {
@@ -194,11 +281,13 @@ export const runPortalFillPipeline = async (
           reason: row.reason ?? 'leave form default; do not overwrite',
           value: countryCodeObserved,
         };
+        await checkpointField(fields[i]);
       }
       continue;
     }
 
     if (row.status !== 'filled' || row.value === undefined) {
+      await checkpointField(row);
       continue;
     }
 
@@ -232,6 +321,7 @@ export const runPortalFillPipeline = async (
         reason: result.reason ?? 'fill failed',
       };
       logFieldFailure(fields[i], 'widget');
+      await checkpointField(fields[i]);
       continue;
     }
 
@@ -245,6 +335,7 @@ export const runPortalFillPipeline = async (
           reason: 'datepicker still shows stale default 0001-01-01',
         };
         logFieldFailure(fields[i], 'date-readback');
+        await checkpointField(fields[i]);
         continue;
       }
       if (norm && norm !== intended.slice(0, 10)) {
@@ -254,6 +345,7 @@ export const runPortalFillPipeline = async (
           reason: `date read-back mismatch: intended=${intended} visible=${visible}`,
         };
         logFieldFailure(fields[i], 'date-readback');
+        await checkpointField(fields[i]);
         continue;
       }
     }
@@ -267,6 +359,7 @@ export const runPortalFillPipeline = async (
           reason: `dropdown read-back mismatch: intended=${intended} got=${shown}`,
         };
         logFieldFailure(fields[i], 'dropdown-readback');
+        await checkpointField(fields[i]);
         continue;
       }
     }
@@ -282,6 +375,7 @@ export const runPortalFillPipeline = async (
         .join('; '),
       value: intended,
     };
+    await checkpointField(fields[i]);
   }
 
   const afterCountry = await readCountryCode(options.page);
@@ -299,6 +393,7 @@ export const runPortalFillPipeline = async (
         value: afterCountry,
       };
       logFieldFailure(fields[idx], 'country-code-guard');
+      await checkpointField(fields[idx]);
     }
   }
 
@@ -315,47 +410,59 @@ export const runPortalFillPipeline = async (
           field: 'EmailOtp',
           status: 'failed',
           reason:
-            'EmailOtp was non-empty after fill (must not be filled when MailSlurp OTP path is off)',
+            'EmailOtp was non-empty after fill (must not be filled when email OTP path is off)',
         };
         logFieldFailure(fields[idx], 'email-otp-guard');
+        await checkpointField(fields[idx]);
       }
     }
   }
 
   logAllFieldErrors(fields);
+  {
+    const counts = summarizeFieldFillCounts(fields);
+    logger.log(
+      `${logPrefix} phase=field_fill complete filled=${counts.filled} failed=${counts.failed} skipped=${counts.skipped}`,
+    );
+  }
 
   // After fill: evidence screenshot, then optional CapMonster Verify + BLS solve.
   // Non-CapMonster path: no Verify click (REQ-012 / DEC-005).
   let screenshotPath: string | undefined;
   if (options.screenshotPath) {
     const resolved = path.resolve(options.screenshotPath);
+    await checkpointStage(PORTAL_AUTOFILL_PIPELINE_STAGE.SCREENSHOT);
+    logger.log(`${logPrefix} phase=screenshot start`);
     try {
       await options.page.screenshot({ path: resolved, fullPage: true });
       screenshotPath = resolved;
+      logger.log(`${logPrefix} phase=screenshot success`);
     } catch (err) {
       // PNG I/O failure must not flip fill success to hard-fail (DEC-006).
       // Orchestration records capture_failed when the file is missing.
       logger.error(
-        `screenshot capture failed: ${err instanceof Error ? err.message : String(err)} (path=${resolved})`,
+        `${logPrefix} phase=screenshot soft_failure ${err instanceof Error ? err.message : String(err)} (path=${resolved})`,
       );
     }
+  } else {
+    logger.log(`${logPrefix} phase=screenshot skipped reason=no_path`);
   }
 
+  logger.log(
+    `${logPrefix} decision CapMonster enabled=${capMonsterEnabled}`,
+  );
   if (capMonsterEnabled) {
     capMonsterAttempted = true;
-    const verifyResult = await options.page.evaluate((verifySel: string) => {
-      const btn = document.querySelector(
-        verifySel,
-      ) as HTMLButtonElement | null;
-      if (!btn) {
-        return { ok: false as const, via: 'not-found' };
-      }
-      btn.click();
-      return { ok: true as const, via: verifySel };
-    }, verifyControl);
-
-    if (!verifyResult.ok) {
-      const error = `${verifyControl} not found after fill`;
+    await checkpointStage(PORTAL_AUTOFILL_PIPELINE_STAGE.CAPMONSTER_VERIFY);
+    logger.log(`${logPrefix} phase=capmonster_verify start`);
+    try {
+      await clickPortalCaptchaVerifyControl(options.page);
+    } catch (err) {
+      const error =
+        err instanceof Error
+          ? err.message
+          : `${verifyControl} not found after fill`;
+      logger.error(`${logPrefix} phase=capmonster_verify failure ${error}`);
       logHardFailure(error);
       return {
         ok: false,
@@ -367,23 +474,40 @@ export const runPortalFillPipeline = async (
       };
     }
     verifyClicked = true;
-    logger.log(`CapMonster path: Verify clicked via ${verifyResult.via}`);
+    logger.log(
+      `${logPrefix} phase=capmonster_verify success via=${verifyControl}`,
+    );
 
     const timeoutMs = PORTAL_CAPMONSTER_TIMEOUT_MS;
     const pollIntervalMs = PORTAL_CAPMONSTER_POLL_INTERVAL_MS;
 
-    try {
-      await solvePortalBlsCaptcha(options.page, {
-        clientKey: capMonsterApiKey,
-        timeoutMs,
-        pollIntervalMs,
-        waitTimeoutMs: timeoutMs,
-      });
-      capMonsterOk = true;
-    } catch (err) {
-      const error = `CapMonster solve failed: ${
-        err instanceof Error ? err.message : String(err)
-      }`;
+    // Absolute deadline: restore on resume, else now + MAX_MS (DEC-003).
+    const budgetDeadlineAt =
+      options.captchaRestore?.budgetDeadlineAt ??
+      new Date(Date.now() + PORTAL_CAPTCHA_VERIFIED_LOOP_MAX_MS);
+    const restoredAttempts = Math.max(
+      0,
+      options.captchaRestore?.attempts ?? 0,
+    );
+    const restoredCircuit = options.captchaRestore?.circuit
+      ? restoreCapMonsterCircuitFromCheckpoint(options.captchaRestore.circuit)
+      : undefined;
+
+    await emitCheckpoint({
+      pipelineStage: PORTAL_AUTOFILL_PIPELINE_STAGE.CAPMONSTER_VERIFIED_LOOP,
+      captchaAttempt: restoredAttempts,
+      captchaBudgetDeadlineAt: budgetDeadlineAt,
+      capmonsterCb: restoredCircuit
+        ? serializeCapMonsterCircuitForCheckpoint(restoredCircuit)
+        : undefined,
+      capmonsterInflightTaskId: null,
+    });
+
+    logger.log(`${logPrefix} phase=capmonster_verified_loop start`);
+    const capMonster = options.capMonster;
+    if (!capMonster) {
+      const error = 'CapMonster service was not injected';
+      logger.error(`${logPrefix} phase=capmonster_verified_loop failure ${error}`);
       logHardFailure(error);
       return {
         ok: false,
@@ -394,15 +518,179 @@ export const runPortalFillPipeline = async (
         ...baseResult(),
       };
     }
+
+    // DEC-005: always re-enter Verified loop when CapMonster enabled (no skip on prior ok).
+    const loopResult = await runPortalCaptchaVerifiedLoop(options.page, {
+      clientKey: capMonsterApiKey,
+      timeoutMs,
+      pollIntervalMs,
+      capMonster,
+      logContext,
+      restoredAttempts,
+      budgetDeadlineAt,
+      restoredCircuit,
+      onHeartbeat: options.checkpoint?.onHeartbeat,
+      onAttemptCheckpoint: async (snapshot) => {
+        await emitCheckpoint({
+          pipelineStage:
+            PORTAL_AUTOFILL_PIPELINE_STAGE.CAPMONSTER_VERIFIED_LOOP,
+          captchaAttempt: snapshot.attempts,
+          captchaBudgetDeadlineAt: snapshot.budgetDeadlineAt,
+          capmonsterCb: serializeCapMonsterCircuitForCheckpoint(
+            snapshot.circuit,
+          ),
+          capmonsterPermanentFailed: snapshot.permanentFailed === true,
+          capmonsterInflightTaskId: snapshot.inflightTaskId ?? null,
+        });
+      },
+    });
+
+    if (!loopResult.ok) {
+      const error = `CapMonster Verified loop failed (${loopResult.stopReason}): ${
+        loopResult.error ?? 'unknown error'
+      }`;
+      logger.error(
+        `${logPrefix} phase=capmonster_verified_loop failure attempts=${loopResult.attempts} ${error}`,
+      );
+      logHardFailure(error);
+      return {
+        ok: false,
+        error,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+
+    // REQ-001 / REQ-007: captcha success only when Verified control is present.
+    capMonsterOk = true;
+    logger.log(
+      `${logPrefix} phase=capmonster_verified_loop success attempts=${loopResult.attempts}`,
+    );
+  } else {
+    logger.log(
+      `${logPrefix} phase=capmonster_verify skipped reason=CapMonster_disabled`,
+    );
+    logger.log(
+      `${logPrefix} phase=capmonster_verified_loop skipped reason=CapMonster_disabled`,
+    );
   }
 
-  // Post-CapMonster MailSlurp OTP UI (REQ-004–REQ-009). No Resend (DEC-006).
+  // Post-CapMonster Mail.tm OTP UI (REQ-003–REQ-009 / DEC-001 / DEC-008).
+  // Submit remains commented stub only (DEC-009).
   if (otpPathArmed && capMonsterOk) {
-    mailSlurpOtpAttempted = true;
+    emailOtpAttempted = true;
+    await checkpointStage(PORTAL_AUTOFILL_PIPELINE_STAGE.OTP);
+    logger.log(
+      `${logPrefix} decision emailOtpPath armed=true proceeding=true`,
+    );
 
+    const mailTm = options.mailTm;
+    if (!mailTm) {
+      const error = 'Mail.tm client missing for armed OTP path';
+      logger.error(`${logPrefix} phase=mailtm_create failure ${error}`);
+      logHardFailure(error);
+      return {
+        ok: false,
+        error,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+
+    const mailTmCircuit = createMailTmCircuitBreaker();
+
+    logger.log(`${logPrefix} phase=mailtm_create start`);
+    let mailTmAddress: string;
+    let mailTmToken: string;
+    try {
+      const account = await mailTm.createAccount({ circuit: mailTmCircuit });
+      recordMailTmCircuitSuccess(mailTmCircuit);
+      mailTmCleanup = {
+        accountId: account.id,
+        token: account.token,
+      };
+      mailTmAddress = account.address;
+      mailTmToken = account.token;
+      logger.log(`${logPrefix} phase=mailtm_create success`);
+    } catch (err) {
+      if (isMailTmClientError(err)) {
+        const recorded = recordMailTmCircuitFailure(
+          mailTmCircuit,
+          err.failureClass,
+          Date.now(),
+        );
+        if (recorded.outcome === 'circuit_open') {
+          mailTmCircuitOpen = true;
+        }
+        logger.warn(
+          `${logPrefix} phase=mailtm_create circuit_record outcome=${recorded.outcome}`,
+        );
+      }
+      const error =
+        err instanceof Error ? err.message : 'Mail.tm create account failed';
+      if (error === MAILTM_CIRCUIT_OPEN_REASON) {
+        mailTmCircuitOpen = true;
+      }
+      logger.error(`${logPrefix} phase=mailtm_create failure ${error}`);
+      logHardFailure(error);
+      return {
+        ok: false,
+        error,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+
+    logger.log(`${logPrefix} phase=otp_email_fill start`);
+    const emailFill = await fillPortalEmail(options.page, mailTmAddress);
+    if (!emailFill.ok) {
+      const error = emailFill.reason ?? 'Email fill failed';
+      logger.error(`${logPrefix} phase=otp_email_fill failure ${error}`);
+      logHardFailure(error);
+      const idx = fields.findIndex((f) => f.field === 'Email');
+      if (idx >= 0) {
+        fields[idx] = {
+          field: 'Email',
+          status: 'failed',
+          reason: error,
+        };
+        logFieldFailure(fields[idx], 'email-fill');
+        await checkpointField(fields[idx]);
+      }
+      return {
+        ok: false,
+        error,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+    {
+      const idx = fields.findIndex((f) => f.field === 'Email');
+      if (idx >= 0) {
+        fields[idx] = {
+          field: 'Email',
+          status: 'filled',
+          reason: 'from Mail.tm disposable account (post-captcha)',
+          value: mailTmAddress,
+        };
+        await checkpointField(fields[idx]);
+      }
+    }
+    logger.log(`${logPrefix} phase=otp_email_fill success`);
+
+    logger.log(`${logPrefix} phase=otp_generate start`);
     const generate = await clickPortalGenerateOtp(options.page);
     if (!generate.ok) {
       const error = generate.error;
+      logger.error(`${logPrefix} phase=otp_generate failure ${error}`);
       logHardFailure(error);
       return {
         ok: false,
@@ -413,11 +701,15 @@ export const runPortalFillPipeline = async (
         ...baseResult(),
       };
     }
-    logger.log(`OTP path: Generate clicked via ${generate.via}`);
+    logger.log(
+      `${logPrefix} phase=otp_generate success via=${generate.via}`,
+    );
 
+    logger.log(`${logPrefix} phase=otp_ok_modal start`);
     const okModal = await dismissPortalOtpOkModal(options.page);
     if (!okModal.ok) {
       const error = okModal.error;
+      logger.error(`${logPrefix} phase=otp_ok_modal failure ${error}`);
       logHardFailure(error);
       return {
         ok: false,
@@ -428,54 +720,148 @@ export const runPortalFillPipeline = async (
         ...baseResult(),
       };
     }
-    logger.log(`OTP path: Ok modal dismissed via ${okModal.via}`);
+    logger.log(
+      `${logPrefix} phase=otp_ok_modal success via=${okModal.via}`,
+    );
 
-    let emailId: string;
-    let emailBody: string;
-    try {
-      const latest = await waitMailSlurpLatestEmail({
-        apiKey: mailSlurpApiKey,
-        inboxId: mailSlurpInboxId,
-        timeoutMs: MAILSLURP_WAIT_FOR_EMAIL_MS,
-        unreadOnly: true,
-      });
-      emailId = latest.emailId;
-      emailBody = latest.body;
-    } catch (err) {
-      const error =
-        err instanceof Error ? err.message : 'MailSlurp wait for email failed';
-      logHardFailure(error);
-      return {
-        ok: false,
-        error,
-        fields,
-        countryCodeObserved: afterCountry ?? countryCodeObserved,
-        screenshotPath,
-        ...baseResult(),
-      };
+    // Wait → extract → optional single Resend (DEC-007 / DEC-008).
+    let extractedOtp: string | undefined;
+    let extractedSource: string | undefined;
+
+    while (extractedOtp === undefined) {
+      logger.log(
+        `${logPrefix} phase=otp_wait_email start resendAttempts=${mailTmResendAttempts}`,
+      );
+      let emailBody: string | undefined;
+      let shouldResend = false;
+      let failureError: string | undefined;
+
+      try {
+        const latest = await mailTm.waitLatestMessage(
+          {
+            token: mailTmToken,
+            timeoutMs: MAILTM_WAIT_FOR_EMAIL_MS,
+            unreadOnly: true,
+          },
+          { circuit: mailTmCircuit },
+        );
+        recordMailTmCircuitSuccess(mailTmCircuit);
+        emailBody = latest.body;
+        logger.log(`${logPrefix} phase=otp_wait_email success`);
+      } catch (err) {
+        if (isMailTmClientError(err)) {
+          const recorded = recordMailTmCircuitFailure(
+            mailTmCircuit,
+            err.failureClass,
+            Date.now(),
+          );
+          if (recorded.outcome === 'circuit_open') {
+            mailTmCircuitOpen = true;
+          }
+          logger.warn(
+            `${logPrefix} phase=otp_wait_email circuit_record outcome=${recorded.outcome}`,
+          );
+        }
+        failureError =
+          err instanceof Error
+            ? err.message
+            : 'Mail.tm wait for message failed';
+        logger.error(
+          `${logPrefix} phase=otp_wait_email failure ${failureError}`,
+        );
+
+        const circuitOpen =
+          failureError === MAILTM_CIRCUIT_OPEN_REASON || mailTmCircuitOpen;
+        if (failureError === MAILTM_CIRCUIT_OPEN_REASON) {
+          mailTmCircuitOpen = true;
+        }
+        const permanentFailure =
+          isMailTmClientError(err) && err.failureClass === 'permanent';
+        shouldResend =
+          mailTmResendAttempts < PORTAL_OTP_RESEND_MAX_ATTEMPTS &&
+          !circuitOpen &&
+          !permanentFailure;
+      }
+
+      if (emailBody !== undefined && !shouldResend) {
+        logger.log(`${logPrefix} phase=otp_extract start`);
+        const extracted = mailTm.extractOtp({ body: emailBody });
+        if (extracted.ok) {
+          extractedOtp = extracted.otp;
+          extractedSource = extracted.source;
+          logger.log(
+            `${logPrefix} phase=otp_extract success source=${extracted.source}`,
+          );
+          break;
+        }
+        failureError = extracted.reason;
+        logger.error(
+          `${logPrefix} phase=otp_extract failure ${failureError}`,
+        );
+        shouldResend =
+          mailTmResendAttempts < PORTAL_OTP_RESEND_MAX_ATTEMPTS;
+      }
+
+      if (!shouldResend) {
+        const error = failureError ?? 'Mail.tm OTP wait/extract failed';
+        logHardFailure(error);
+        return {
+          ok: false,
+          error,
+          fields,
+          countryCodeObserved: afterCountry ?? countryCodeObserved,
+          screenshotPath,
+          ...baseResult(),
+        };
+      }
+
+      logger.log(
+        `${logPrefix} phase=otp_resend start attempt=${mailTmResendAttempts + 1} max=${PORTAL_OTP_RESEND_MAX_ATTEMPTS}`,
+      );
+      const resend = await clickPortalResendOtp(options.page);
+      if (!resend.ok) {
+        logger.error(`${logPrefix} phase=otp_resend failure ${resend.error}`);
+        logHardFailure(resend.error);
+        return {
+          ok: false,
+          error: resend.error,
+          fields,
+          countryCodeObserved: afterCountry ?? countryCodeObserved,
+          screenshotPath,
+          ...baseResult(),
+        };
+      }
+      logger.log(
+        `${logPrefix} phase=otp_resend success via=${resend.via}`,
+      );
+
+      logger.log(`${logPrefix} phase=otp_ok_modal start after_resend`);
+      const resendOkModal = await dismissPortalOtpOkModal(options.page);
+      if (!resendOkModal.ok) {
+        logger.error(
+          `${logPrefix} phase=otp_ok_modal failure after_resend ${resendOkModal.error}`,
+        );
+        logHardFailure(resendOkModal.error);
+        return {
+          ok: false,
+          error: resendOkModal.error,
+          fields,
+          countryCodeObserved: afterCountry ?? countryCodeObserved,
+          screenshotPath,
+          ...baseResult(),
+        };
+      }
+      logger.log(
+        `${logPrefix} phase=otp_ok_modal success after_resend via=${resendOkModal.via}`,
+      );
+      mailTmResendAttempts += 1;
     }
 
-    const extracted = await extractMailSlurpOtp({
-      apiKey: mailSlurpApiKey,
-      emailId,
-      body: emailBody,
-    });
-    if (!extracted.ok) {
-      const error = extracted.reason;
-      logHardFailure(error);
-      return {
-        ok: false,
-        error,
-        fields,
-        countryCodeObserved: afterCountry ?? countryCodeObserved,
-        screenshotPath,
-        ...baseResult(),
-      };
-    }
-
-    const otpFill = await fillPortalEmailOtp(options.page, extracted.otp);
+    logger.log(`${logPrefix} phase=otp_fill start`);
+    const otpFill = await fillPortalEmailOtp(options.page, extractedOtp);
     if (!otpFill.ok) {
       const error = otpFill.reason ?? 'EmailOtp fill failed';
+      logger.error(`${logPrefix} phase=otp_fill failure ${error}`);
       logHardFailure(error);
       const idx = fields.findIndex((f) => f.field === 'EmailOtp');
       if (idx >= 0) {
@@ -485,6 +871,7 @@ export const runPortalFillPipeline = async (
           reason: error,
         };
         logFieldFailure(fields[idx], 'email-otp-fill');
+        await checkpointField(fields[idx]);
       }
       return {
         ok: false,
@@ -497,27 +884,42 @@ export const runPortalFillPipeline = async (
     }
 
     emailOtpTouched = true;
-    mailSlurpOtpOk = true;
+    emailOtpOk = true;
     {
       const idx = fields.findIndex((f) => f.field === 'EmailOtp');
       if (idx >= 0) {
         fields[idx] = {
           field: 'EmailOtp',
           status: 'filled',
-          reason: `filled via MailSlurp OTP (${extracted.source})`,
-          value: extracted.otp,
+          reason: `filled via Mail.tm OTP (${extractedSource ?? 'unknown'})`,
+          value: extractedOtp,
         };
+        await checkpointField(fields[idx]);
       }
     }
-    logger.log('OTP path: EmailOtp filled (value masked in reports)');
+    logger.log(
+      `${logPrefix} phase=otp_fill success (value masked in reports)`,
+    );
 
-    // REQ-009 / CON-004: prepare `#btnSubmit` click but do not submit yet.
+    // REQ-016 / CON-004 / DEC-009: prepare `#btnSubmit` click but do not submit yet.
+    // OTP phase succeeds after `#EmailOtp` fill (stop point for this feature).
     // await options.page.evaluate((sel: string) => {
     //   const btn = document.querySelector(sel) as HTMLButtonElement | null;
     //   if (btn) btn.click();
     // }, PORTAL_REGISTER_USER_SELECTORS.submitControl);
+  } else {
+    const skipReason = !otpPathArmed
+      ? 'not_armed'
+      : 'capMonster_not_ok';
+    logger.log(
+      `${logPrefix} decision emailOtpPath armed=${otpPathArmed} skipped=true reason=${skipReason}`,
+    );
+    logger.log(
+      `${logPrefix} phase=otp_generate skipped reason=${skipReason}`,
+    );
   }
 
+  logger.log(`${logPrefix} phase=pipeline overall success`);
   return {
     ok: true,
     fields,

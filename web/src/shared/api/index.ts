@@ -4,6 +4,7 @@
   ApiRequestOptions,
   ApiTokenProvider,
   ApiRawResponse,
+  PaginatedList,
 } from './types'
 export {
   buildApiUrl,

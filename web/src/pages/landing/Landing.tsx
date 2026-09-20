@@ -23,16 +23,9 @@ export const Landing = () => {
     }
   }, [login, nav])
 
-  const enter = async (role: Role) => {
-    const result = await login(role)
-    if (result === true) nav(homePath(role))
-    else setError(result)
-  }
-
   return (
     <LandingRender
       session={session}
-      onEnter={enter}
       loginForm={
         <AuthLoginForm
           apiError={error}

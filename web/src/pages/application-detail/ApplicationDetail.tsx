@@ -4,21 +4,29 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '@/app/providers'
 import type { Application, DocType } from '@/entities/application'
-import { statusLabel } from '@/entities/application'
+import { fetchAppById, statusLabel } from '@/entities/application'
 import { staffBase } from '@/entities/session'
+import { fetchManagerNames } from '@/entities/user'
 import { applicationDetailFormSchema } from '@/features/application-form'
 import { nowIso, uid } from '@/shared/lib'
+import { APPLICATION_DETAIL_DEFAULT_TAB } from './constants'
+import type { ApplicationDetailTabId } from './types'
 import { ApplicationDetailRender } from './ApplicationDetailRender'
 
 export const ApplicationDetail = () => {
   const { id } = useParams()
   const nav = useNavigate()
-  const { apps, upsert, remove, addDoc, openDoc, session, settings, users } = useStore()
-  const found = apps.find((a) => a.id === id)
+  const { apps, upsert, remove, addDoc, openDoc, session, settings, cacheApp } = useStore()
+  const found = id ? apps.find((a) => a.id === id) : undefined
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'missing'>(
+    found ? 'ready' : 'loading',
+  )
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [uploading, setUploading] = useState<DocType | null>(null)
   const [docError, setDocError] = useState('')
+  const [activeTab, setActiveTab] = useState<ApplicationDetailTabId>(APPLICATION_DETAIL_DEFAULT_TAB)
+  const [managerNames, setManagerNames] = useState<string[]>([])
 
   const form = useForm<Application>({
     resolver: zodResolver(applicationDetailFormSchema) as Resolver<Application>,
@@ -31,6 +39,46 @@ export const ApplicationDetail = () => {
   useEffect(() => {
     if (isDirty) setSaved(false)
   }, [isDirty])
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchManagerNames()
+      .then((names) => {
+        if (!cancelled) setManagerNames(names)
+      })
+      .catch(() => {
+        if (!cancelled) setManagerNames([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!id) {
+      setLoadState('missing')
+      return
+    }
+    if (apps.some((a) => a.id === id)) {
+      setLoadState('ready')
+      return
+    }
+    let cancelled = false
+    setLoadState('loading')
+    void fetchAppById(id)
+      .then((app) => {
+        if (cancelled) return
+        cacheApp(app)
+        setLoadState('ready')
+      })
+      .catch(() => {
+        if (cancelled) return
+        setLoadState('missing')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id, apps, cacheApp])
 
   useEffect(() => {
     if (!found) {
@@ -103,19 +151,22 @@ export const ApplicationDetail = () => {
   return (
     <FormProvider {...form}>
       <ApplicationDetailRender
-        form={found ? values : null}
+        form={loadState === 'ready' && found ? values : null}
         found={found ?? null}
+        loading={loadState === 'loading'}
         saved={saved}
         saveError={saveError}
         uploading={uploading}
         docError={docError}
         destinations={settings.destinations}
         cities={settings.cities}
-        managerNames={users.filter((u) => u.role === 'manager' && u.active).map((u) => u.name)}
+        managerNames={managerNames}
         appsListPath={`${staffBase(session?.role)}/apps`}
+        activeTab={activeTab}
         register={form.register}
         setValue={form.setValue}
         watch={form.watch}
+        onTabChange={setActiveTab}
         onSave={() => {
           void save()
         }}

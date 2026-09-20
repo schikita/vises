@@ -7,3 +7,7 @@ export { checkPassword } from './check-password.util';
 export { safeFilename } from './filename.util';
 export { generateInvitePassword } from './generate-invite-password.util';
 export { assertValidUpload } from './upload-validation.util';
+export { normalizePage } from './normalize-page.util';
+export { normalizePageSize } from './normalize-page-size.util';
+export { buildPaginatedList } from './build-paginated-list.util';
+export { isPaginationRequested } from './is-pagination-requested.util';

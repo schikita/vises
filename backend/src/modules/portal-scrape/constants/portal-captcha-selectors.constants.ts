@@ -7,8 +7,8 @@
  * Live DOM quirks (must not use naïve `querySelectorAll('.captcha-img')`):
  * - Challenge runs inside an iframe (not the RegisterUser parent document).
  * - Dozens of decoy `img.captcha-img` cells; only ~9 are visible in the 3×3.
- * - Many decoy `.box-label` lines; real TaskArgument is the visible,
- *   non-AliceBlue label: "Please select all boxes with number NNN".
+ * - Many decoy `.box-label` lines; real TaskArgument is the readable
+ *   (non-camouflaged near-white) label: "Please select all boxes with number NNN".
  * - Confirm control is `#submit` (Submit Selection) after cell clicks.
  */
 

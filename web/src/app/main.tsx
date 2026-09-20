@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { App } from '@/app'
 import { StoreProvider } from '@/app/providers'
+import '@/shared/i18n'
 import '@/index.css'
 
 const basename = String(import.meta.env.BASE_URL || '/').replace(/\/$/, '')

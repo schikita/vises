@@ -6,7 +6,11 @@ import { staffTripFormSchema } from './trip-form.schema'
 export const staffApplicationFormSchema = staffTripFormSchema.extend({
   id: z.string(),
   code: z.string(),
-  clientEmail: z.string().trim().min(1, APPLICATION_FORM_MESSAGES.clientEmailRequired),
+  clientEmail: z
+    .string()
+    .trim()
+    .min(1, APPLICATION_FORM_MESSAGES.clientEmailRequired)
+    .email(APPLICATION_FORM_MESSAGES.clientEmailInvalid),
   status: z.string(),
   destination: z.string(),
   visaType: z.string(),

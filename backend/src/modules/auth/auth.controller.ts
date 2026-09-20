@@ -11,7 +11,7 @@ import { DemoDto } from './dto/demo.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { User } from '../database/entities/user.entity';
-import type { UserOut } from '../users/types';
+import type { UserMeOut } from './types';
 
 @Controller('auth')
 export class AuthController {
@@ -29,7 +29,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(@CurrentUser() user: User): UserOut {
+  me(@CurrentUser() user: User): UserMeOut {
     return this.auth.me(user);
   }
 }

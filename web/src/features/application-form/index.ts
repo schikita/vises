@@ -21,10 +21,12 @@ export {
   STAFF_PEOPLE_STEP_FIELDS,
   applicationDetailFormSchema,
 } from './constants'
-export { getNestedFormError, toLatin } from './utils'
+export { getNestedFormError, toLatin, formatBelarusLocalPhoneDisplay, parseBelarusLocalPhoneDigits } from './utils'
 export type {
   ApplicantFormValues,
   ClientTripFormValues,
   StaffTripFormValues,
   ApplicantFieldsProps,
+  ApplicantFieldsSection,
 } from './types'
+

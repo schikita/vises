@@ -31,6 +31,26 @@ export type {
   PortalAutofillRunListItem,
   PortalAutofillRunListResponse,
 } from './portal-autofill-run-list.types';
+export type { PortalFieldProgressSummary } from './portal-field-progress-summary.types';
+export type { PortalAutofillCaptchaSummary } from './portal-autofill-captcha-summary.types';
+export type {
+  PortalAutofillRetryEligibility,
+  PortalAutofillRetryEligibilityInput,
+  PortalAutofillRetryImpliedMode,
+} from './portal-autofill-retry-eligibility.types';
+export type {
+  PortalSiteOutcome,
+  PortalSiteOutcomeState,
+} from './portal-site-outcome.types';
+export type {
+  PortalClientPortalProgress,
+  PortalClientPortalSendState,
+} from './portal-client-progress.types';
+export type {
+  PortalClientPortalProgressMapInput,
+  PortalClientPortalProgressRunInput,
+} from './portal-client-progress-map-input.types';
+export type { PortalSiteAdapterMatchContext } from './portal-site-adapter.types';
 export type {
   PortalBrowser,
   PortalBrowserContext,
@@ -60,7 +80,35 @@ export type {
 } from './portal-captcha.types';
 export type { PortalRegisterUserSelectors } from './portal-register-user-selectors.types';
 export type {
+  CapMonsterCircuitState,
+  CapMonsterCircuitBreaker,
+  CapMonsterCircuitRecordFailureResult,
+} from './capmonster-circuit.types';
+export type {
+  RunPortalCaptchaVerifiedLoopInput,
+  RunPortalCaptchaVerifiedLoopResult,
+  PortalCaptchaVerifiedLoopStopReason,
+} from './portal-captcha-verified-loop.types';
+export type {
   PortalOtpOkModalActionArg,
   PortalOtpOkModalActionResult,
 } from './portal-otp-modal.types';
-export type { BuildMailSlurpOtpNotesInput } from './mailslurp-otp-notes.types';
+export type { BuildEmailOtpNotesInput } from './email-otp-notes.types';
+export type { PortalLogContext } from './portal-log-context.types';
+export type {
+  PortalAutofillRunStatus,
+  PortalAutofillPipelineStage,
+  PortalAutofillCapMonsterCbState,
+  PortalAutofillFieldProgressStatus,
+  PortalAutofillFieldProgressEntry,
+  PortalAutofillFieldProgressMap,
+  PortalAutofillCapMonsterCbCheckpoint,
+  PortalAutofillLockSnapshot,
+  PortalAutofillResumeEligibilityInput,
+} from './portal-autofill-run-lifecycle.types';
+export type {
+  PortalAutofillCheckpointPatch,
+  PortalAutofillCaptchaRestore,
+  PortalCaptchaVerifiedLoopCheckpointSnapshot,
+  PortalAutofillPipelineCheckpointCallbacks,
+} from './portal-autofill-checkpoint.types';

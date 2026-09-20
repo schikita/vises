@@ -8,8 +8,12 @@ export type SettingsOut = {
   defaultPrice: number;
   cities: string[];
   destinations: string[];
-  /** Admin: use Webshare proxies for portal autofill (requires WEBSHARE_API_KEY). */
+  /** Retained DB flag; effective portal enablement is credentials-only (DEC-002). */
   webshareProxyEnabled: boolean;
   /** Optional Webshare plan_id; empty string omits plan_id on list API. */
   websharePlanId: string;
+  /** Retained DB flag; effective OTP arming is credentials-only (DEC-002). */
+  emailOtpEnabled: boolean;
+  /** Derived: true when NODE_ENV is non-prod (owner-console-ux DEC-010). */
+  demoControlsEnabled: boolean;
 };

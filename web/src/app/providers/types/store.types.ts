@@ -1,5 +1,9 @@
 import type { Application, DocFile, Status, UpsertAppResult } from '@/entities/application'
-import type { PortalAutofillRunListItem, PortalAutofillRunResult } from '@/entities/portal-autofill'
+import type {
+  PortalAutofillRunListResponse,
+  PortalAutofillRunOptions,
+  PortalAutofillRunResult,
+} from '@/entities/portal-autofill'
 import type { Session } from '@/entities/session'
 import type { SystemSettings } from '@/entities/settings'
 import type { IssuedAccess, Role, User } from '@/entities/user'
@@ -19,11 +23,15 @@ export type Store = {
   setStatus: (id: string, status: Status, note?: string) => Promise<Application | null>
   addDoc: (id: string, doc: DocFile, file?: File) => Promise<void>
   openDoc: (appId: string, docId: string) => Promise<void>
-  listPortalAutofillRuns: (applicationId: string) => Promise<PortalAutofillRunListItem[]>
+  listPortalAutofillRuns: (
+    applicationId: string,
+    applicantId?: string,
+  ) => Promise<PortalAutofillRunListResponse>
   openPortalAutofillScreenshot: (runId: string) => Promise<void>
   runPortalAutofill: (
     applicationId: string,
     applicantId: string,
+    options?: PortalAutofillRunOptions,
   ) => Promise<PortalAutofillRunResult>
   createUser: (input: {
     name: string
@@ -35,6 +43,7 @@ export type Store = {
   reissueAccess: (id: string) => Promise<IssuedAccess | string>
   removeUser: (id: string) => Promise<string | null>
   refreshUsers: () => Promise<void>
+  cacheApp: (app: Application) => void
   saveSettings: (patch: Partial<SystemSettings>) => Promise<void>
   resetDemo: () => Promise<void>
 }

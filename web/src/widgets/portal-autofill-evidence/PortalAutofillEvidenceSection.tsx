@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@/app/providers'
-import type { PortalAutofillRunListItem } from '@/entities/portal-autofill'
+import type {
+  PortalAutofillRetryEligibility,
+  PortalAutofillRunListItem,
+} from '@/entities/portal-autofill'
 import {
+  isPortalAutofillActionEligible,
   isPortalAutofillApplicantReady,
+  portalAutofillActionLabel,
   resolveCrmStatusAfterPortalAutofill,
+  resolvePortalAutofillSupersede,
 } from '@/entities/portal-autofill'
 import { PortalAutofillEvidenceSectionRender } from './PortalAutofillEvidenceSectionRender'
 import type { PortalAutofillEvidenceSectionProps } from './types'
@@ -22,6 +28,8 @@ export const PortalAutofillEvidenceSection = ({
     setStatus,
   } = useStore()
   const [runs, setRuns] = useState<PortalAutofillRunListItem[] | null>(null)
+  const [retryEligibility, setRetryEligibility] =
+    useState<PortalAutofillRetryEligibility | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [openError, setOpenError] = useState('')
@@ -45,11 +53,27 @@ export const PortalAutofillEvidenceSection = ({
   const applicantPersisted = Boolean(
     selectedApplicant?.id && persistedApplicantIds.includes(selectedApplicant.id),
   )
-  const canStart = ready && applicantPersisted && Boolean(selectedApplicant)
+  const localCanTrigger = ready && applicantPersisted && Boolean(selectedApplicant)
 
-  const refreshRuns = async () => {
-    const next = await listPortalAutofillRuns(applicationId)
-    setRuns(next)
+  const actionEligible = retryEligibility
+    ? isPortalAutofillActionEligible(retryEligibility)
+    : false
+  const actionLabel = retryEligibility
+    ? portalAutofillActionLabel(retryEligibility)
+    : 'Запустить автозаполнение'
+  const blockedReasonRu = retryEligibility?.blockedReasonRu ?? null
+
+  const refreshRuns = async (applicantId: string) => {
+    const next = await listPortalAutofillRuns(
+      applicationId,
+      applicantId || undefined,
+    )
+    const forApplicant =
+      applicantId !== ''
+        ? next.runs.filter((run) => run.applicantId === applicantId)
+        : next.runs
+    setRuns(forApplicant)
+    setRetryEligibility(next.retryEligibility)
   }
 
   useEffect(() => {
@@ -57,13 +81,20 @@ export const PortalAutofillEvidenceSection = ({
     setLoading(true)
     setError('')
     setOpenError('')
-    void listPortalAutofillRuns(applicationId)
+    void listPortalAutofillRuns(applicationId, effectiveApplicantId || undefined)
       .then((next) => {
-        if (!cancelled) setRuns(next)
+        if (cancelled) return
+        const forApplicant =
+          effectiveApplicantId !== ''
+            ? next.runs.filter((run) => run.applicantId === effectiveApplicantId)
+            : next.runs
+        setRuns(forApplicant)
+        setRetryEligibility(next.retryEligibility)
       })
       .catch((err: unknown) => {
         if (!cancelled) {
           setRuns(null)
+          setRetryEligibility(null)
           setError(err instanceof Error ? err.message : 'Не удалось загрузить запуски')
         }
       })
@@ -73,7 +104,7 @@ export const PortalAutofillEvidenceSection = ({
     return () => {
       cancelled = true
     }
-  }, [applicationId, listPortalAutofillRuns])
+  }, [applicationId, effectiveApplicantId, listPortalAutofillRuns])
 
   const openScreenshot = async (runId: string) => {
     setOpenError('')
@@ -88,7 +119,10 @@ export const PortalAutofillEvidenceSection = ({
   }
 
   const startAutofill = async () => {
-    if (busy || !selectedApplicant || !canStart) return
+    if (busy || !selectedApplicant || !localCanTrigger || !retryEligibility) return
+    if (!isPortalAutofillActionEligible(retryEligibility)) return
+
+    const supersede = resolvePortalAutofillSupersede(retryEligibility)
 
     setBusy(true)
     setRunFeedback('')
@@ -97,7 +131,11 @@ export const PortalAutofillEvidenceSection = ({
     setOpenError('')
 
     try {
-      const result = await runPortalAutofill(applicationId, selectedApplicant.id)
+      const result = await runPortalAutofill(
+        applicationId,
+        selectedApplicant.id,
+        supersede ? { supersede: true } : undefined,
+      )
       setRunFeedback(formatRunFeedback(result))
       setRunFeedbackIsError(!result.report)
 
@@ -118,7 +156,7 @@ export const PortalAutofillEvidenceSection = ({
       }
 
       try {
-        await refreshRuns()
+        await refreshRuns(selectedApplicant.id)
         setError('')
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Не удалось обновить список запусков')
@@ -134,7 +172,10 @@ export const PortalAutofillEvidenceSection = ({
       effectiveApplicantId={effectiveApplicantId}
       ready={ready}
       applicantPersisted={applicantPersisted}
-      canStart={canStart}
+      localCanTrigger={localCanTrigger}
+      actionEligible={actionEligible}
+      actionLabel={actionLabel}
+      blockedReasonRu={blockedReasonRu}
       busy={busy}
       loading={loading}
       error={error}

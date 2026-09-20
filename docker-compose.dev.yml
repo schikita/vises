@@ -1,0 +1,51 @@
+# Dev overrides. Use with the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch
+# Requires:
+#   backend/.env.dev  (from .env.dev.example)
+#   web/.env.dev      (from .env.dev.example)
+#
+# Watch mode (develop.watch): on source changes, Compose rebuilds the service
+# image and recreates the container so api/web load the updated code fresh.
+# Without --watch, this file still applies env/ports/volumes only.
+
+services:
+  db:
+    env_file:
+      - backend/.env.dev
+    ports:
+      - "5432:5432"
+
+  api:
+    env_file:
+      - backend/.env.dev
+    volumes:
+      - ./backend/uploads:/uploads
+      - ./backend/logs:/logs
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend
+          ignore:
+            - node_modules/
+            - dist/
+            - logs/
+            - uploads/
+            - vises_pg/
+            - .env
+            - .env.*
+            - "*.md"
+
+  web:
+    env_file:
+      - web/.env.dev
+    develop:
+      watch:
+        - action: rebuild
+          path: ./web
+          ignore:
+            - node_modules/
+            - dist/
+            - deploy/
+            - .env
+            - .env.*
+            - "*.md"

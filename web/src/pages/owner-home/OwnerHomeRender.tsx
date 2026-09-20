@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { User } from '@/entities/user'
 import { ROLE_LABEL } from '@/entities/user'
@@ -11,6 +12,7 @@ type OwnerHomeRenderProps = {
   reviewCount: number
   fixesCount: number
   inactiveCount: number
+  charts: ReactNode
 }
 
 export const OwnerHomeRender = ({
@@ -20,6 +22,7 @@ export const OwnerHomeRender = ({
   reviewCount,
   fixesCount,
   inactiveCount,
+  charts,
 }: OwnerHomeRenderProps) => (
   <div>
     <h1 className="text-2xl font-extrabold tracking-tight">Кабинет админа</h1>
@@ -35,6 +38,8 @@ export const OwnerHomeRender = ({
         </Card>
       ))}
     </div>
+
+    {charts}
 
     <div className="mt-5 grid gap-5 lg:grid-cols-2">
       <Card>

@@ -1,9 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
+import { Application } from '../database/entities/application.entity';
 import { User } from '../database/entities/user.entity';
 import { userOut } from '../../shared/mappers';
 import {
+  buildPaginatedList,
   generateInvitePassword,
   hashPassword,
   uid,
@@ -14,8 +16,22 @@ import {
   USER_ROLES,
 } from '../auth/constants';
 import type { IUsersService } from './interfaces';
-import type { EnsureClientResult, UserCredentialsOut, UserOut } from './types';
-import { normalizeClientIdentity } from './utils';
+import type {
+  EnsureClientResult,
+  ManagerNamesOut,
+  UserCredentialsOut,
+  UserListItemOut,
+  UserOut,
+  UsersListQuery,
+  UsersPaginatedList,
+} from './types';
+import {
+  applyUsersListFilters,
+  applyUsersListSort,
+  isValidEmailFormat,
+  normalizeClientIdentity,
+  resolveLatestAppIdForUserIdentity,
+} from './utils';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PatchUserDto } from './dto/patch-user.dto';
 
@@ -23,6 +39,8 @@ import { PatchUserDto } from './dto/patch-user.dto';
 export class UsersService implements IUsersService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
+    @InjectRepository(Application)
+    private readonly apps: Repository<Application>,
   ) {}
 
   async list(): Promise<UserOut[]> {
@@ -30,6 +48,60 @@ export class UsersService implements IUsersService {
       order: { createdAt: 'DESC' },
     });
     return rows.map((u) => userOut(u));
+  }
+
+  async listPaged(query: UsersListQuery): Promise<UsersPaginatedList> {
+    const countQb = this.users.createQueryBuilder('u');
+    applyUsersListFilters(countQb, query);
+    const total = await countQb.getCount();
+
+    const qb = this.users.createQueryBuilder('u');
+    applyUsersListFilters(qb, query);
+    applyUsersListSort(qb, query.sort, query.sortDir);
+    const rows = await qb
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize)
+      .getMany();
+
+    const identityKeys = new Set<string>();
+    for (const row of rows) {
+      const email = row.email.trim().toLowerCase();
+      const login = row.login.trim().toLowerCase();
+      if (email) identityKeys.add(email);
+      if (login) identityKeys.add(login);
+    }
+
+    const appsPool =
+      identityKeys.size === 0
+        ? []
+        : await this.apps
+            .createQueryBuilder('a')
+            .where('LOWER(TRIM(a.client_email)) IN (:...keys)', {
+              keys: [...identityKeys],
+            })
+            .getMany();
+
+    const items: UserListItemOut[] = rows.map((row) => ({
+      ...userOut(row),
+      latestAppId: resolveLatestAppIdForUserIdentity(appsPool, row),
+    }));
+
+    return buildPaginatedList({
+      items,
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+  }
+
+  async listActiveManagerNames(): Promise<ManagerNamesOut> {
+    const rows = await this.users.find({
+      where: { role: 'manager', active: true },
+      order: { name: 'ASC' },
+    });
+    return {
+      names: rows.map((row) => row.name).filter((name) => Boolean(name.trim())),
+    };
   }
 
   async create(body: CreateUserDto): Promise<UserCredentialsOut> {
@@ -80,8 +152,8 @@ export class UsersService implements IUsersService {
   }
 
   /**
-   * Internal ensure for staff app create (DEC-001 / DEC-006).
-   * Prefers login match over email when both could hit different rows.
+   * Internal ensure for staff app create (DEC-001 / DEC-006 / REQ-019).
+   * Identity must be an email; prefers login match over email when both could hit different rows.
    */
   async ensureClientForIdentity(
     identity: string,
@@ -90,7 +162,13 @@ export class UsersService implements IUsersService {
     const normalized = normalizeClientIdentity(identity);
     if (!normalized) {
       throw new HttpException(
-        'Client email or login is required',
+        'Client email is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (!isValidEmailFormat(normalized)) {
+      throw new HttpException(
+        'Client identity must be a valid email',
         HttpStatus.BAD_REQUEST,
       );
     }

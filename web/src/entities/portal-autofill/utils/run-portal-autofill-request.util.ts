@@ -1,5 +1,9 @@
 import { apiRequestRaw, extractApiErrorDetail } from '@/shared/api'
-import type { AutofillReportSummary, PortalAutofillRunResult } from '../types'
+import type {
+  AutofillReportSummary,
+  PortalAutofillRunOptions,
+  PortalAutofillRunResult,
+} from '../types'
 import { isAutofillReportSummary } from './is-autofill-report-summary.util'
 
 /**
@@ -9,12 +13,18 @@ import { isAutofillReportSummary } from './is-autofill-report-summary.util'
 export const runPortalAutofillRequest = async (
   applicationId: string,
   applicantId: string,
+  options?: PortalAutofillRunOptions,
 ): Promise<PortalAutofillRunResult> => {
+  const body: { applicantId: string; supersede?: boolean } = { applicantId }
+  if (options?.supersede === true) {
+    body.supersede = true
+  }
+
   const { status, data, networkError } = await apiRequestRaw<
     AutofillReportSummary | { detail?: string | { msg: string }[] } | null
   >(`/apps/${applicationId}/portal-autofill`, {
     method: 'POST',
-    data: { applicantId },
+    data: body,
     headers: { 'Content-Type': 'application/json' },
   })
 

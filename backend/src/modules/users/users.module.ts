@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Application } from '../database/entities/application.entity';
 import { User } from '../database/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { USERS_SERVICE } from './constants';
@@ -7,7 +8,10 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([User, Application]),
+    AuthModule,
+  ],
   controllers: [UsersController],
   providers: [
     UsersService,

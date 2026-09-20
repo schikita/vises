@@ -6,6 +6,11 @@ export type PortalAutofillHttpInput = {
   applicantId: string;
   /** JWT actor id for audit (DEC-005); not part of POST body. */
   triggeredByUserId?: string;
+  /**
+   * When true, abandon eligible/in_progress prior run and start a new runId (DEC-009).
+   * Default false → resume eligible in_progress for the same application+applicant.
+   */
+  supersede?: boolean;
 };
 
 /**

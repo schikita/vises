@@ -1,5 +1,7 @@
 # Multi-stage SPA image: Node build → nginx alpine runtime (DEC-002).
 # Serves /vises/ static + proxies /vises/api/ → api:8100/api/ (DEC-001, DEC-003, DEC-006).
+# Secrets are not copied into the image — Compose injects via env_file.
+# Vite base uses command === 'build' (/vises/); no custom VITE_* keys.
 
 FROM node:24-bookworm-slim AS build
 

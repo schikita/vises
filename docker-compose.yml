@@ -1,13 +1,18 @@
+# Shared Compose skeleton (db + api + web).
+# Dev (with image rebuild on code changes):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch
+# Prod:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Env is injected via dev/prod env_file (not baked into images).
+# Copy env examples first — see backend/.env.*.example and web/.env.*.example.
+
 services:
   db:
     image: postgres:18.6-alpine
-    env_file:
-      - backend/.env
     volumes:
       - ./backend/vises_pg:/var/lib/postgresql
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vises"]
       interval: 5s
@@ -15,24 +20,20 @@ services:
       retries: 10
 
   api:
-    build: ./backend
-    image: vises-api:local
-    env_file:
-      - backend/.env
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8100:8100"
-    volumes:
-      - ./backend/vises_uploads:/data/uploads
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
   web:
-    build: ./web
-    image: vises-web:local
-    env_file:
-      - web/.env
+    build:
+      context: ./web
+      dockerfile: Dockerfile
     ports:
       - "8090:80"
     depends_on:
@@ -42,3 +43,4 @@ services:
 volumes:
   vises_pg:
   vises_uploads:
+  vises_logs:

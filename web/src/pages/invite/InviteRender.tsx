@@ -95,7 +95,7 @@ export const InviteRender = ({
                   <button
                     type="button"
                     className="text-leaf"
-                    onClick={() => onCopy(user.password, 'password')}
+                    onClick={() => onCopy(user.password ?? '', 'password')}
                   >
                     <Copy size={14} />
                   </button>

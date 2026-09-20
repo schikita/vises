@@ -24,4 +24,8 @@ export class Setting {
   /** Optional Webshare plan_id for Proxy List; empty ⇒ account default plan. */
   @Column({ name: 'webshare_plan_id', type: 'varchar', length: 120, default: '' })
   websharePlanId!: string;
+
+  /** Admin toggle: Mail.tm disposable email OTP for portal autofill. */
+  @Column({ name: 'email_otp_enabled', type: 'boolean', default: false })
+  emailOtpEnabled!: boolean;
 }

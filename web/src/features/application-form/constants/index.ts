@@ -6,6 +6,13 @@ export { RELATIONSHIPS } from './relationships.constants'
 export { MARITAL_STATUSES } from './marital-statuses.constants'
 export { PURPOSES } from './purposes.constants'
 export { ENTRIES } from './entries.constants'
+export {
+  BELARUS_PHONE_COUNTRY_CODE,
+  BELARUS_PHONE_COUNTRY_LABEL,
+  BELARUS_PHONE_LOCAL_DIGIT_COUNT,
+  BELARUS_PHONE_PLACEHOLDER,
+} from './belarus-phone.constants'
+export { APPLICANT_FIELDS_SECTIONS } from './applicant-fields-sections.constants'
 export { APPLICATION_FORM_MESSAGES } from './form-messages.constants'
 export { applicantFormSchema, staffApplicantFormSchema } from './applicant-form.schema'
 export { clientTripFormSchema, staffTripFormSchema } from './trip-form.schema'

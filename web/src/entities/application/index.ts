@@ -6,6 +6,13 @@
   TimelineItem,
   Application,
   UpsertAppResult,
+  AppsPaginatedList,
+  VisitsPaginatedList,
+  PaymentsPaginatedList,
+  PaymentsSummary,
+  FetchAppsPageParams,
+  FetchVisitsPageParams,
+  FetchPaymentsPageParams,
 } from './types'
 export { STATUSES, DOC_TYPES } from './constants'
 export {
@@ -15,4 +22,9 @@ export {
   progress,
   emptyApplicant,
   emptyApplication,
+  resolveLatestAppIdForUser,
+  fetchAppsPage,
+  fetchAppById,
+  fetchVisitsPage,
+  fetchPaymentsPage,
 } from './utils'
