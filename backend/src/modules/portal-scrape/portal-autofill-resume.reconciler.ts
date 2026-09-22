@@ -6,7 +6,6 @@ import {
   PORTAL_AUTOFILL_CAPMONSTER_CB_STATE,
   PORTAL_AUTOFILL_CAPTURE_STATUS,
   PORTAL_AUTOFILL_LOCK_STALE_MS,
-  PORTAL_AUTOFILL_PIPELINE_STAGE,
   PORTAL_AUTOFILL_RUN_STATUS,
 } from './constants';
 import { isPortalAutofillLockStale } from './utils';
@@ -117,7 +116,7 @@ export class PortalAutofillResumeReconciler implements OnModuleInit {
         screenshotRelativePath: null,
         errorNote: terminalReason,
         terminalReason,
-        pipelineStage: PORTAL_AUTOFILL_PIPELINE_STAGE.TERMINAL,
+        // Keep last checkpoint stage for staff UI (same as persistRunTerminal).
         lockOwner: null,
         lockHeartbeatAt: null,
         updatedAt,

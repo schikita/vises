@@ -2,14 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppEnv } from '../config';
 import { isProdNodeEnv } from '../config/utils';
-import { SettingsService } from '../settings/settings.service';
-import {
-  parseWebshareListTtlMs,
-  WEBSHARE_PROXY_MODE,
-} from '../webshare';
 import type { IPortalAutofillConfig } from './interfaces';
 import type { AutofillConfig } from './types';
+import { DEFAULT_MANAGE_APPLICANTS_PATH } from './constants/portal-status.constants';
 import { resolveRegisterPath } from './utils/resolve-register-path.util';
+import { resolveLoginPath } from './utils/resolve-login-path.util';
 import { trimOrUndefined } from './utils/trim-or-undefined.util';
 
 /**
@@ -17,25 +14,17 @@ import { trimOrUndefined } from './utils/trim-or-undefined.util';
  * Live HTTP autofill requires VISES_PORTAL_BASE_URL (DEC-008).
  * App env keys are Zod-validated at ConfigModule boot.
  *
- * Webshare / Mail.tm enablement (owner-console-ux DEC-002 + portal-email-otp-mailtm
- * DEC-004): credentials/env gated — do not require settings.webshareProxyEnabled
- * or settings.emailOtpEnabled for arming. OTP product enable is hardcoded true;
- * operators disarm Mail.tm OTP by clearing MAILTM_API_BASE_URL (and/or CapMonster
- * key). Settings DB flags remain for compatibility only.
+ * Proxy enablement (proxy6-migration DEC-002 / REQ-022): non-empty PROXY6_API_KEY.
+ * OTP product enable is hardcoded true; operators disarm Mail.tm OTP by clearing
+ * MAILTM_API_BASE_URL (and/or CapMonster key).
  */
 @Injectable()
 export class PortalConfigService implements IPortalAutofillConfig {
-  constructor(
-    private readonly config: ConfigService<AppEnv, true>,
-    private readonly settings: SettingsService,
-  ) {}
-
+  constructor(private readonly config: ConfigService<AppEnv, true>) {}
   async load(): Promise<AutofillConfig> {
-    const settingsOut = await this.settings.get();
-    const webshareApiKey = trimOrUndefined(
-      this.config.get('WEBSHARE_API_KEY', { infer: true }),
+    const proxy6ApiKey = trimOrUndefined(
+      this.config.get('PROXY6_API_KEY', { infer: true }),
     );
-    const websharePlanId = trimOrUndefined(settingsOut.websharePlanId);
 
     return {
       portalBaseUrl: trimOrUndefined(
@@ -43,6 +32,9 @@ export class PortalConfigService implements IPortalAutofillConfig {
       ),
       registerPath: resolveRegisterPath(
         this.config.get('VISES_PORTAL_REGISTER_PATH', { infer: true }),
+      ),
+      loginPath: resolveLoginPath(
+        this.config.get('VISES_PORTAL_LOGIN_PATH', { infer: true }),
       ),
       // CapMonster: non-empty trimmed key enables Verify+solve (DEC-002/003).
       capMonsterApiKey: trimOrUndefined(
@@ -53,15 +45,9 @@ export class PortalConfigService implements IPortalAutofillConfig {
       mailTmApiBaseUrl: trimOrUndefined(
         this.config.get('MAILTM_API_BASE_URL', { infer: true }),
       ),
-      // DEC-002: effective when API key present (plan/mode from settings/env).
-      webshareProxyEnabled: webshareApiKey !== undefined,
-      webshareProxyMisconfigured: false,
-      webshareApiKey,
-      webshareProxyMode: WEBSHARE_PROXY_MODE,
-      webshareListTtlMs: parseWebshareListTtlMs(
-        this.config.get('WEBSHARE_PROXY_LIST_TTL_MS', { infer: true }),
-      ),
-      websharePlanId,
+      proxy6Enabled: proxy6ApiKey !== undefined,
+      proxy6Misconfigured: false,
+      proxy6ApiKey,
     };
   }
 
@@ -90,6 +76,44 @@ export class PortalConfigService implements IPortalAutofillConfig {
     if (path === '/') {
       return `${base}/`;
     }
+    return `${base}${path}`;
+  }
+
+  /**
+   * Resolve absolute portal login URL (REQ-008 / DEC-009).
+   * Empty/whitespace login path or missing base → fail closed.
+   */
+  resolvePortalLoginUrl(config: AutofillConfig): string {
+    if (!config.portalBaseUrl?.trim()) {
+      throw new Error(
+        'VISES_PORTAL_BASE_URL is required for portal login navigation',
+      );
+    }
+    const loginPath = config.loginPath.trim();
+    if (loginPath === '') {
+      throw new Error(
+        'VISES_PORTAL_LOGIN_PATH is required for portal login navigation',
+      );
+    }
+    const base = config.portalBaseUrl.replace(/\/+$/, '');
+    const path = loginPath.startsWith('/') ? loginPath : `/${loginPath}`;
+    return `${base}${path}`;
+  }
+
+  /**
+   * Resolve absolute Manage Applicants URL (REQ-018 / TASK-011).
+   * Uses fixture path `/Global/appointmentdata/myappointments`.
+   */
+  resolvePortalManageApplicantsUrl(config: AutofillConfig): string {
+    if (!config.portalBaseUrl?.trim()) {
+      throw new Error(
+        'VISES_PORTAL_BASE_URL is required for portal Manage Applicants navigation',
+      );
+    }
+    const base = config.portalBaseUrl.replace(/\/+$/, '');
+    const path = DEFAULT_MANAGE_APPLICANTS_PATH.startsWith('/')
+      ? DEFAULT_MANAGE_APPLICANTS_PATH
+      : `/${DEFAULT_MANAGE_APPLICANTS_PATH}`;
     return `${base}${path}`;
   }
 }

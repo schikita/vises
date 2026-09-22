@@ -26,6 +26,14 @@ export class UpsertAppDto {
   @IsString()
   clientEmail?: string;
 
+  /**
+   * Accepted so SPA full-object upserts pass `forbidNonWhitelisted`.
+   * Ignored on write — portal-form email is set by autofill/seed only (DEC-001/005).
+   */
+  @IsOptional()
+  @IsString()
+  portalFormEmail?: string | null;
+
   @IsOptional()
   @IsString()
   @IsIn([...ALL_APP_STATUSES])

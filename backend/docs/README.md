@@ -22,17 +22,17 @@ NestJS 11 API for the Vises CRM (visa applications). Global prefix: **`/api`**. 
 | [users](modules/users.md) | Yes | Admin user CRUD |
 | [apps](modules/apps.md) | Yes | Applications + documents |
 | [settings](modules/settings.md) | Yes | Company settings + demo reset |
-| [portal-scrape](modules/portal-scrape.md) | Yes | Portal RegisterUser autofill |
+| [portal-scrape](modules/portal-scrape.md) | Yes | Durable BLS workflow + RegisterUser autofill + login prep |
 | [capmonster](modules/capmonster.md) | No | Captcha solver (used by portal) |
-| [mailtm](modules/mailtm.md) | No | Disposable email OTP (portal) |
-| [webshare](modules/webshare.md) | No | Proxy lease pool (portal) |
+| [mailtm](modules/mailtm.md) | No | Disposable email OTP (portal; retain until workflow terminal) |
+| [proxy6](modules/proxy6.md) | Yes (admin) | Proxy6 inventory + lease (portal / BLS workflow) |
 | [config](modules/config.md) | No | Env validation / ConfigService |
 | [database](modules/database.md) | No | TypeORM + entities |
 | [logger](modules/logger.md) | No | Winston Nest logger |
 | [seed](modules/seed.md) | No | Boot seed + demo reset data |
 | [shared](modules/shared.md) | — | Cross-cutting guards, mappers, utils |
 
-`AppModule` imports: config → logger → database → seed → health → auth → users → apps → settings → portal-scrape. CapMonster, Mail.tm, and Webshare are pulled in by `PortalScrapeModule`.
+`AppModule` imports: config → logger → database → seed → health → auth → users → apps → settings → stats → portal-scrape → proxy6. CapMonster and Mail.tm are pulled in by `PortalScrapeModule`; Proxy6 lease is provided by `Proxy6Module`.
 
 ## API route index
 
@@ -65,6 +65,17 @@ All paths below are under `/api`.
 | `DELETE` | `/apps/:appId` | admin, manager | apps |
 | `PATCH` | `/settings` | admin | settings |
 | `POST` | `/settings/reset-demo` | admin | settings |
+| `GET` | `/proxy6/balance` | admin | proxy6 |
+| `GET` | `/proxy6/price` | admin | proxy6 |
+| `GET` | `/proxy6/count` | admin | proxy6 |
+| `GET` | `/proxy6/countries` | admin | proxy6 |
+| `POST` | `/proxy6/buy` | admin | proxy6 |
+| `POST` | `/proxy6/prolong` | admin | proxy6 |
+| `POST` | `/proxy6/replace` | admin | proxy6 |
+| `POST` | `/proxy6/delete` | admin | proxy6 |
+| `GET` | `/proxy6/proxies` | admin | proxy6 |
+| `POST` | `/proxy6/proxies/refresh` | admin | proxy6 |
+| `GET` | `/proxy6/stats` | admin | proxy6 |
 | `GET` | `/users` | admin | users |
 | `POST` | `/users` | admin | users |
 | `PATCH` | `/users/:userId` | admin | users |
@@ -73,6 +84,15 @@ All paths below are under `/api`.
 | `POST` | `/apps/:applicationId/portal-autofill` | admin, manager | portal-scrape |
 | `GET` | `/apps/:applicationId/portal-autofill-runs` | admin, manager | portal-scrape |
 | `GET` | `/apps/portal-autofill-runs/:runId/screenshot` | admin, manager | portal-scrape |
+| `POST` | `/apps/:applicationId/portal-login-prep` | admin, manager | portal-scrape |
+| `POST` | `/apps/:applicationId/bls-workflow` | admin, manager | portal-scrape |
+| `GET` | `/apps/:applicationId/bls-workflow` | admin, manager | portal-scrape |
+| `GET` | `/apps/:applicationId/bls-workflow/:workflowId` | admin, manager | portal-scrape |
+| `GET` | `/apps/:applicationId/bls-workflow/:workflowId/events` | admin, manager | portal-scrape |
+| `POST` | `/apps/:applicationId/bls-workflow/:workflowId/retry` | admin, manager | portal-scrape |
+| `POST` | `/apps/:applicationId/bls-workflow/:workflowId/resume` | admin, manager | portal-scrape |
+| `POST` | `/apps/:applicationId/bls-workflow/:workflowId/pause` | admin, manager | portal-scrape |
+| `POST` | `/apps/:applicationId/bls-workflow/:workflowId/cancel` | admin, manager | portal-scrape |
 
 ## Auth header
 

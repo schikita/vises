@@ -2,7 +2,7 @@
 
 **Path:** `backend/src/modules/settings/`  
 **HTTP:** yes  
-**Purpose:** Singleton company settings (cities, destinations, price, portal integration toggles) and admin demo reset.
+**Purpose:** Singleton company settings (cities, destinations, price, email OTP flag) and admin demo reset.
 
 ## Main parts
 
@@ -16,7 +16,7 @@
 | Interface | `interfaces/settings.service.interface.ts` | `ISettingsService` |
 
 **Depends on:** `AuthModule`, `SeedModule` (for `resetDemo`), `Setting` entity.  
-**Consumed by:** Portal autofill (proxy + email OTP toggles).
+**Consumed by:** Portal autofill (email OTP toggle; proxy enablement is env-only via Proxy6).
 
 ## API
 
@@ -32,17 +32,15 @@
 |-------|------|---------|
 | `company` | string | Company display name |
 | `defaultPrice` | int | Default payment amount |
-| `cities` | string[] | Submit cities catalog |
+| `cities` | string[] | Submit cities catalog (server coerces to Minsk-only) |
 | `destinations` | string[] | Destinations catalog |
-| `webshareProxyEnabled` | boolean | Use Webshare proxies for portal autofill |
-| `websharePlanId` | string | Optional Webshare plan filter |
 | `emailOtpEnabled` | boolean | Mail.tm disposable OTP during portal autofill |
 
 ### `SettingsOut`
 
-`company`, `defaultPrice`, `cities`, `destinations`, `webshareProxyEnabled`, `websharePlanId`, `emailOtpEnabled`.
+`company`, `defaultPrice`, `cities`, `destinations`, `emailOtpEnabled`, `demoControlsEnabled`.
 
-**No API-key fields** in DTO or UI (DEC-006). CapMonster / Webshare secrets are env-only — see ops rotation below.
+**No API-key fields** and **no proxy plan/toggle fields** in DTO or Settings UI. CapMonster / Proxy6 secrets are env-only — see ops rotation below. Proxy inventory/admin is under [`/api/proxy6`](proxy6.md).
 
 ### Roles (DEC-001 locked)
 
@@ -53,19 +51,19 @@
 | `client` | Read `GET` only |
 | `superadmin` | **Does not exist** — do not invent |
 
-## Ops: rotating CapMonster / Webshare API keys (DEC-006 / REQ-014)
+## Ops: rotating CapMonster / Proxy6 API keys
 
 Keys are **never** stored in the settings DB row and there is **no** in-app key editor.
 
 1. Update deployment env (compose / host `.env` / secrets store):
    - `CAPMONSTER_API_KEY`
-   - `WEBSHARE_API_KEY`
+   - `PROXY6_API_KEY`
    - related portal URL env as needed (`VISES_PORTAL_BASE_URL`, …)
 2. Restart the API process so Nest `ConfigService` reloads validated env.
-3. Confirm autofill: CapMonster path arms when key non-empty; Webshare lease fails closed if proxy enabled but key missing.
+3. Confirm autofill: CapMonster path arms when key non-empty; Proxy6 lease fails closed when key non-empty but pool empty/all leased. Empty `PROXY6_API_KEY` → direct browser egress.
 4. Never log keys; never commit live secrets to examples.
 
-Admin UI toggles only `webshareProxyEnabled`, `websharePlanId`, and `emailOtpEnabled`. Proxy “list” = plan id + enablement; full IP-list editing is out of scope.
+Admin Settings UI does not manage Proxy6 inventory (follow-up SPA). Use admin `/api/proxy6/*` or ops tooling.
 
 ### `POST /api/settings/reset-demo`
 

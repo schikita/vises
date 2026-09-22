@@ -1,8 +1,13 @@
-import type { WebshareProxyRuntimeConfig } from '../../webshare';
+import type { Proxy6ProxyRuntimeConfig } from '../../proxy6';
 
-export interface AutofillConfig extends WebshareProxyRuntimeConfig {
+export interface AutofillConfig extends Proxy6ProxyRuntimeConfig {
   portalBaseUrl?: string;
   registerPath: string;
+  /**
+   * Trimmed login path from VISES_PORTAL_LOGIN_PATH (DEC-009).
+   * Empty/whitespace fails closed at resolvePortalLoginUrl.
+   */
+  loginPath: string;
   /**
    * CapMonster Cloud API key (DEC-002). CapMonster path enabled iff non-empty
    * after trim (DEC-003 / REQ-002). Verify click gated by this key alone

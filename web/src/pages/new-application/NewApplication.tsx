@@ -42,6 +42,7 @@ export const NewApplication = () => {
     setError('')
     const next: Application = {
       ...values,
+      portalFormEmail: null,
       status: 'docs',
       updatedAt: nowIso(),
       timeline: [

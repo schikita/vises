@@ -5,3 +5,5 @@ export const PORTAL_APPLICATION_DATA = Symbol('PORTAL_APPLICATION_DATA');
 export const PORTAL_FIELD_MAPPER = Symbol('PORTAL_FIELD_MAPPER');
 export const PORTAL_FORM_FILLER = Symbol('PORTAL_FORM_FILLER');
 export const PORTAL_SITE_ADAPTER_REGISTRY = Symbol('PORTAL_SITE_ADAPTER_REGISTRY');
+/** Injected task executor for BlsWorkflowRunner (DEC-002 / DEC-008). */
+export const BLS_WORKFLOW_TASK_EXECUTOR = Symbol('BLS_WORKFLOW_TASK_EXECUTOR');

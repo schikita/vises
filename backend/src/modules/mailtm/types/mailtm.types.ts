@@ -7,6 +7,11 @@ export type MailTmAccountHandle = {
   id: string;
   address: string;
   token: string;
+  /**
+   * Mailbox password for retain / re-auth (REQ-016).
+   * Never log, report, or HTTP-return this value.
+   */
+  password: string;
 };
 
 export type FetchMailTmJsonInput = {
@@ -107,3 +112,24 @@ export type DeleteMailTmAccountResult = {
   /** Soft-fail detail; never includes token/password. */
   warnMessage?: string;
 };
+
+/** Soft-fail login input for terminal cleanup re-auth (REQ-016). */
+export type LoginMailTmAccountInput = {
+  address: string;
+  password: string;
+};
+
+/**
+ * Soft-fail login /me resolve outcome.
+ * Never includes token/password in warnMessage.
+ */
+export type ResolveMailTmAccountResult =
+  | {
+      ok: true;
+      accountId: string;
+      token: string;
+    }
+  | {
+      ok: false;
+      warnMessage: string;
+    };

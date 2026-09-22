@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { useStore } from '@/app/providers'
 import { LOCKED_SUBMIT_CITIES } from '@/entities/settings'
+import { Proxy6ProxiesPanel } from '@/features/proxy6-proxies'
 import { SettingsEditForm } from '@/features/settings-edit'
-import { WebshareProxiesPanel } from '@/features/webshare-proxies'
 import { SettingsRender } from './SettingsRender'
 
 export const SettingsPage = () => {
@@ -31,10 +31,9 @@ export const SettingsPage = () => {
         company: settings.company,
         price: String(settings.defaultPrice),
         destinations: settings.destinations.join(', '),
-        websharePlanId: settings.websharePlanId ?? '',
       }}
       saved={saved}
-      onValidSubmit={async ({ company, price, destinations, websharePlanId }) => {
+      onValidSubmit={async ({ company, price, destinations }) => {
         setError('')
         setSaved(false)
         try {
@@ -46,7 +45,6 @@ export const SettingsPage = () => {
               .split(',')
               .map((x) => x.trim())
               .filter(Boolean),
-            websharePlanId: websharePlanId.trim(),
           })
           setSaved(true)
         } catch (err) {
@@ -56,13 +54,13 @@ export const SettingsPage = () => {
     />
   ) : null
 
-  const websharePanel: ReactNode = isAdmin ? <WebshareProxiesPanel /> : null
+  const proxy6Panel: ReactNode = isAdmin ? <Proxy6ProxiesPanel /> : null
 
   return (
     <SettingsRender
       isAdmin={isAdmin}
       settingsForm={settingsForm}
-      websharePanel={websharePanel}
+      proxy6Panel={proxy6Panel}
       error={error}
       settingsCompany={settings.company}
       settingsCities={settings.cities}

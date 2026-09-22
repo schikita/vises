@@ -125,10 +125,7 @@ export const PortalAutofillEvidenceSectionRender = ({
                 <p className="text-sm font-semibold">
                   {portalCaptureStatusLabel(run.captureStatus)}
                 </p>
-                <p className="text-sm">{portalReportOkLabel(run.reportOk)}</p>
-                {run.errorNote ? (
-                  <p className="text-xs font-semibold text-clay">{run.errorNote}</p>
-                ) : null}
+                <p className="text-sm">{portalReportOkLabel(run.reportOk, run.status)}</p>
                 <PortalAutofillRunOpsStatus run={run} />
               </div>
               {run.screenshotAvailable ? (

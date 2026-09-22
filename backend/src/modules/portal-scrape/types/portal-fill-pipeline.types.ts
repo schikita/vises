@@ -1,5 +1,8 @@
 import type { ICaptchaSolver } from '../../capmonster';
-import type { DeleteMailTmAccountInput, IDisposableEmail } from '../../mailtm';
+import type {
+  DeleteMailTmAccountInput,
+  TemporaryEmailProvider,
+} from '../../mailtm';
 import type {
   PortalAutofillCaptchaRestore,
   PortalAutofillPipelineCheckpointCallbacks,
@@ -22,10 +25,10 @@ export type RunPortalFillPipelineOptions = {
    */
   otpPathArmed?: boolean;
   /**
-   * Injected disposable-email client for create/wait/extract when OTP path is armed.
+   * Injected temporary-email client for create/wait/extract when OTP path is armed.
    */
   mailTm?: Pick<
-    IDisposableEmail,
+    TemporaryEmailProvider,
     'createAccount' | 'waitLatestMessage' | 'extractOtp'
   >;
   /**
@@ -40,6 +43,12 @@ export type RunPortalFillPipelineOptions = {
    * Prior `capMonsterOk` must not skip the loop after re-nav (DEC-005).
    */
   captchaRestore?: PortalAutofillCaptchaRestore;
+  /**
+   * When true, click `#btnSubmit` after fill/OTP and verify `succes.html` cues
+   * before overall success (REQ-009 / DEC-019). Default false — legacy staff
+   * sync autofill stays prepare-only (no submit).
+   */
+  submitRegisterForm?: boolean;
 };
 
 export type RunPortalFillPipelineResult = {
@@ -62,8 +71,33 @@ export type RunPortalFillPipelineResult = {
   /** True when Mail.tm CB refused a call or opened during this run. */
   mailTmCircuitOpen?: boolean;
   /**
-   * Soft-fail delete handle after post-captcha create (DEC-010).
-   * Never log token.
+   * Soft-fail delete handle when a Mail.tm account was created post-captcha
+   * (DEC-010). Never log token. Cleared by autofill when mailbox is retained
+   * after OTP success (REQ-016 / DEC-007).
    */
   mailTmCleanup?: DeleteMailTmAccountInput;
+  /**
+   * Disposable address used as portal Email (non-secret). Present when Mail.tm
+   * account was created for the OTP path (portal-login-status-check SUB-001).
+   */
+  mailTmAddress?: string;
+  /**
+   * Mailbox password for vault retain after OTP success (REQ-016).
+   * Never log, report, or HTTP-return. Autofill clears after vault/use.
+   */
+  mailTmPassword?: string;
+  /**
+   * True when `#btnSubmit` was clicked this run (`submitRegisterForm` path).
+   */
+  registerSubmitted?: boolean;
+  /**
+   * True when external success cues matched (`succes.html` / DEC-019).
+   * Required for workflow REGISTER COMPLETED (REQ-007).
+   */
+  registerSuccessVerified?: boolean;
+  /**
+   * True when submit may have taken effect but success page was not confirmed
+   * → caller must classify `VERIFY_THEN_REPEAT` (DEC-004).
+   */
+  registerSubmitAmbiguous?: boolean;
 };

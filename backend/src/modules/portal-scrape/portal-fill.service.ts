@@ -88,6 +88,9 @@ export class PortalFillService implements IPortalFormFiller {
                 ...(options.browserProxy.password !== undefined
                   ? { password: options.browserProxy.password }
                   : {}),
+                ...(options.browserProxy.bypass !== undefined
+                  ? { bypass: options.browserProxy.bypass }
+                  : {}),
               },
             }
           : undefined,
@@ -127,6 +130,7 @@ export class PortalFillService implements IPortalFormFiller {
         runId: options.runId,
         checkpoint: options.checkpoint,
         captchaRestore: options.captchaRestore,
+        submitRegisterForm: options.submitRegisterForm === true,
       });
 
       if (PORTAL_KEEP_OPEN_MS > 0) {
@@ -156,6 +160,11 @@ export class PortalFillService implements IPortalFormFiller {
           mailTmResendAttempts: pipeline.mailTmResendAttempts,
           mailTmCircuitOpen: pipeline.mailTmCircuitOpen,
           mailTmCleanup: pipeline.mailTmCleanup,
+          mailTmAddress: pipeline.mailTmAddress,
+          mailTmPassword: pipeline.mailTmPassword,
+          registerSubmitted: pipeline.registerSubmitted,
+          registerSuccessVerified: pipeline.registerSuccessVerified,
+          registerSubmitAmbiguous: pipeline.registerSubmitAmbiguous,
         };
       }
 
@@ -175,6 +184,11 @@ export class PortalFillService implements IPortalFormFiller {
         mailTmResendAttempts: pipeline.mailTmResendAttempts,
         mailTmCircuitOpen: pipeline.mailTmCircuitOpen,
         mailTmCleanup: pipeline.mailTmCleanup,
+        mailTmAddress: pipeline.mailTmAddress,
+        mailTmPassword: pipeline.mailTmPassword,
+        registerSubmitted: pipeline.registerSubmitted,
+        registerSuccessVerified: pipeline.registerSuccessVerified,
+        registerSubmitAmbiguous: pipeline.registerSubmitAmbiguous,
       };
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);

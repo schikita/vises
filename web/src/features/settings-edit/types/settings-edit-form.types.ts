@@ -2,7 +2,6 @@ export type SettingsEditFormValues = {
   company: string
   price: string
   destinations: string
-  websharePlanId: string
 }
 
 export type SettingsEditFormProps = {

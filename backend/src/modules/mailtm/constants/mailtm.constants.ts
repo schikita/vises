@@ -8,6 +8,8 @@ export const MAILTM_DOMAINS_PATH = '/domains';
 export const MAILTM_ACCOUNTS_PATH = '/accounts';
 export const MAILTM_TOKEN_PATH = '/token';
 export const MAILTM_MESSAGES_PATH = '/messages';
+/** Authenticated account profile (id for DELETE /accounts/{id}). */
+export const MAILTM_ME_PATH = '/me';
 
 /** Vendor email wait budget. */
 export const MAILTM_WAIT_FOR_EMAIL_MS = 120_000;

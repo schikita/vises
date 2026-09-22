@@ -11,6 +11,8 @@ export const staffApplicationFormSchema = staffTripFormSchema.extend({
     .trim()
     .min(1, APPLICATION_FORM_MESSAGES.clientEmailRequired)
     .email(APPLICATION_FORM_MESSAGES.clientEmailInvalid),
+  /** Staff create leaves null; autofill/seed own writes (DEC-004). */
+  portalFormEmail: z.string().nullable().optional(),
   status: z.string(),
   destination: z.string(),
   visaType: z.string(),

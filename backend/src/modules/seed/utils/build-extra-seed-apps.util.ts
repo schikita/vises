@@ -7,6 +7,8 @@ import {
   SEED_DESTINATIONS,
   SEED_DOC_TYPES,
   SEED_EXTRA_APP_COUNT,
+  SEED_EXTRA_PORTAL_FORM_EMAIL_DOMAIN,
+  SEED_EXTRA_PORTAL_FORM_EMAIL_LOCAL_PREFIX,
   SEED_PAYMENT_NOTES,
   SEED_RNG_SEED,
   SEED_VISA_TYPES,
@@ -56,11 +58,18 @@ export const buildExtraSeedApps = (
           ? pickSeedInt(0, 2, rng)
           : pickSeedInt(1, 4, rng);
 
+    // Post-autofill-like statuses get a distinct portal-form email; others stay null (DEC-005).
+    const portalFormEmail =
+      status === 'autofill_ok' || status === 'booked' || status === 'done'
+        ? `${SEED_EXTRA_PORTAL_FORM_EMAIL_LOCAL_PREFIX}${i + 1}@${SEED_EXTRA_PORTAL_FORM_EMAIL_DOMAIN}`
+        : null;
+
     apps.push(
       applications.create({
         id: `a-seed-${i + 1}`,
         code: `VS-${2500 + i}`,
         clientEmail: client.email,
+        portalFormEmail,
         status,
         destination: pickSeedItem(SEED_DESTINATIONS, rng),
         visaType: pickSeedItem(SEED_VISA_TYPES, rng),

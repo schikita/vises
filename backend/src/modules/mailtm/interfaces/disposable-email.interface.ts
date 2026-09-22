@@ -1,25 +1,8 @@
-import type {
-  CreateMailTmAccountResult,
-  DeleteMailTmAccountInput,
-  DeleteMailTmAccountResult,
-  ExtractMailTmOtpInput,
-  ExtractMailTmOtpResult,
-  MailTmCircuitCallOptions,
-  WaitMailTmLatestMessageInput,
-  WaitMailTmLatestMessageResult,
-} from '../types';
-
-/** Vendor-agnostic disposable inbox + OTP extraction port. */
-export interface IDisposableEmail {
-  createAccount(
-    options?: MailTmCircuitCallOptions,
-  ): Promise<CreateMailTmAccountResult>;
-  waitLatestMessage(
-    input: WaitMailTmLatestMessageInput,
-    options?: MailTmCircuitCallOptions,
-  ): Promise<WaitMailTmLatestMessageResult>;
-  extractOtp(input: ExtractMailTmOtpInput): ExtractMailTmOtpResult;
-  deleteAccount(
-    input: DeleteMailTmAccountInput,
-  ): Promise<DeleteMailTmAccountResult>;
-}
+/**
+ * @deprecated Import from `./temporary-email-provider.interface` instead.
+ * Re-exports TemporaryEmailProvider / IDisposableEmail for path compatibility.
+ */
+export type {
+  TemporaryEmailProvider,
+  IDisposableEmail,
+} from './temporary-email-provider.interface';

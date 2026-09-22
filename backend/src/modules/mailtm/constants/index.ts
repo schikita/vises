@@ -3,6 +3,7 @@ export {
   MAILTM_ACCOUNTS_PATH,
   MAILTM_TOKEN_PATH,
   MAILTM_MESSAGES_PATH,
+  MAILTM_ME_PATH,
   MAILTM_WAIT_FOR_EMAIL_MS,
   MAILTM_POLL_INTERVAL_MS,
   MAILTM_BACKOFF_INITIAL_MS,
@@ -20,4 +21,7 @@ export {
   MAILTM_CB_OPEN_MS,
   MAILTM_CIRCUIT_OPEN_REASON,
 } from './mailtm-circuit.constants';
-export { DISPOSABLE_EMAIL } from './mailtm-di.tokens';
+export {
+  TEMPORARY_EMAIL_PROVIDER,
+  DISPOSABLE_EMAIL,
+} from './mailtm-di.tokens';

@@ -1,0 +1,48 @@
+/** Workflow lifecycle statuses (aligns with backend BLS_WORKFLOW_STATUS). */
+export const BLS_WORKFLOW_STATUS = {
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING',
+  WAITING_RETRY: 'WAITING_RETRY',
+  WAITING_STAFF: 'WAITING_STAFF',
+  PAUSED: 'PAUSED',
+  AWAITING_STAFF_BOOKING: 'AWAITING_STAFF_BOOKING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+  ABANDONED: 'ABANDONED',
+} as const
+
+/** Active (non-terminal) workflow statuses. */
+export const BLS_WORKFLOW_ACTIVE_STATUSES = [
+  BLS_WORKFLOW_STATUS.PENDING,
+  BLS_WORKFLOW_STATUS.RUNNING,
+  BLS_WORKFLOW_STATUS.WAITING_RETRY,
+  BLS_WORKFLOW_STATUS.WAITING_STAFF,
+  BLS_WORKFLOW_STATUS.PAUSED,
+] as const
+
+/** Terminal workflow statuses — stop staff poll (DEC-006 / NFR-007). */
+export const BLS_WORKFLOW_TERMINAL_STATUSES = [
+  BLS_WORKFLOW_STATUS.AWAITING_STAFF_BOOKING,
+  BLS_WORKFLOW_STATUS.COMPLETED,
+  BLS_WORKFLOW_STATUS.FAILED,
+  BLS_WORKFLOW_STATUS.CANCELLED,
+  BLS_WORKFLOW_STATUS.ABANDONED,
+] as const
+
+/** Task lifecycle statuses. */
+export const BLS_WORKFLOW_TASK_STATUS = {
+  PENDING: 'PENDING',
+  READY: 'READY',
+  RUNNING: 'RUNNING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  WAITING: 'WAITING',
+  SKIPPED: 'SKIPPED',
+} as const
+
+/** Staff UI poll interval while non-terminal (DEC-006 / NFR-007). */
+export const BLS_WORKFLOW_POLL_INTERVAL_MS = 3_000
+
+/** Backend 404 detail when no workflow exists for the application. */
+export const BLS_WORKFLOW_MSG_NOT_FOUND = 'Сценарий не найден'

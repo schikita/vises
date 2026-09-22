@@ -95,6 +95,7 @@ export const ApplicationDetail = () => {
     form.setValue('status', found.status)
     form.setValue('timeline', found.timeline)
     form.setValue('documents', found.documents)
+    form.setValue('portalFormEmail', found.portalFormEmail ?? null)
     form.setValue('updatedAt', found.updatedAt)
   }, [found, form])
 
@@ -147,11 +148,17 @@ export const ApplicationDetail = () => {
   }
 
   const values = form.watch()
+  const formValues =
+    loadState === 'ready' && found
+      ? values.id === found.id && Array.isArray(values.applicants)
+        ? values
+        : found
+      : null
 
   return (
     <FormProvider {...form}>
       <ApplicationDetailRender
-        form={loadState === 'ready' && found ? values : null}
+        form={formValues}
         found={found ?? null}
         loading={loadState === 'loading'}
         saved={saved}

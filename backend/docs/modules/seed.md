@@ -23,7 +23,7 @@ If tables are empty, insert:
 - Fixed demo admin / manager / client accounts
 - Extra random managers and clients (`active` mix)
 - Settings row
-- Fixed sample applications (`a1`, `a2`, `a5`) plus many random apps across all CRM statuses
+- Fixed sample applications (`a1`, `a2`, `a5`) plus many random apps across all CRM statuses. Sample/extra rows that represent post-autofill carry a distinct `portalFormEmail` alongside `clientEmail`; never-autofilled demos leave `portalFormEmail` null.
 
 Volume knobs live in `constants/demo-seed-volume.constants.ts`. Generation is deterministic (`SEED_RNG_SEED`) so reset-demo / image rebuilds stay reproducible.
 

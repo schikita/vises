@@ -7,6 +7,8 @@ export type AppOut = {
   id: string;
   code: string;
   clientEmail: string;
+  /** Portal RegisterUser / login email; null when unset (REQ-001 / DEC-001). */
+  portalFormEmail: string | null;
   status: string;
   destination: string;
   visaType: string;

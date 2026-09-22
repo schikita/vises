@@ -1,11 +1,13 @@
 export { MailTmModule } from './mailtm.module';
 export { MailTmService } from './mailtm.service';
 export {
+  TEMPORARY_EMAIL_PROVIDER,
   DISPOSABLE_EMAIL,
   MAILTM_DOMAINS_PATH,
   MAILTM_ACCOUNTS_PATH,
   MAILTM_TOKEN_PATH,
   MAILTM_MESSAGES_PATH,
+  MAILTM_ME_PATH,
   MAILTM_WAIT_FOR_EMAIL_MS,
   MAILTM_POLL_INTERVAL_MS,
   MAILTM_BACKOFF_INITIAL_MS,
@@ -19,7 +21,7 @@ export {
   MAILTM_CB_OPEN_MS,
   MAILTM_CIRCUIT_OPEN_REASON,
 } from './constants';
-export type { IDisposableEmail } from './interfaces';
+export type { TemporaryEmailProvider, IDisposableEmail } from './interfaces';
 export type {
   MailTmAccountHandle,
   FetchMailTmJsonInput,
@@ -36,6 +38,8 @@ export type {
   ExtractMailTmOtpResult,
   DeleteMailTmAccountInput,
   DeleteMailTmAccountResult,
+  LoginMailTmAccountInput,
+  ResolveMailTmAccountResult,
   MailTmFailureClass,
   MailTmFailureClassifyInput,
   CreateMailTmClientErrorInput,

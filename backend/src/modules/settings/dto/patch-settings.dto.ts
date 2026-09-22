@@ -28,13 +28,5 @@ export class PatchSettingsDto {
 
   @IsOptional()
   @IsBoolean()
-  webshareProxyEnabled?: boolean;
-
-  @IsOptional()
-  @IsString()
-  websharePlanId?: string;
-
-  @IsOptional()
-  @IsBoolean()
   emailOtpEnabled?: boolean;
 }

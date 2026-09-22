@@ -10,6 +10,7 @@ import { StatsModule } from './modules/stats';
 import { DatabaseModule } from './modules/database/database.module';
 import { SeedModule } from './modules/seed/seed.module';
 import { PortalScrapeModule } from './modules/portal-scrape/portal-scrape.module';
+import { Proxy6Module } from './modules/proxy6';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PortalScrapeModule } from './modules/portal-scrape/portal-scrape.module
     SettingsModule,
     StatsModule,
     PortalScrapeModule,
+    Proxy6Module,
   ],
 })
 export class AppModule {}

@@ -1,5 +1,5 @@
 import type { DeleteMailTmAccountInput } from '../../mailtm';
-import type { PatchrightProxyConfig } from '../../webshare';
+import type { PatchrightProxyConfig } from '../../proxy6';
 import type {
   PortalAutofillCaptchaRestore,
   PortalAutofillPipelineCheckpointCallbacks,
@@ -20,8 +20,8 @@ export interface FillRegisterFormOptions {
    */
   capMonsterApiKey?: string;
   /**
-   * Optional Patchright context proxy (Webshare lease). When unset, direct
-   * host egress (REQ-006 / DEC-004). Never log password.
+   * Optional Patchright context proxy (Proxy6 lease). When unset, direct
+   * host egress (REQ-011 / DEC-005). Never log password.
    */
   browserProxy?: PatchrightProxyConfig;
   /**
@@ -38,6 +38,11 @@ export interface FillRegisterFormOptions {
   checkpoint?: PortalAutofillPipelineCheckpointCallbacks;
   /** Restored captcha budgets/CB on resume (DEC-003); does not skip Verified loop (DEC-005). */
   captchaRestore?: PortalAutofillCaptchaRestore;
+  /**
+   * Opt-in `#btnSubmit` + success verify for durable workflow REGISTER
+   * (DEC-019). Legacy sync POST omits this (prepare-only).
+   */
+  submitRegisterForm?: boolean;
 };
 
 export interface FillRegisterFormResult {
@@ -65,9 +70,29 @@ export interface FillRegisterFormResult {
   mailTmCircuitOpen?: boolean;
   /**
    * Soft-fail delete handle when a Mail.tm account was created post-captcha
-   * (DEC-010). Never log token.
+   * (DEC-010). Never log token. Cleared when mailbox is retained after OTP
+   * success (REQ-016 / DEC-007).
    */
   mailTmCleanup?: DeleteMailTmAccountInput;
+  /**
+   * Disposable address used as portal Email (non-secret). Present when Mail.tm
+   * account was created for the OTP path (portal-login-status-check SUB-001).
+   */
+  mailTmAddress?: string;
+  /**
+   * Mailbox password for vault retain after OTP success (REQ-016).
+   * Never log, report, or HTTP-return. Autofill clears after vault/use.
+   */
+  mailTmPassword?: string;
+  /** True when `#btnSubmit` was clicked (`submitRegisterForm` path). */
+  registerSubmitted?: boolean;
+  /** True when external RegisterUser success cues matched (DEC-019). */
+  registerSuccessVerified?: boolean;
+  /**
+   * Submit may have applied without confirmed success page →
+   * `VERIFY_THEN_REPEAT`.
+   */
+  registerSubmitAmbiguous?: boolean;
 }
 
 export type WidgetOpResult = {

@@ -43,17 +43,9 @@ export const SettingsEditFormRender = ({
     <Field label="Направления" error={errors.destinations?.message}>
       <input className="field" {...register('destinations')} />
     </Field>
-    <Field label="ID плана Webshare (необязательно)" error={errors.websharePlanId?.message}>
-      <input
-        className="field"
-        maxLength={120}
-        placeholder="Пусто = план по умолчанию в Webshare"
-        {...register('websharePlanId')}
-      />
-    </Field>
     <p className="text-xs text-muted">
-      Прокси Webshare и Mail.tm OTP включаются автоматически при наличии ключей
-      в окружении сервера (WEBSHARE_API_KEY / MAILTM_API_BASE_URL). Переключатели
+      Прокси портала (Proxy6) и Mail.tm OTP включаются автоматически при наличии
+      ключей в окружении сервера (PROXY6_API_KEY / MAILTM_API_BASE_URL). Переключатели
       на этом экране убраны.
     </p>
     <Btn type="submit">{saved ? 'Сохранено' : 'Сохранить'}</Btn>

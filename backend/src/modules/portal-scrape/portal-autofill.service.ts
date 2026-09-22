@@ -8,14 +8,15 @@ import {
   MailTmService,
 } from '../mailtm';
 import {
-  isWebshareProxyError,
+  isProxy6ApiError,
   PortalProxyLeaseService,
   type PortalProxyLease,
-  WEBSHARE_PROXY_MSG_MISCONFIGURED,
-} from '../webshare';
+  PROXY6_MSG_MISCONFIGURED,
+} from '../proxy6';
 import { Application } from '../database/entities/application.entity';
 import { PortalAutofillRun } from '../database/entities/portal-autofill-run.entity';
 import {
+  BLS_SECRET_PURPOSE,
   PORTAL_AUTOFILL_CAPTURE_STATUS,
   PORTAL_AUTOFILL_LOCK_HEARTBEAT_MS,
   PORTAL_AUTOFILL_LOCK_STALE_MS,
@@ -26,6 +27,8 @@ import {
   PORTAL_AUTOFILL_RUN_STATUS,
 } from './constants';
 import type { IPortalAutofill } from './interfaces';
+import { BlsSecretVaultService } from './bls-secret-vault.service';
+import { PortalAutofillRunPersistenceService } from './portal-autofill-run-persistence.service';
 import { PortalConfigService } from './portal-config.service';
 import { PortalDataService } from './portal-data.service';
 import { PortalFieldMapperService } from './portal-field-mapper.service';
@@ -63,6 +66,7 @@ import {
   resolveEvidenceAbsolutePath,
   resolvePortalAutofillEligibilityApplicantId,
   resolvePortalSiteOutcomeForAdapter,
+  shouldRetainMailTmMailboxAfterOtp,
   unlinkEvidenceBestEffort,
 } from './utils';
 import { buildCapMonsterNotes } from './utils/build-cap-monster-notes.util';
@@ -74,7 +78,7 @@ import { resolveUploadDir } from '../apps/utils';
  * (portal-autofill-api DEC-001 / DEC-003). CLI / map-check removed.
  * Evidence capture + persist for HTTP path (portal-autofill-screenshot-evidence).
  * Staff list-by-application (portal-autofill-evidence-ui DEC-001 / DEC-004).
- * Optional Webshare proxy lease around fill (webshare-portal-proxy DEC-003).
+ * Optional Proxy6 proxy lease around fill (proxy6-migration DEC-003/005).
  * Email OTP: arm when CapMonster key ∧ config.emailOtpEnabled ∧
  * non-empty MAILTM_API_BASE_URL (portal-email-otp-mailtm DEC-004;
  * product enable hardcoded true in portal-config).
@@ -91,7 +95,9 @@ export class PortalAutofillService implements IPortalAutofill {
     private readonly fillService: PortalFillService,
     private readonly proxyLeaseService: PortalProxyLeaseService,
     private readonly mailTm: MailTmService,
+    private readonly secretVault: BlsSecretVaultService,
     private readonly siteAdapters: PortalSiteAdapterRegistry,
+    private readonly runPersistence: PortalAutofillRunPersistenceService,
     @InjectRepository(PortalAutofillRun)
     private readonly runRepo: Repository<PortalAutofillRun>,
     @InjectRepository(Application)
@@ -109,8 +115,10 @@ export class PortalAutofillService implements IPortalAutofill {
    * Assigns managed screenshot path, persists run row, attaches `evidence` (DEC-004–008).
    * Durable early create + always-terminal persist (portal-autofill-durable-resume REQ-002 / REQ-016).
    * Checkpoint / heartbeat sinks + POST resume / supersede / live-lock 409 (REQ-003–007 / REQ-014–015).
-   * When Webshare proxying is enabled: acquire after mapping OK, release in finally.
-   * When OTP path armed: create Mail.tm account before map/fill; delete in finally.
+   * When Proxy6 proxying is enabled: acquire after mapping OK, release in finally.
+   * When OTP path armed: create Mail.tm during fill; retain after OTP success
+   * (REQ-016 / DEC-007); vault MAILTM_* when `workflowId` is set; delete only
+   * on failure / portalFormEmail persist hard-fail (terminal delete TASK-018).
    * On resume: always re-navigate; fresh Mail.tm when OTP armed; restore captcha budgets only (DEC-002/004/005).
    */
   async runForHttp(
@@ -149,8 +157,10 @@ export class PortalAutofillService implements IPortalAutofill {
     let mailTmCleanup:
       | { accountId: string; token: string }
       | undefined;
+    let mailTmPassword: string | undefined;
     let accountDeleted: boolean | undefined;
     let accountDeleteWarn: string | undefined;
+    let accountRetained = false;
 
     try {
       const config = await this.configService.load();
@@ -250,27 +260,27 @@ export class PortalAutofillService implements IPortalAutofill {
 
       this.logger.log(`${logPrefix()} decision mapping=continue_to_browser`);
 
-      if (config.webshareProxyMisconfigured) {
-        endWorkflow('error', 'failure', 'webshare_proxy_misconfigured');
+      if (config.proxy6Misconfigured) {
+        endWorkflow('error', 'failure', 'proxy6_misconfigured');
         throw new HttpException(
-          WEBSHARE_PROXY_MSG_MISCONFIGURED,
+          PROXY6_MSG_MISCONFIGURED,
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      if (config.webshareProxyEnabled) {
+      if (config.proxy6Enabled) {
         try {
           lease = await this.proxyLeaseService.acquire(config);
           this.logger.log(
-            `${logPrefix()} decision webshareProxy=leased`,
+            `${logPrefix()} decision proxy6=leased`,
           );
         } catch (err) {
-          endWorkflow('error', 'failure', 'webshare_proxy_acquire_failed');
+          endWorkflow('error', 'failure', 'proxy6_acquire_failed');
           throw this.mapProxyAcquireFailure(err);
         }
       } else {
         this.logger.log(
-          `${logPrefix()} decision webshareProxy=skipped`,
+          `${logPrefix()} decision proxy6=skipped`,
         );
       }
 
@@ -395,10 +405,143 @@ export class PortalAutofillService implements IPortalAutofill {
       if (fill.mailTmCleanup) {
         mailTmCleanup = fill.mailTmCleanup;
       }
-      const emailFromMailTm = Boolean(fill.mailTmCleanup);
+      if (fill.mailTmPassword) {
+        mailTmPassword = fill.mailTmPassword;
+      }
+      const emailFromMailTm = Boolean(fill.mailTmAddress ?? fill.mailTmCleanup);
+      const portalFormEmailToPersist = fill.mailTmAddress?.trim() ?? '';
+      const retainMailbox = shouldRetainMailTmMailboxAfterOtp(
+        fill.emailOtpOk,
+        Boolean(mailTmCleanup),
+      );
 
-      // Prefer delete before notes so soft-fail is visible; finally is backup.
-      if (mailTmCleanup) {
+      // DEC-011: durable portal-form email before mail.tm delete; persist fail ⇒ hard fail.
+      if (portalFormEmailToPersist) {
+        try {
+          await this.appsRepo.update(
+            { id: applicationId },
+            { portalFormEmail: portalFormEmailToPersist },
+          );
+          this.logger.log(
+            `${logPrefix()} stage=portal_form_email_persist success`,
+          );
+        } catch (persistErr) {
+          const persistDetail =
+            persistErr instanceof Error
+              ? persistErr.message
+              : 'portal_form_email_persist_failed';
+          this.logger.error(
+            `${logPrefix()} stage=portal_form_email_persist failure ${persistDetail}`,
+          );
+          if (mailTmCleanup) {
+            const del = await this.mailTm.deleteAccount(mailTmCleanup);
+            accountDeleted = del.ok;
+            accountDeleteWarn = del.warnMessage;
+            if (del.warnMessage) {
+              this.logger.warn(del.warnMessage);
+            }
+            mailTmCleanup = undefined;
+            mailTmPassword = undefined;
+          }
+          unlinkEvidenceBestEffort(absolutePath);
+          const hardFailReason = 'Failed to persist portal form email';
+          try {
+            await this.persistRunTerminal(runId, {
+              status: PORTAL_AUTOFILL_RUN_STATUS.FAILED,
+              captureStatus: PORTAL_AUTOFILL_CAPTURE_STATUS.CAPTURE_FAILED,
+              reportOk: false,
+              screenshotRelativePath: null,
+              errorNote: hardFailReason.slice(0, 500),
+              terminalReason: hardFailReason.slice(0, 500),
+            });
+          } catch {
+            this.logger.warn(
+              `${logPrefix()} stage=persist failed detail=portal_form_email_terminal`,
+            );
+          }
+          const failedMapping: MappingResult = {
+            ...mapping,
+            fields: fill.fields,
+            ok: false,
+            metadata: {
+              ...mapping.metadata,
+              notes: [
+                ...mapping.metadata.notes,
+                hardFailReason,
+                ...buildCapMonsterNotes(fill, config.capMonsterApiKey),
+                ...buildEmailOtpNotes({
+                  otpPathArmed,
+                  emailFromMailTm,
+                  emailOtpTouched: fill.emailOtpTouched,
+                  emailOtpAttempted: fill.emailOtpAttempted,
+                  emailOtpOk: fill.emailOtpOk,
+                  resendAttempts: fill.mailTmResendAttempts,
+                  mailTmCircuitOpen: fill.mailTmCircuitOpen,
+                  accountDeleted,
+                  accountDeleteWarn,
+                  error: fill.error,
+                }),
+              ],
+            },
+          };
+          const report = buildReport(failedMapping);
+          endWorkflow('error', 'hard_failure', hardFailReason);
+          return mapAutofillReportToHttpOutcome({
+            report,
+            mappingAborted: false,
+            browserHardFailure: true,
+          });
+        }
+      }
+
+      // REQ-016 / DEC-007: retain after OTP success; delete only on failure paths.
+      if (retainMailbox && mailTmCleanup) {
+        const workflowId = input.workflowId?.trim() ?? '';
+        if (workflowId) {
+          const passwordPlain = mailTmPassword?.trim() ?? '';
+          const tokenPlain = mailTmCleanup.token.trim();
+          if (passwordPlain && tokenPlain) {
+            try {
+              await this.secretVault.persistSecret({
+                workflowId,
+                applicationId,
+                purpose: BLS_SECRET_PURPOSE.MAILTM_PASSWORD,
+                plain: passwordPlain,
+              });
+              await this.secretVault.persistSecret({
+                workflowId,
+                applicationId,
+                purpose: BLS_SECRET_PURPOSE.MAILTM_TOKEN,
+                plain: tokenPlain,
+              });
+              this.logger.log(
+                `${logPrefix()} stage=mailtm_vault persist success`,
+              );
+            } catch (vaultErr) {
+              const vaultDetail =
+                vaultErr instanceof Error
+                  ? vaultErr.message
+                  : 'mailtm_vault_persist_failed';
+              this.logger.error(
+                `${logPrefix()} stage=mailtm_vault persist failure ${vaultDetail}`,
+              );
+            }
+          } else {
+            this.logger.warn(
+              `${logPrefix()} stage=mailtm_vault skipped reason=missing_credentials`,
+            );
+          }
+        } else {
+          this.logger.log(
+            `${logPrefix()} stage=mailtm_retain success vault=skipped_no_workflow`,
+          );
+        }
+        accountRetained = true;
+        accountDeleted = false;
+        mailTmCleanup = undefined;
+        mailTmPassword = undefined;
+      } else if (mailTmCleanup) {
+        // Failure path: prefer delete before notes so soft-fail is visible; finally is backup.
         const del = await this.mailTm.deleteAccount(mailTmCleanup);
         accountDeleted = del.ok;
         accountDeleteWarn = del.warnMessage;
@@ -406,6 +549,7 @@ export class PortalAutofillService implements IPortalAutofill {
           this.logger.warn(del.warnMessage);
         }
         mailTmCleanup = undefined;
+        mailTmPassword = undefined;
       }
 
       const emailOtpNotes = buildEmailOtpNotes({
@@ -418,6 +562,7 @@ export class PortalAutofillService implements IPortalAutofill {
         mailTmCircuitOpen: fill.mailTmCircuitOpen,
         accountDeleted,
         accountDeleteWarn,
+        accountRetained,
         error: fill.error,
       });
 
@@ -574,12 +719,14 @@ export class PortalAutofillService implements IPortalAutofill {
       if (lease) {
         await lease.release().catch(() => undefined);
       }
+      // Backup delete only when mailbox was not retained (OTP failure / early abort).
       if (mailTmCleanup) {
         const del = await this.mailTm.deleteAccount(mailTmCleanup);
         if (del.warnMessage) {
           this.logger.warn(del.warnMessage);
         }
       }
+      mailTmPassword = undefined;
     }
   }
 
@@ -993,6 +1140,7 @@ export class PortalAutofillService implements IPortalAutofill {
   /**
    * Mark a durable run terminal and release the execution lock (REQ-016).
    * Best-effort callers may `.catch` — process crash leaves `in_progress` for resume.
+   * Delegates to shared persistence (TASK-016 / DEC-012).
    */
   private async persistRunTerminal(
     runId: string,
@@ -1005,29 +1153,22 @@ export class PortalAutofillService implements IPortalAutofill {
       terminalReason?: string | null;
     },
   ): Promise<void> {
-    const updatedAt = new Date();
-    await this.runRepo.update(
-      { id: runId },
-      {
-        ...patch,
-        pipelineStage: PORTAL_AUTOFILL_PIPELINE_STAGE.TERMINAL,
-        lockOwner: null,
-        lockHeartbeatAt: null,
-        updatedAt,
-      },
-    );
+    await this.runPersistence.persistTerminal({
+      runId,
+      ...patch,
+    });
   }
 
   /** Map lease/list failures to HTTP (fail closed — never host IP). */
   private mapProxyAcquireFailure(err: unknown): HttpException {
-    if (isWebshareProxyError(err)) {
+    if (isProxy6ApiError(err)) {
       if (err.code === 'misconfigured') {
         return new HttpException(err.message, HttpStatus.BAD_REQUEST);
       }
       return new HttpException(err.message, HttpStatus.SERVICE_UNAVAILABLE);
     }
     const message =
-      err instanceof Error ? err.message : WEBSHARE_PROXY_MSG_MISCONFIGURED;
+      err instanceof Error ? err.message : PROXY6_MSG_MISCONFIGURED;
     return new HttpException(message, HttpStatus.SERVICE_UNAVAILABLE);
   }
 }

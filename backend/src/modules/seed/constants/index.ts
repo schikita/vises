@@ -10,11 +10,8 @@ export {
   SEED_DEFAULT_PRICE,
   SEED_CITIES,
   SEED_DESTINATIONS,
-  SEED_WEBSHARE_PROXY_ENABLED,
-  SEED_WEBSHARE_PLAN_ID,
   SEED_EMAIL_OTP_ENABLED,
 } from './demo-settings.constants';
-
 export {
   SEED_ADMIN_USER_ID,
   SEED_MANAGER_USER_ID,
@@ -46,3 +43,9 @@ export {
   SEED_PAYMENT_NOTES,
   SEED_APP_COMMENTS,
 } from './demo-name-pools.constants';
+
+export {
+  SEED_SAMPLE_PORTAL_FORM_EMAIL_A1,
+  SEED_EXTRA_PORTAL_FORM_EMAIL_LOCAL_PREFIX,
+  SEED_EXTRA_PORTAL_FORM_EMAIL_DOMAIN,
+} from './demo-portal-email.constants';

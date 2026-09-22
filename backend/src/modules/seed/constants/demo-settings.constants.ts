@@ -10,7 +10,4 @@ export const SEED_DESTINATIONS = [
   'Франция',
   'Италия',
 ] as const;
-/** Retained columns; effective enablement is credentials-only (DEC-002). */
-export const SEED_WEBSHARE_PROXY_ENABLED = true;
-export const SEED_WEBSHARE_PLAN_ID = '';
 export const SEED_EMAIL_OTP_ENABLED = true;

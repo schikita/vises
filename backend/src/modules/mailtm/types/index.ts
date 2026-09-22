@@ -14,6 +14,8 @@ export type {
   ExtractMailTmOtpResult,
   DeleteMailTmAccountInput,
   DeleteMailTmAccountResult,
+  LoginMailTmAccountInput,
+  ResolveMailTmAccountResult,
 } from './mailtm.types';
 export type {
   MailTmFailureClass,

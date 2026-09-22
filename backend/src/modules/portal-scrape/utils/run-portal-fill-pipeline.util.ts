@@ -54,8 +54,10 @@ import { setDateField } from './set-date-field.util';
 import { setDropdownField } from './set-dropdown-field.util';
 import { setTextField } from './set-text-field.util';
 import { clickPortalCaptchaVerifyControl } from './click-portal-captcha-verify-control.util';
+import { clickPortalRegisterSubmit } from './click-portal-register-submit.util';
 import { runPortalCaptchaVerifiedLoop } from './run-portal-captcha-verified-loop.util';
 import { summarizeFieldFillCounts } from './summarize-field-fill-counts.util';
+import { verifyPortalRegisterSuccess } from './verify-portal-register-success.util';
 
 const logger = new Logger('PortalFillPipeline');
 
@@ -78,9 +80,15 @@ export const runPortalFillPipeline = async (
   let mailTmResendAttempts = 0;
   let mailTmCircuitOpen = false;
   let mailTmCleanup: RunPortalFillPipelineResult['mailTmCleanup'];
+  let mailTmAddress: string | undefined;
+  let mailTmPassword: string | undefined;
+  let registerSubmitted = false;
+  let registerSuccessVerified = false;
+  let registerSubmitAmbiguous = false;
   const capMonsterApiKey = options.capMonsterApiKey?.trim() ?? '';
   const capMonsterEnabled = capMonsterApiKey.length > 0;
   const otpPathArmed = options.otpPathArmed === true;
+  const submitRegisterForm = options.submitRegisterForm === true;
   const logPrefix = formatPortalLogContext({
     applicationId: options.mapping.applicationId,
     applicantId: options.mapping.applicantId,
@@ -130,6 +138,11 @@ export const runPortalFillPipeline = async (
     mailTmResendAttempts: emailOtpAttempted ? mailTmResendAttempts : undefined,
     mailTmCircuitOpen: mailTmCircuitOpen || undefined,
     mailTmCleanup,
+    mailTmAddress,
+    mailTmPassword,
+    registerSubmitted: registerSubmitted || undefined,
+    registerSuccessVerified: registerSuccessVerified || undefined,
+    registerSubmitAmbiguous: registerSubmitAmbiguous || undefined,
   });
 
   for (const row of fields) {
@@ -604,7 +617,6 @@ export const runPortalFillPipeline = async (
     const mailTmCircuit = createMailTmCircuitBreaker();
 
     logger.log(`${logPrefix} phase=mailtm_create start`);
-    let mailTmAddress: string;
     let mailTmToken: string;
     try {
       const account = await mailTm.createAccount({ circuit: mailTmCircuit });
@@ -615,6 +627,7 @@ export const runPortalFillPipeline = async (
       };
       mailTmAddress = account.address;
       mailTmToken = account.token;
+      mailTmPassword = account.password;
       logger.log(`${logPrefix} phase=mailtm_create success`);
     } catch (err) {
       if (isMailTmClientError(err)) {
@@ -648,6 +661,19 @@ export const runPortalFillPipeline = async (
     }
 
     logger.log(`${logPrefix} phase=otp_email_fill start`);
+    if (!mailTmAddress) {
+      const error = 'Mail.tm address missing after create';
+      logger.error(`${logPrefix} phase=otp_email_fill failure ${error}`);
+      logHardFailure(error);
+      return {
+        ok: false,
+        error,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
     const emailFill = await fillPortalEmail(options.page, mailTmAddress);
     if (!emailFill.ok) {
       const error = emailFill.reason ?? 'Email fill failed';
@@ -901,12 +927,8 @@ export const runPortalFillPipeline = async (
       `${logPrefix} phase=otp_fill success (value masked in reports)`,
     );
 
-    // REQ-016 / CON-004 / DEC-009: prepare `#btnSubmit` click but do not submit yet.
-    // OTP phase succeeds after `#EmailOtp` fill (stop point for this feature).
-    // await options.page.evaluate((sel: string) => {
-    //   const btn = document.querySelector(sel) as HTMLButtonElement | null;
-    //   if (btn) btn.click();
-    // }, PORTAL_REGISTER_USER_SELECTORS.submitControl);
+    // Legacy path: OTP fill succeeds without `#btnSubmit` (staff sync autofill).
+    // Workflow path opts in via `submitRegisterForm` (REQ-009 / DEC-019).
   } else {
     const skipReason = !otpPathArmed
       ? 'not_armed'
@@ -916,6 +938,105 @@ export const runPortalFillPipeline = async (
     );
     logger.log(
       `${logPrefix} phase=otp_generate skipped reason=${skipReason}`,
+    );
+  }
+
+  if (submitRegisterForm) {
+    if (otpPathArmed && !emailOtpOk) {
+      const error =
+        'Email OTP required before RegisterUser submit (OTP path armed)';
+      logger.error(`${logPrefix} phase=register_submit failure ${error}`);
+      logHardFailure(error);
+      return {
+        ok: false,
+        error,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+
+    logger.log(`${logPrefix} phase=register_submit start`);
+
+    // VERIFY_THEN_REPEAT retry: already on success page → COMPLETED without re-click.
+    const alreadyOk = await verifyPortalRegisterSuccess(options.page, {
+      waitMs: 2_000,
+    });
+    if (alreadyOk.ok) {
+      registerSuccessVerified = true;
+      logger.log(
+        `${logPrefix} phase=register_submit already_verified via=${alreadyOk.via}`,
+      );
+      logger.log(`${logPrefix} phase=pipeline overall success`);
+      return {
+        ok: true,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+
+    const submitClick = await clickPortalRegisterSubmit(options.page);
+    if (!submitClick.ok) {
+      const afterMiss = await verifyPortalRegisterSuccess(options.page, {
+        waitMs: 5_000,
+      });
+      if (afterMiss.ok) {
+        registerSuccessVerified = true;
+        logger.log(
+          `${logPrefix} phase=register_submit success via=pre_nav_verify (${submitClick.error})`,
+        );
+        logger.log(`${logPrefix} phase=pipeline overall success`);
+        return {
+          ok: true,
+          fields,
+          countryCodeObserved: afterCountry ?? countryCodeObserved,
+          screenshotPath,
+          ...baseResult(),
+        };
+      }
+      registerSubmitAmbiguous = true;
+      const error =
+        submitClick.error ?? 'RegisterUser #btnSubmit click failed';
+      logger.error(`${logPrefix} phase=register_submit failure ${error}`);
+      logHardFailure(error);
+      return {
+        ok: false,
+        error,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+
+    registerSubmitted = true;
+    logger.log(
+      `${logPrefix} phase=register_submit clicked via=${submitClick.via}`,
+    );
+
+    const verified = await verifyPortalRegisterSuccess(options.page);
+    if (!verified.ok) {
+      registerSubmitAmbiguous = true;
+      const error =
+        verified.reason ?? 'RegisterUser success page not confirmed';
+      logger.error(`${logPrefix} phase=register_verify failure ${error}`);
+      logHardFailure(error);
+      return {
+        ok: false,
+        error,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+
+    registerSuccessVerified = true;
+    logger.log(
+      `${logPrefix} phase=register_verify success via=${verified.via}`,
     );
   }
 

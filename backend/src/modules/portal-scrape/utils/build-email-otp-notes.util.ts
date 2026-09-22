@@ -44,7 +44,11 @@ export const buildEmailOtpNotes = (
     notes.push('Mail.tm circuit: open (fail-fast)');
   }
 
-  if (input.accountDeleted === true) {
+  if (input.accountRetained === true) {
+    notes.push(
+      'Mail.tm account: retained until terminal cleanup (REQ-016 / DEC-007)',
+    );
+  } else if (input.accountDeleted === true) {
     notes.push('Mail.tm account: deleted');
   } else if (input.accountDeleteWarn) {
     notes.push(`Mail.tm account: delete soft-fail: ${input.accountDeleteWarn}`);

@@ -8,8 +8,6 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   defaultPrice: 180,
   cities: [...LOCKED_SUBMIT_CITIES],
   destinations: ['Испания', 'Кипр', 'Франция', 'Италия'],
-  webshareProxyEnabled: true,
-  websharePlanId: '',
   emailOtpEnabled: true,
   demoControlsEnabled: false,
 }

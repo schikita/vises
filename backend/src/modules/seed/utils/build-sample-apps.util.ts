@@ -1,6 +1,9 @@
 import type { Application } from '../../database/entities/application.entity';
 import { iso } from '../../../shared/utils';
-import { SEED_DEFAULT_PRICE } from '../constants';
+import {
+  SEED_DEFAULT_PRICE,
+  SEED_SAMPLE_PORTAL_FORM_EMAIL_A1,
+} from '../constants';
 import type { AppFactory } from '../types';
 
 /** Sample applications for empty DB / reset-demo. */
@@ -31,6 +34,8 @@ export const buildSampleApps = (applications: AppFactory): Application[] => {
       id: 'a1',
       code: 'VS-2408',
       clientEmail: 'anna@example.com',
+      // Post-autofill-like demo: distinct disposable-style portal email (REQ-003).
+      portalFormEmail: SEED_SAMPLE_PORTAL_FORM_EMAIL_A1,
       status: 'booked',
       destination: 'Испания',
       visaType: 'Туристическая',

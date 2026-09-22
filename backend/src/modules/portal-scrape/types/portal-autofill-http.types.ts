@@ -11,6 +11,13 @@ export type PortalAutofillHttpInput = {
    * Default false → resume eligible in_progress for the same application+applicant.
    */
   supersede?: boolean;
+  /**
+   * Durable BLS workflow id when REGISTER is driven by the workflow runner
+   * (REQ-016 / DEC-007). When set after OTP success, autofill vaults
+   * MAILTM_PASSWORD / MAILTM_TOKEN. Legacy sync HTTP omits this — still
+   * retains the mailbox (no delete) but does not vault.
+   */
+  workflowId?: string;
 };
 
 /**

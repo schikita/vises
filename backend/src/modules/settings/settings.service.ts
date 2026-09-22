@@ -7,22 +7,11 @@ import { settingsOut } from '../../shared/mappers';
 import type { AppEnv } from '../config';
 import { isProdNodeEnv } from '../config';
 import { SeedService } from '../seed/seed.service';
-import {
-  parseWebshareListTtlMs,
-  WEBSHARE_PROXY_MODE,
-  WebshareProxyListService,
-  type WebshareProxyRuntimeConfig,
-} from '../webshare';
 import { LOCKED_SUBMIT_CITIES, SETTINGS_SINGLETON_ID } from './constants';
 import { PatchSettingsDto } from './dto/patch-settings.dto';
 import type { ISettingsService } from './interfaces';
-import type { SettingsOut, WebshareProxiesOut } from './types';
-import {
-  isLockedSubmitCities,
-  mapWebshareErrorToRussianDetail,
-  mapWebshareProxiesOut,
-  trimOrUndefined,
-} from './utils';
+import type { SettingsOut } from './types';
+import { isLockedSubmitCities } from './utils';
 
 @Injectable()
 export class SettingsService implements ISettingsService {
@@ -30,7 +19,6 @@ export class SettingsService implements ISettingsService {
     @InjectRepository(Setting) private readonly settings: Repository<Setting>,
     private readonly seed: SeedService,
     private readonly config: ConfigService<AppEnv, true>,
-    private readonly webshareList: WebshareProxyListService,
   ) {}
 
   async get(): Promise<SettingsOut> {
@@ -52,12 +40,6 @@ export class SettingsService implements ISettingsService {
     if (body.destinations !== undefined) {
       row.destinations = body.destinations;
     }
-    if (body.webshareProxyEnabled !== undefined) {
-      row.webshareProxyEnabled = body.webshareProxyEnabled;
-    }
-    if (body.websharePlanId !== undefined) {
-      row.websharePlanId = body.websharePlanId.trim();
-    }
     if (body.emailOtpEnabled !== undefined) {
       row.emailOtpEnabled = body.emailOtpEnabled;
     }
@@ -76,31 +58,6 @@ export class SettingsService implements ISettingsService {
     return { ok: true };
   }
 
-  /** Cached Webshare proxies (masked); no network call (DEC-003). */
-  listWebshareProxies(): WebshareProxiesOut {
-    return mapWebshareProxiesOut(
-      this.webshareList.getCachedProxies(),
-      this.webshareList.getCacheFetchedAtMs(),
-    );
-  }
-
-  /** Force-refresh Webshare list; Russian-safe errors (DEC-003). */
-  async refreshWebshareProxies(): Promise<WebshareProxiesOut> {
-    try {
-      const runtime = await this.buildWebshareRuntimeConfig();
-      const proxies = await this.webshareList.getUsableProxies(runtime, true);
-      return mapWebshareProxiesOut(
-        proxies,
-        this.webshareList.getCacheFetchedAtMs(),
-      );
-    } catch (err) {
-      throw new HttpException(
-        mapWebshareErrorToRussianDetail(err),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
-
   private toOut(row: Setting): SettingsOut {
     const out = settingsOut(row, this.isDemoControlsEnabled());
     return {
@@ -117,25 +74,6 @@ export class SettingsService implements ISettingsService {
     if (isLockedSubmitCities(row.cities)) return;
     row.cities = [...LOCKED_SUBMIT_CITIES];
     await this.settings.save(row);
-  }
-
-  private async buildWebshareRuntimeConfig(): Promise<WebshareProxyRuntimeConfig> {
-    const row = await this.requireRow();
-    const webshareApiKey = trimOrUndefined(
-      this.config.get('WEBSHARE_API_KEY', { infer: true }),
-    );
-    const websharePlanId = trimOrUndefined((row.websharePlanId ?? '').trim());
-    return {
-      // DEC-002: credentials-only effective enablement for admin list/refresh.
-      webshareProxyEnabled: webshareApiKey !== undefined,
-      webshareProxyMisconfigured: false,
-      webshareApiKey,
-      webshareProxyMode: WEBSHARE_PROXY_MODE,
-      webshareListTtlMs: parseWebshareListTtlMs(
-        this.config.get('WEBSHARE_PROXY_LIST_TTL_MS', { infer: true }),
-      ),
-      websharePlanId,
-    };
   }
 
   private async requireRow(): Promise<Setting> {

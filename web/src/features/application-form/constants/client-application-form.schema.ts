@@ -7,6 +7,8 @@ export const clientApplicationFormSchema = clientTripFormSchema.extend({
   id: z.string(),
   code: z.string(),
   clientEmail: z.string(),
+  /** Client create leaves null; ignored on client screens (DEC-004). */
+  portalFormEmail: z.string().nullable().optional(),
   status: z.string(),
   category: z.string().optional(),
   submitFrom: z.string().optional(),

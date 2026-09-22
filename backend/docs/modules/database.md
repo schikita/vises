@@ -20,11 +20,15 @@ Identity for auth and ACL: `id`, `name`, `login`, `email`, `passwordHash`, `invi
 
 ### `applications` — `Application`
 
-CRM application: code, client email, status, travel/submit fields, JSON `applicants` / `documents` / `timeline` / `extras`, payment & visit fields, manager, timestamps.
+CRM application: code, `clientEmail` (CRM identity / ACL), nullable `portalFormEmail` (portal RegisterUser / login address), status, travel/submit fields, JSON `applicants` / `documents` / `timeline` / `extras`, payment & visit fields, manager, timestamps.
 
 ### `settings` — `Setting`
 
-Singleton-style row: company, default price, cities/destinations arrays, `webshareProxyEnabled`, `websharePlanId`, `emailOtpEnabled`.
+Singleton-style row: company, default price, cities/destinations arrays, `emailOtpEnabled`. Legacy proxy-provider columns are dropped on boot (`SchemaBootstrap`).
+
+### `proxy6_proxies` — `Proxy6Proxy`
+
+Proxy6 inventory + lease state: host/port/credentials, period/expiry, `active`, `in_use`, lease token/timestamps, fairness counters. See [proxy6](proxy6.md).
 
 ### `portal_autofill_runs` — `PortalAutofillRun`
 

@@ -8,6 +8,7 @@ export const appOut = (app: Application): AppOut => ({
   id: app.id,
   code: app.code,
   clientEmail: app.clientEmail,
+  portalFormEmail: app.portalFormEmail ?? null,
   status: app.status,
   destination: app.destination,
   visaType: app.visaType,

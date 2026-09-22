@@ -1,1 +1,4 @@
-export type { IDisposableEmail } from './disposable-email.interface';
+export type {
+  TemporaryEmailProvider,
+  IDisposableEmail,
+} from './temporary-email-provider.interface';

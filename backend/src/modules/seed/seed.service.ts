@@ -15,8 +15,6 @@ import {
   SEED_EXTRA_CLIENT_COUNT,
   SEED_EXTRA_MANAGER_COUNT,
   SEED_SETTINGS_ID,
-  SEED_WEBSHARE_PLAN_ID,
-  SEED_WEBSHARE_PROXY_ENABLED,
 } from './constants';
 import { buildExtraSeedApps, buildSampleApps, buildSeedUsers } from './utils';
 import type { IDemoDataSeeder } from './interfaces';
@@ -69,10 +67,7 @@ export class SeedService implements OnModuleInit, IDemoDataSeeder {
           defaultPrice: SEED_DEFAULT_PRICE,
           cities: [...SEED_CITIES],
           destinations: [...SEED_DESTINATIONS],
-          webshareProxyEnabled: SEED_WEBSHARE_PROXY_ENABLED,
-          websharePlanId: SEED_WEBSHARE_PLAN_ID,
-          emailOtpEnabled: SEED_EMAIL_OTP_ENABLED,
-        }),
+          emailOtpEnabled: SEED_EMAIL_OTP_ENABLED,        }),
       );
       this.logger.log('Seeded settings id=1');
     }

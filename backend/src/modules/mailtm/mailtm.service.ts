@@ -7,12 +7,13 @@ import type { AppEnv } from '../config';
 import {
   MAILTM_ACCOUNTS_PATH,
   MAILTM_DOMAINS_PATH,
+  MAILTM_ME_PATH,
   MAILTM_MESSAGES_PATH,
   MAILTM_POLL_INTERVAL_MS,
   MAILTM_TOKEN_PATH,
   MAILTM_WAIT_FOR_EMAIL_MS,
 } from './constants';
-import type { IDisposableEmail } from './interfaces';
+import type { TemporaryEmailProvider } from './interfaces';
 import type {
   CreateMailTmAccountResult,
   DeleteMailTmAccountInput,
@@ -21,11 +22,13 @@ import type {
   ExtractMailTmOtpResult,
   FetchMailTmJsonInput,
   FetchMailTmJsonResult,
+  LoginMailTmAccountInput,
   MailTmCircuitCallOptions,
   MailTmFailureClassifyInput,
   MailTmHydraCollection,
   MailTmMessageDetail,
   MailTmMessagesCollection,
+  ResolveMailTmAccountResult,
   WaitMailTmLatestMessageInput,
   WaitMailTmLatestMessageResult,
 } from './types';
@@ -43,12 +46,13 @@ import { pickMailTmDomain } from './utils/pick-mailtm-domain.util';
 import { pickMailTmNewestMessage } from './utils/pick-mailtm-newest-message.util';
 
 /**
- * Mail.tm disposable inbox + OTP client (HttpModule / axios).
+ * Mail.tm TemporaryEmailProvider adapter (HttpModule / axios).
  * Attribution: https://mail.tm
  * Protected create/wait accept optional run-scoped CB (DEC-002); delete is exempt.
+ * Callers retain after OTP success and vault password/token (REQ-016 / DEC-007).
  */
 @Injectable()
-export class MailTmService implements IDisposableEmail {
+export class MailTmService implements TemporaryEmailProvider {
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService<AppEnv, true>,
@@ -56,7 +60,7 @@ export class MailTmService implements IDisposableEmail {
 
   /**
    * Create a Mail.tm account and obtain a Bearer token.
-   * Password is used only transiently and is not returned on the handle.
+   * Returns password on the handle for vault retain only — never log it.
    * When `options.circuit` is set, asserts the breaker before any HTTP.
    */
   async createAccount(
@@ -162,6 +166,7 @@ export class MailTmService implements IDisposableEmail {
       id,
       address: createdAddress,
       token,
+      password,
     };
   }
 
@@ -300,6 +305,125 @@ export class MailTmService implements IDisposableEmail {
 
   extractOtp(input: ExtractMailTmOtpInput): ExtractMailTmOtpResult {
     return extractMailTmOtp(input);
+  }
+
+  /**
+   * Soft-fail re-auth for terminal cleanup (REQ-016).
+   * Returns account id + Bearer token. Never throws; never logs secrets.
+   * Not gated by CB (same exemption as delete).
+   */
+  async loginAccount(
+    input: LoginMailTmAccountInput,
+  ): Promise<ResolveMailTmAccountResult> {
+    const address = input.address.trim().toLowerCase();
+    const password = input.password.trim();
+    if (!address || !password) {
+      return {
+        ok: false,
+        warnMessage: formatMailTmError(
+          'login account',
+          new Error('missing address or password'),
+        ),
+      };
+    }
+    const redactSecrets = [password];
+    try {
+      const tokenRes = await this.requestJson({
+        method: 'POST',
+        path: MAILTM_TOKEN_PATH,
+        body: { address, password },
+        remainingMs: 30_000,
+        redactSecrets,
+      });
+      if (!tokenRes.ok) {
+        return {
+          ok: false,
+          warnMessage: formatMailTmError(
+            'login account',
+            new Error(`HTTP ${tokenRes.status}`),
+            redactSecrets,
+          ),
+        };
+      }
+      const tokenBody = tokenRes.data as
+        | { token?: string; id?: string }
+        | undefined;
+      const token = tokenBody?.token?.trim() ?? '';
+      const accountId = tokenBody?.id?.trim() ?? '';
+      if (!token || !accountId) {
+        return {
+          ok: false,
+          warnMessage: formatMailTmError(
+            'login account',
+            new Error('token response missing id or token'),
+            redactSecrets,
+          ),
+        };
+      }
+      return { ok: true, accountId, token };
+    } catch (err) {
+      return {
+        ok: false,
+        warnMessage: formatMailTmError('login account', err, redactSecrets),
+      };
+    }
+  }
+
+  /**
+   * Soft-fail GET /me to resolve account id from a vaulted Bearer token.
+   * Never throws; never includes token in warnMessage.
+   */
+  async resolveAccountIdFromToken(
+    token: string,
+  ): Promise<ResolveMailTmAccountResult> {
+    const trimmed = token.trim();
+    if (!trimmed) {
+      return {
+        ok: false,
+        warnMessage: formatMailTmError(
+          'resolve account',
+          new Error('missing token'),
+        ),
+      };
+    }
+    const redactSecrets = [trimmed];
+    try {
+      const res = await this.requestJson({
+        method: 'GET',
+        path: MAILTM_ME_PATH,
+        token: trimmed,
+        remainingMs: 30_000,
+        redactSecrets,
+      });
+      if (!res.ok) {
+        return {
+          ok: false,
+          warnMessage: formatMailTmError(
+            'resolve account',
+            new Error(`HTTP ${res.status}`),
+            redactSecrets,
+          ),
+        };
+      }
+      const body = res.data as { id?: string } | undefined;
+      const accountId = body?.id?.trim() ?? '';
+      if (!accountId) {
+        return {
+          ok: false,
+          warnMessage: formatMailTmError(
+            'resolve account',
+            new Error('me response missing account id'),
+            redactSecrets,
+          ),
+        };
+      }
+      return { ok: true, accountId, token: trimmed };
+    } catch (err) {
+      return {
+        ok: false,
+        warnMessage: formatMailTmError('resolve account', err, redactSecrets),
+      };
+    }
   }
 
   /**

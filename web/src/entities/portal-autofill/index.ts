@@ -38,4 +38,6 @@ export {
   portalClientSendLabel,
   portalSiteOutcomeLabel,
   formatPortalFillSummaryRu,
+  formatPortalAutofillFailureReason,
+  isPortalAutofillCaptchaOpsRelevant,
 } from './utils'

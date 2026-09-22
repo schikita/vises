@@ -15,3 +15,5 @@ export { isPortalAutofillActionEligible } from './is-portal-autofill-action-elig
 export { portalClientSendLabel } from './portal-client-send-label.util'
 export { portalSiteOutcomeLabel } from './portal-site-outcome-label.util'
 export { formatPortalFillSummaryRu } from './format-portal-fill-summary-ru.util'
+export { formatPortalAutofillFailureReason } from './format-portal-autofill-failure-reason.util'
+export { isPortalAutofillCaptchaOpsRelevant } from './is-portal-autofill-captcha-ops-relevant.util'

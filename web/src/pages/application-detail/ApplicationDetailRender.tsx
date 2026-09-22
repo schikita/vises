@@ -4,6 +4,7 @@ import type {
   UseFormWatch,
 } from 'react-hook-form'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Trash2, Upload } from 'lucide-react'
 import type { Application, DocType } from '@/entities/application'
 import {
@@ -20,6 +21,7 @@ import {
   SUBMIT_COUNTRIES,
 } from '@/features/application-form'
 import { Avatar, Btn, Card, Empty, Field, StatusBadge } from '@/shared/ui'
+import { BlsWorkflowPanel } from '@/widgets/bls-workflow-panel'
 import { PortalAutofillEvidenceSection } from '@/widgets/portal-autofill-evidence'
 import { formatDateTime } from '@/shared/lib'
 import { APPLICATION_DETAIL_TABS } from './constants'
@@ -70,6 +72,8 @@ export const ApplicationDetailRender = ({
   onUpload,
   onOpenDoc,
 }: ApplicationDetailRenderProps) => {
+  const { t } = useTranslation()
+
   if (loading) {
     return <Empty title="Загрузка…" text="Открываем заявку." />
   }
@@ -86,6 +90,7 @@ export const ApplicationDetailRender = ({
   const paymentAmount = watch('paymentAmount')
   const submitCountry = watch('submitCountry')
   const submitCity = watch('submitCity')
+  const portalFormEmail = (form.portalFormEmail ?? '').trim()
 
   return (
     <div>
@@ -114,6 +119,17 @@ export const ApplicationDetailRender = ({
               <h1 className="text-xl font-extrabold">{name}</h1>
               <p className="mt-1 text-sm text-muted">
                 {form.code} · {form.destination} · {form.visaType}
+              </p>
+              <p className="mt-2 text-sm">
+                <span className="font-semibold text-muted">
+                  {t('applicationDetail.fields.portalFormEmail')}:{' '}
+                </span>
+                <span className={portalFormEmail ? 'font-semibold text-ink' : 'text-muted'}>
+                  {portalFormEmail || t('applicationDetail.fields.portalFormEmailEmpty')}
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                {t('applicationDetail.fields.portalFormEmailHint')}
               </p>
             </div>
           </div>
@@ -401,6 +417,7 @@ export const ApplicationDetailRender = ({
 
       {activeTab === 'autofill' ? (
         <div role="tabpanel">
+          <BlsWorkflowPanel applicationId={form.id} />
           <PortalAutofillEvidenceSection
             applicationId={form.id}
             applicants={form.applicants}

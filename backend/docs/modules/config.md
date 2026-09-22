@@ -46,10 +46,15 @@ Samples: `.env.dev.example` / `.env.prod.example` / `.env.dev.local.example` (co
 | `UPLOAD_DIR` | Application document uploads |
 | `VISES_PORTAL_BASE_URL` | Portal origin |
 | `VISES_PORTAL_REGISTER_PATH` | RegisterUser path |
+| `VISES_PORTAL_LOGIN_PATH` | Portal login path (e.g. `/Global/account/login`) |
 | `CAPMONSTER_API_KEY` | Captcha |
-| `WEBSHARE_API_KEY` | Proxies |
-| `WEBSHARE_PROXY_LIST_TTL_MS` | Proxy list cache TTL (empty → default ms) |
+| `PROXY6_API_KEY` | Portal Proxy6 lease (empty → direct browser) |
 | `MAILTM_API_BASE_URL` | Mail.tm API origin |
+| `VISES_SECRETS_MASTER_KEY` | BLS vault master key (DEC-005): empty **or** base64 of exactly 32 bytes; empty ⇒ crypto fail-closed at use (503). Samples leave blank — never commit a real key |
 | `LOG_DIR` | Winston log root (required non-empty) |
 
 Application code should use `ConfigService`, not raw `process.env`.
+
+Generate a local key (do not commit):  
+`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`  
+Operator details: [portal-scrape](portal-scrape.md) (durable BLS workflow).

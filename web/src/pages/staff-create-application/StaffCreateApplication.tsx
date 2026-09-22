@@ -78,6 +78,7 @@ export const StaffCreateApplication = () => {
     const next: Application = {
       ...values,
       clientEmail: clientIdentity,
+      portalFormEmail: null,
       status: 'new',
       updatedAt: nowIso(),
       timeline: [

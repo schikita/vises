@@ -4,7 +4,7 @@ import { Btn, Card } from '@/shared/ui'
 type SettingsRenderProps = {
   isAdmin: boolean
   settingsForm: ReactNode
-  websharePanel: ReactNode
+  proxy6Panel: ReactNode
   error: string
   settingsCompany: string
   settingsCities: string[]
@@ -15,7 +15,7 @@ type SettingsRenderProps = {
 export const SettingsRender = ({
   isAdmin,
   settingsForm,
-  websharePanel,
+  proxy6Panel,
   error,
   settingsCompany,
   settingsCities,
@@ -38,9 +38,7 @@ export const SettingsRender = ({
       </Card>
     )}
 
-    {isAdmin && websharePanel ? (
-      <Card className="mt-5 space-y-3">{websharePanel}</Card>
-    ) : null}
+    {proxy6Panel}
 
     {isAdmin && demoControlsEnabled ? (
       <Card className="mt-5 space-y-3">

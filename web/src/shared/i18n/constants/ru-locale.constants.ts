@@ -1,5 +1,13 @@
 /** Russian UI strings for staff create + ApplicantFields (DEC-004). */
 export const RU_LOCALE = {
+  applicationDetail: {
+    fields: {
+      portalFormEmail: 'Email на портале',
+      portalFormEmailEmpty: 'не задан',
+      portalFormEmailHint:
+        'Адрес, введённый в анкете портала (логин). Заполняется после автозаполнения с disposable-почтой.',
+    },
+  },
   staffCreate: {
     backToApps: 'К заявкам',
     title: 'Создать заявку',

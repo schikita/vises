@@ -11,6 +11,8 @@ export const applicationDetailFormSchema = z.object({
   id: z.string(),
   code: z.string(),
   clientEmail: z.string(),
+  /** Read-only on detail; ignored on upsert write (DEC-004). */
+  portalFormEmail: z.string().nullable().optional(),
   status: z.string(),
   destination: z.string(),
   visaType: z.string(),

@@ -1,5 +1,7 @@
 import {
+  formatPortalAutofillFailureReason,
   formatPortalFillSummaryRu,
+  isPortalAutofillCaptchaOpsRelevant,
   listPortalPassedPipelineStageLabels,
   portalCaptchaCbStateLabel,
   portalPipelineStageLabel,
@@ -11,14 +13,21 @@ type PortalAutofillRunOpsStatusProps = {
   run: PortalAutofillRunListItem
 }
 
-export const PortalAutofillRunOpsStatus = ({ run }: PortalAutofillRunOpsStatusProps) => {
-  const passed = listPortalPassedPipelineStageLabels(run.pipelineStage)
-  const stopLabel =
-    run.status === 'in_progress'
+export const PortalAutofillRunOpsStatus = ({
+  run,
+}: PortalAutofillRunOpsStatusProps) => {
+  const isLive = run.status === 'in_progress'
+  const failureRaw = run.terminalReason ?? run.errorNote
+  const failureReason =
+    !isLive && failureRaw ? formatPortalAutofillFailureReason(failureRaw) : null
+  const showCaptcha = isPortalAutofillCaptchaOpsRelevant(run)
+  const stageLabel =
+    run.pipelineStage && run.pipelineStage !== 'terminal'
       ? portalPipelineStageLabel(run.pipelineStage)
-      : run.terminalReason
-        ? run.terminalReason
-        : portalPipelineStageLabel(run.pipelineStage)
+      : null
+  const passed = isLive
+    ? listPortalPassedPipelineStageLabels(run.pipelineStage)
+    : []
 
   return (
     <div className="mt-2 space-y-1 border-t border-line pt-2 text-sm">
@@ -26,32 +35,45 @@ export const PortalAutofillRunOpsStatus = ({ run }: PortalAutofillRunOpsStatusPr
         <span className="text-muted">Статус запуска: </span>
         <span className="font-semibold">{portalRunStatusLabel(run.status)}</span>
       </p>
-      <p>
-        <span className="text-muted">Текущий этап: </span>
-        <span className="font-semibold">{portalPipelineStageLabel(run.pipelineStage)}</span>
-      </p>
-      {passed.length > 0 ? (
-        <p className="text-xs text-muted">Пройдено: {passed.join(' → ')}</p>
+
+      {isLive ? (
+        <>
+          <p>
+            <span className="text-muted">Текущий этап: </span>
+            <span className="font-semibold">
+              {portalPipelineStageLabel(run.pipelineStage)}
+            </span>
+          </p>
+          {passed.length > 0 ? (
+            <p className="text-xs text-muted">Пройдено: {passed.join(' → ')}</p>
+          ) : null}
+        </>
       ) : null}
-      {run.status !== 'in_progress' && (run.terminalReason || run.pipelineStage) ? (
+
+      {!isLive && stageLabel ? (
         <p>
-          <span className="text-muted">Остановка: </span>
-          <span className="font-semibold">{stopLabel}</span>
+          <span className="text-muted">Остановка на этапе: </span>
+          <span className="font-semibold">{stageLabel}</span>
         </p>
       ) : null}
-      {run.terminalReason ? (
-        <p className="text-xs font-semibold text-clay">Причина: {run.terminalReason}</p>
+
+      {failureReason ? (
+        <p className="text-sm font-semibold text-clay">{failureReason}</p>
       ) : null}
+
       {run.fieldProgressSummary ? (
         <p className="text-xs text-muted">
           {formatPortalFillSummaryRu(run.fieldProgressSummary)}
         </p>
       ) : null}
-      <p className="text-xs text-muted">
-        Капча CB: {portalCaptchaCbStateLabel(run.captcha.cbState)}
-        {run.captcha.permanentFailed ? ' · постоянный сбой CapMonster' : ''}
-        {run.captcha.budgetExhausted ? ' · бюджет Verified исчерпан' : ''}
-      </p>
+
+      {showCaptcha ? (
+        <p className="text-xs text-muted">
+          Капча CB: {portalCaptchaCbStateLabel(run.captcha.cbState)}
+          {run.captcha.permanentFailed ? ' · постоянный сбой CapMonster' : ''}
+          {run.captcha.budgetExhausted ? ' · бюджет Verified исчерпан' : ''}
+        </p>
+      ) : null}
     </div>
   )
 }

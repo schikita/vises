@@ -137,7 +137,7 @@ export const PortalAutofillEvidenceSection = ({
         supersede ? { supersede: true } : undefined,
       )
       setRunFeedback(formatRunFeedback(result))
-      setRunFeedbackIsError(!result.report)
+      setRunFeedbackIsError(result.httpStatus !== 200 || result.report?.ok === false)
 
       const crm = resolveCrmStatusAfterPortalAutofill(result)
       if (crm != null) {

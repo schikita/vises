@@ -27,6 +27,11 @@ export type BuildEmailOtpNotesInput = {
   accountDeleted?: boolean;
   /** Soft-fail delete detail (no token/password). */
   accountDeleteWarn?: string;
+  /**
+   * True when mailbox was retained after OTP success (REQ-016 / DEC-007).
+   * Mutually exclusive with a successful delete on the same run.
+   */
+  accountRetained?: boolean;
   /** Fill/pipeline error when OTP phase failed (safe message only). */
   error?: string;
 };

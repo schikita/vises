@@ -5,3 +5,4 @@ export type { IPortalFieldMapper } from './portal-field-mapper.interface';
 export type { IPortalFormFiller } from './portal-form-filler.interface';
 export type { IPortalSiteAdapter } from './portal-site-adapter.interface';
 export type { IPortalSiteAdapterRegistry } from './portal-site-adapter-registry.interface';
+export type { IBlsWorkflowTaskExecutor } from './bls-workflow-task-executor.interface';

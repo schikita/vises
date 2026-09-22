@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
+/** AES-256 master key length for VISES_SECRETS_MASTER_KEY (DEC-005). */
+const SECRETS_MASTER_KEY_BYTES = 32;
+
 /**
- * Full backend env bag validated at Nest boot (ConfigModule.validate).
+ * Full backend env bag validated at Nest ConfigModule boot (ConfigModule.validate).
  * Keys must be present (may be empty string where operators fill later).
  */
 export const appEnvSchema = z.object({
@@ -15,18 +18,37 @@ export const appEnvSchema = z.object({
   UPLOAD_DIR: z.string(),
   VISES_PORTAL_BASE_URL: z.string(),
   VISES_PORTAL_REGISTER_PATH: z.string(),
+  /** Portal login path (DEC-009 / REQ-006); empty/whitespace fails at URL resolve. */
+  VISES_PORTAL_LOGIN_PATH: z.string(),
   CAPMONSTER_API_KEY: z.string(),
-  WEBSHARE_API_KEY: z.string(),
   /**
-   * Empty ⇒ default 60000 ms. List cache TTL: when elapsed (or plan/key
-   * changes / free pool empty), refresh usable proxy inventory from Webshare.
+   * Proxy6 API key (https://px6.link/api/{key}/…). Empty ⇒ portal proxy leasing
+   * disabled (direct browser egress). Non-empty trimmed ⇒ leasing enabled (REQ-022).
+   * No buy period/country defaults in env (CON-009). No list TTL env (DEC-007).
    */
-  WEBSHARE_PROXY_LIST_TTL_MS: z.string(),
+  PROXY6_API_KEY: z.string(),
   /**
    * Mail.tm API origin (e.g. https://api.mail.tm). Required non-empty when
    * Settings email OTP is armed; empty is allowed at boot.
    */
   MAILTM_API_BASE_URL: z.string(),
+  /**
+   * Envelope encryption master key (DEC-005 / REQ-014): base64 of exactly 32 bytes.
+   * Empty allowed at boot (crypto unused); encrypt/decrypt fail-closed with 503.
+   * Non-empty invalid length fails ConfigModule validation (never log the value).
+   */
+  VISES_SECRETS_MASTER_KEY: z.string().refine(
+    (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return true;
+      }
+      return Buffer.from(trimmed, 'base64').length === SECRETS_MASTER_KEY_BYTES;
+    },
+    {
+      message: `must be empty or base64-encoded ${SECRETS_MASTER_KEY_BYTES} bytes`,
+    },
+  ),
   /**
    * Root directory for Winston level folders (common/error/warn/info).
    * Required non-empty; created at logger init or boot fails.

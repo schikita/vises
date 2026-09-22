@@ -12,7 +12,10 @@ export type PortalRegisterUserSelectors = {
   verifiedControl: string;
   /** Request email OTP (REQ-005). */
   generateControl: string;
-  /** Registration submit — prepared but commented out at call site (REQ-009). */
+  /**
+   * Registration submit — clicked only when `submitRegisterForm` is opted in
+   * (REQ-009 / DEC-019). Legacy autofill leaves this unclicked.
+   */
   submitControl: string;
   /** Resend OTP — not clicked on happy path (REQ-010 / DEC-006). */
   regenerateControl: string;

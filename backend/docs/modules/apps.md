@@ -17,7 +17,7 @@
 | Interface | `interfaces/apps.service.interface.ts` | `IAppsService` |
 
 **Depends on:** `AuthModule`, `UsersModule`, `PortalScrapeModule` (client-safe `portalProgress` embed), `Application` + `User` entities.  
-**Related HTTP:** Portal autofill routes also live under `/api/apps/...` but belong to [portal-scrape](portal-scrape.md).
+**Related HTTP:** Portal autofill and login-prep routes also live under `/api/apps/...` but belong to [portal-scrape](portal-scrape.md).
 
 ## Application statuses
 
@@ -38,10 +38,10 @@ All routes require **JWT**. Delete requires **admin or manager**.
 
 ### `POST /api/apps` body (`UpsertAppDto`)
 
-Optional fields include: `id`, `code`, `clientEmail`, `status`, travel/submit fields, `applicants`, `documents`, payment/visit fields, `manager`, `timeline`, `category`, `paused`, `transfer`, `submitFrom` / `submitTo`, plus ignored-on-write `createdAt` / `updatedAt` for SPA full-object upserts.
+Optional fields include: `id`, `code`, `clientEmail`, `status`, travel/submit fields, `applicants`, `documents`, payment/visit fields, `manager`, `timeline`, `category`, `paused`, `transfer`, `submitFrom` / `submitTo`, plus ignored-on-write `createdAt` / `updatedAt` / `portalFormEmail` for SPA full-object upserts (`portalFormEmail` is written only by autofill/seed).
 
 ### Response shapes
 
-**`AppOut`:** application CRM fields in camelCase (`id`, `code`, `clientEmail`, `status`, applicants/documents JSON, payment, visit, manager, timeline, extras-derived flags, timestamps), plus additive **`portalProgress`** (client-safe portal send/fill/site-outcome projection — see [portal-scrape](portal-scrape.md)).
+**`AppOut`:** application CRM fields in camelCase (`id`, `code`, `clientEmail`, `portalFormEmail` | null, `status`, applicants/documents JSON, payment, visit, manager, timeline, extras-derived flags, timestamps), plus additive **`portalProgress`** (client-safe portal send/fill/site-outcome projection — see [portal-scrape](portal-scrape.md)).
 
 **`UpsertAppResult`:** `AppOut` plus optional `issuedClientAccess` (`UserCredentialsOut`) when staff upsert mints a new client account.

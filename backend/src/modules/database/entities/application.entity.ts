@@ -11,6 +11,15 @@ export class Application {
   @Column({ name: 'client_email', type: 'varchar', length: 200 })
   clientEmail!: string;
 
+  /** Disposable / portal RegisterUser email; null when never set (legacy rows). */
+  @Column({
+    name: 'portal_form_email',
+    type: 'varchar',
+    length: 200,
+    nullable: true,
+  })
+  portalFormEmail!: string | null;
+
   @Column({ type: 'varchar', length: 20, default: 'new' })
   status!: string;
 

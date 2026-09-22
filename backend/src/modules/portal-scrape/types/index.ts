@@ -21,6 +21,7 @@ export type {
   RunPortalFillPipelineOptions,
   RunPortalFillPipelineResult,
 } from './portal-fill-pipeline.types';
+export type { PortalRegisterSuccessVerifyResult } from './portal-register-success.types';
 export type { DetectBlockingPageOptions } from './portal-page-guards.types';
 export type {
   PortalAutofillHttpInput,
@@ -31,6 +32,11 @@ export type {
   PortalAutofillRunListItem,
   PortalAutofillRunListResponse,
 } from './portal-autofill-run-list.types';
+export type {
+  EnsureWorkflowLinkedAutofillRunInput,
+  EnsureWorkflowLinkedAutofillRunResult,
+  PersistPortalAutofillRunTerminalInput,
+} from './portal-autofill-run-persistence.types';
 export type { PortalFieldProgressSummary } from './portal-field-progress-summary.types';
 export type { PortalAutofillCaptchaSummary } from './portal-autofill-captcha-summary.types';
 export type {
@@ -79,6 +85,10 @@ export type {
   ApplyBlsAnswerInPageResult,
 } from './portal-captcha.types';
 export type { PortalRegisterUserSelectors } from './portal-register-user-selectors.types';
+export type { PortalLoginSelectors } from './portal-login-selectors.types';
+export type { DiscoverLoginEmailControlResult } from './discover-login-email-control.types';
+export type { DiscoverLoginPasswordControlResult } from './discover-login-password-control.types';
+export type { PortalLoginAuthVerifyResult } from './portal-login-auth.types';
 export type {
   CapMonsterCircuitState,
   CapMonsterCircuitBreaker,
@@ -107,8 +117,111 @@ export type {
   PortalAutofillResumeEligibilityInput,
 } from './portal-autofill-run-lifecycle.types';
 export type {
+  BlsWorkflowStatus,
+  BlsWorkflowStepKey,
+  BlsWorkflowStepStatus,
+  BlsWorkflowTaskStatus,
+  BlsWorkflowAttemptOutcome,
+  BlsWorkflowErrorClass,
+  BlsSecretPurpose,
+} from './bls-workflow.types';
+export type {
+  BlsWorkflowTaskDraft,
+  BlsWorkflowStepDraft,
+  BlsWorkflowGraphDraft,
+  BlsWorkflowGraph,
+  BlsWorkflowAdvancePlan,
+  BlsWorkflowStepCursorRow,
+  BlsWorkflowTaskCursorRow,
+  CreateBlsWorkflowInput,
+  AdvanceBlsWorkflowInput,
+  SkipBlsWorkflowStepInput,
+  FailBlsWorkflowTaskInput,
+  AbandonBlsWorkflowInput,
+} from './bls-workflow-graph.types';
+export type {
+  BlsWorkflowStepOut,
+  BlsWorkflowTaskOut,
+  BlsWorkflowOut,
+  BlsWorkflowEventOut,
+  BlsWorkflowEventsOut,
+  AppendBlsWorkflowEventInput,
+  ListBlsWorkflowEventsInput,
+  StartBlsWorkflowBody,
+  StartBlsWorkflowOut,
+  RetryBlsWorkflowBody,
+  BlsWorkflowControlOut,
+  RetryBlsWorkflowInput,
+  BlsWorkflowControlInput,
+  BlsWorkflowManualRetryTaskRow,
+} from './bls-workflow-api.types';
+export type {
+  BlsWorkflowTerminalCleanupInput,
+  BlsWorkflowTerminalCleanupResult,
+  BlsWorkflowEventsRetentionPurgeResult,
+} from './bls-workflow-terminal-cleanup.types';
+export type {
+  BlsWorkflowLockErrorCode,
+  CreateBlsWorkflowLockErrorInput,
+  BlsWorkflowLockError,
+  BlsWorkflowLockLease,
+  AcquireBlsWorkflowLockInput,
+  BlsWorkflowLockOwnerInput,
+  ClaimDueBlsWorkflowInput,
+  RecordBlsWorkflowAttemptInput,
+  RecordBlsWorkflowAttemptResult,
+} from './bls-workflow-lock.types';
+export type {
+  BlsWorkflowTaskExecutorInput,
+  BlsWorkflowTaskExecutorSuccess,
+  BlsWorkflowTaskExecutorSkipped,
+  BlsWorkflowTaskExecutorFailure,
+  BlsWorkflowTaskExecutorResult,
+} from './bls-workflow-runner.types';
+export type {
+  SecretEnvelope,
+  PersistBlsSecretInput,
+  LoadBlsSecretInput,
+} from './secret-envelope.types';
+export type {
   PortalAutofillCheckpointPatch,
   PortalAutofillCaptchaRestore,
   PortalCaptchaVerifiedLoopCheckpointSnapshot,
   PortalAutofillPipelineCheckpointCallbacks,
 } from './portal-autofill-checkpoint.types';
+export type {
+  FillPortalLoginPrepOptions,
+  FillPortalLoginPrepResult,
+  PortalLoginPrepHttpOutcome,
+  PortalLoginPrepReport,
+  RunPortalLoginPrepPipelineOptions,
+  RunPortalLoginPrepPipelineResult,
+} from './portal-login-prep.types';
+export type { PortalPasswordChangeSelectors } from './portal-password-change-selectors.types';
+export type {
+  FillPortalPasswordChangeOptions,
+  FillPortalPasswordChangeResult,
+  PortalPasswordChangeFormVisibleResult,
+  PortalPasswordChangeVerifyResult,
+  RunPortalPasswordChangePipelineOptions,
+  RunPortalPasswordChangePipelineResult,
+} from './portal-password-change.types';
+export type { BlsApplicantPortalStatus } from './bls-applicant-portal-status.types';
+export type { PortalStatusSelectors } from './portal-status-selectors.types';
+export type {
+  PortalApplicantStatusRow,
+  PortalStatusApplicantMatchHint,
+  RunPortalStatusValidatePipelineOptions,
+  RunPortalStatusValidatePipelineResult,
+  FillPortalStatusValidateOptions,
+  FillPortalStatusValidateResult,
+} from './portal-status.types';
+export type { PortalBookingSelectors } from './portal-booking-selectors.types';
+export type {
+  PortalBookingPrefillHint,
+  PortalBookingPrefillOutcome,
+  RunPortalBookingSafeStopPipelineOptions,
+  RunPortalBookingSafeStopPipelineResult,
+  FillPortalBookingSafeStopOptions,
+  FillPortalBookingSafeStopResult,
+} from './portal-booking.types';

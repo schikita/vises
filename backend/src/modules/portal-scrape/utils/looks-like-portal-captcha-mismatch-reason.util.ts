@@ -1,6 +1,9 @@
 /**
  * Heuristic: terminal reason looks like a portal captcha / Verified mismatch
  * (REQ-011c) without requiring CapMonster permanent failure.
+ *
+ * Do not match bare "bls" — portal hostnames like `blsspainbelarus.by` appear in
+ * navigation timeouts and produced false captcha-retry button labels.
  */
 export const looksLikePortalCaptchaMismatchReason = (
   terminalReason: string | null | undefined,
@@ -12,6 +15,6 @@ export const looksLikePortalCaptchaMismatchReason = (
   return (
     lower.includes('verified') ||
     lower.includes('captcha') ||
-    lower.includes('bls')
+    lower.includes('capmonster')
   );
 };

@@ -5,7 +5,4 @@ export const settingsEditFormSchema = z.object({
   company: z.string(),
   price: z.string(),
   destinations: z.string(),
-  websharePlanId: z
-    .string()
-    .max(120, 'Не более 120 символов'),
 })

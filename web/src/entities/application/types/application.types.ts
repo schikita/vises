@@ -69,6 +69,8 @@ export type Application = {
   id: string
   code: string
   clientEmail: string
+  /** Portal RegisterUser / login email; null when unset (DEC-004). */
+  portalFormEmail: string | null
   status: Status
   destination: string
   visaType: string
