@@ -80,6 +80,7 @@ export const RU_LOCALE = {
       passportIssued: 'Дата выдачи',
       passportExpires: 'Действителен до',
       passportIssuedBy: 'Кем выдан',
+      passportIssueCountry: 'Страна выдачи паспорта',
       email: 'Email',
       phone: 'Телефон',
       address: 'Домашний адрес',
@@ -113,10 +114,21 @@ export const RU_LOCALE = {
         Separated: 'Раздельно',
       },
       passportType: {
-        'Ordinary passport': 'Обычный паспорт',
-        'Diplomatic passport': 'Дипломатический паспорт',
-        'Service passport': 'Служебный паспорт',
-        'Official passport': 'Официальный паспорт',
+        'Ordinary Passport': 'Обычный паспорт',
+        'Collective Passport': 'Коллективный паспорт',
+        'Diplomatic Passport': 'Дипломатический паспорт',
+        'D. Viaje Apatridas C. New York':
+          'Проездной документ апатрида (Нью-Йорк)',
+        'Government official on duty':
+          'Государственный служащий при исполнении',
+        'National laissez-passer': 'Национальный проездной документ',
+        'Official Passport': 'Официальный паспорт',
+        'Passport of foreigners': 'Паспорт иностранца',
+        'Protection passport': 'Паспорт защиты',
+        'Refugee Travel Document (Geneva Convention)':
+          'Проездной документ беженца (Женевская конвенция)',
+        'Seaman book': 'Моряцкая книжка',
+        'UN laissez-passer': 'Проездной документ ООН',
       },
       purpose: {
         Tourism: 'Туризм',

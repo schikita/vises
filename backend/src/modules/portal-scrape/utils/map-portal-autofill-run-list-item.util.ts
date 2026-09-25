@@ -8,12 +8,12 @@ import type { PortalAutofillRunListItem } from '../types';
 import { buildPortalAutofillCaptchaSummary } from './build-portal-autofill-captcha-summary.util';
 import { buildPortalAutofillScreenshotDownloadPath } from './build-portal-autofill-screenshot-download-path.util';
 import { resolvePortalAutofillRunStatus } from './resolve-portal-autofill-run-status.util';
-import { summarizePortalFieldProgressJson } from './summarize-portal-field-progress-json.util';
+import { summarizePortalFieldProgressJson } from '../../portal-core';
 
 /**
  * Map a persisted run row to the enriched staff list DTO (DEC-007 / REQ-007).
  * `screenshotAvailable` requires terminal capture (`captured` + path); never for pending/live.
- * Secrets, relative paths, and raw CapMonster payloads are never included.
+ * Secrets, relative paths, and raw captcha-service payloads are never included.
  */
 export const mapPortalAutofillRunListItem = (
   run: PortalAutofillRun,

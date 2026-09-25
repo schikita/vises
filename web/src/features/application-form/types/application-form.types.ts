@@ -17,6 +17,8 @@ export type ApplicantFormValues = {
   nationalityAtBirth?: string
   nationalId?: string
   passportType?: string
+  /** Passport Issue Country (portal BirthCountry); English portal label. */
+  passportIssueCountry?: string
   passportIssuedBy?: string
   email?: string
   phone?: string

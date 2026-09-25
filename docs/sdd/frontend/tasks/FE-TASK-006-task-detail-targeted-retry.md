@@ -4,7 +4,7 @@
 |-------|-------|
 | Task ID | `FE-TASK-006` |
 | Title | Enhanced task list/detail, applicant labels, targeted retry |
-| Status | **TODO** |
+| Status | **DONE** |
 | Feature | `bls-workflow-frontend` |
 | REQ/NFR | REQ-003, REQ-004, REQ-009, REQ-010, REQ-011, NFR-001 |
 | DEC | DEC-003, DEC-004 |

@@ -56,6 +56,18 @@ button {
   box-shadow: 0 0 0 3px rgba(47, 122, 100, 0.16);
 }
 
+.field[aria-invalid="true"],
+[data-invalid="true"] .field {
+  border-color: var(--color-clay);
+  box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.16);
+}
+
+.field[aria-invalid="true"]:focus,
+[data-invalid="true"] .field:focus {
+  border-color: var(--color-clay);
+  box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.22);
+}
+
 .field-label {
   display: block;
   font-size: 12px;

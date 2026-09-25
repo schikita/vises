@@ -4,7 +4,7 @@
 |-------|-------|
 | Task ID | `FE-TASK-003` |
 | Title | Expose `tasks[].id` and `maxAttempts` on snapshot (scoped backend + SPA types) |
-| Status | **TODO** |
+| Status | **DONE** |
 | Feature | `bls-workflow-frontend` |
 | REQ/NFR | REQ-010, CON-003 |
 | DEC | DEC-003 |

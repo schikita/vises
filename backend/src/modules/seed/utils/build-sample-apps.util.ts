@@ -1,4 +1,8 @@
 import type { Application } from '../../database/entities/application.entity';
+import {
+  APPLICATION_APPLICANT_DEFAULT_PASSPORT_ISSUE_COUNTRY,
+  APPLICATION_APPLICANT_DEFAULT_PASSPORT_TYPE,
+} from '../../database/constants';
 import { iso } from '../../../shared/utils';
 import {
   SEED_DEFAULT_PRICE,
@@ -20,7 +24,8 @@ export const buildSampleApps = (applications: AppFactory): Application[] => {
       nationality: 'Беларусь',
       gender: 'female',
       maritalStatus: 'Холост / не замужем',
-      passportType: 'Обычный паспорт',
+      passportType: APPLICATION_APPLICANT_DEFAULT_PASSPORT_TYPE,
+      passportIssueCountry: APPLICATION_APPLICANT_DEFAULT_PASSPORT_ISSUE_COUNTRY,
       passportNumber: 'MP1234567',
       passportIssued: '2022-03-01',
       passportExpires: '2032-03-01',
@@ -107,7 +112,8 @@ export const buildSampleApps = (applications: AppFactory): Application[] => {
           nationality: 'Беларусь',
           gender: 'male',
           maritalStatus: 'Женат / замужем',
-          passportType: 'Обычный паспорт',
+          passportType: APPLICATION_APPLICANT_DEFAULT_PASSPORT_TYPE,
+          passportIssueCountry: APPLICATION_APPLICANT_DEFAULT_PASSPORT_ISSUE_COUNTRY,
           passportNumber: 'MP7654321',
           passportIssued: '2021-08-20',
           passportExpires: '2031-08-20',
@@ -125,7 +131,8 @@ export const buildSampleApps = (applications: AppFactory): Application[] => {
           nationality: 'Беларусь',
           gender: 'female',
           maritalStatus: 'Женат / замужем',
-          passportType: 'Обычный паспорт',
+          passportType: APPLICATION_APPLICANT_DEFAULT_PASSPORT_TYPE,
+          passportIssueCountry: APPLICATION_APPLICANT_DEFAULT_PASSPORT_ISSUE_COUNTRY,
           passportNumber: 'MP7654322',
           passportIssued: '2021-08-20',
           passportExpires: '2031-08-20',

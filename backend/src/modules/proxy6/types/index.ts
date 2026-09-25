@@ -48,6 +48,7 @@ export type {
 
 export type {
   UsableProxy6Proxy,
+  Proxy6LeaseSelectResult,
   PatchrightProxyConfig,
   PortalProxyLease,
 } from './proxy6-lease.types';

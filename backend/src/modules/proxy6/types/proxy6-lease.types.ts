@@ -2,6 +2,8 @@
  * Proxy6 lease + Patchright proxy types (DEC-003 / DEC-005 / DEC-006).
  */
 
+import type { Proxy6Proxy } from '../../database/entities/proxy6-proxy.entity';
+
 export type UsableProxy6Proxy = {
   id: string;
   host: string;
@@ -11,6 +13,15 @@ export type UsableProxy6Proxy = {
   country?: string;
   proxyType: string;
 };
+
+/**
+ * Internal fair-lease selection outcome (DEC-001).
+ * Thrown to callers only after outer acquire maps these to Proxy6ApiError.
+ */
+export type Proxy6LeaseSelectResult =
+  | { status: 'leased'; row: Proxy6Proxy }
+  | { status: 'empty_pool' }
+  | { status: 'all_leased' };
 
 /** Patchright `newContext({ proxy })` shape (optional DEC-005 bypass). */
 export type PatchrightProxyConfig = {

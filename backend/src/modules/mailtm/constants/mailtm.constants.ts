@@ -34,3 +34,16 @@ export const MAILTM_OTP_CUE_PATTERN =
  * Fallback six-digit word-boundary pattern when cue yields nothing.
  */
 export const MAILTM_OTP_BODY_FALLBACK_PATTERN = '\\b(\\d{6})\\b';
+
+/**
+ * Cue for the post-registration portal login password email (6 digits).
+ * Distinct from EmailOtp verification cues.
+ */
+export const MAILTM_PORTAL_PASSWORD_CUE_PATTERN =
+  '(?:temporary\\s+password|your\\s+password|login\\s+password|password|пароль|Пароль|временный\\s+пароль)[^0-9]{0,120}(\\d{6})';
+
+/**
+ * Fallback six-digit word-boundary for portal password email bodies.
+ * Same shape as OTP fallback; callers must exclude the OTP message id.
+ */
+export const MAILTM_PORTAL_PASSWORD_BODY_FALLBACK_PATTERN = '\\b(\\d{6})\\b';

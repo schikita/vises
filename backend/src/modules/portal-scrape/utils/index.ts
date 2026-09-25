@@ -1,26 +1,21 @@
-export { normalizeTargetUrl } from './normalize-target-url.util';
-export { resolveRegisterPath } from './resolve-register-path.util';
-export { resolveLoginPath } from './resolve-login-path.util';
+export { normalizeTargetUrl } from '../../portal-core';
+export { resolveRegisterPath } from '../../portal-core';
+export { resolveLoginPath } from '../../portal-core';
 export { mapAutofillReportToHttpOutcome } from './map-autofill-http-status.util';
-export { mappingOk } from './mapping-ok.util';
-export { maskSensitiveValue } from './mask-sensitive-value.util';
-export { buildReport } from './build-report.util';
-export { runPortalFillPipeline } from './run-portal-fill-pipeline.util';
-export { clickPortalRegisterSubmit } from './click-portal-register-submit.util';
-export { verifyPortalRegisterSuccess } from './verify-portal-register-success.util';
-export { dismissConsentModalsInOrder } from './dismiss-consent-modals-in-order.util';
-export { consentModalStepBudgetMs } from './consent-modal-step-budget-ms.util';
-export { consentModalPresenceWindowMs } from './consent-modal-presence-window-ms.util';
-export { buildEvidenceRelativePath } from './build-evidence-relative-path.util';
-export { buildEvidenceAbsolutePath } from './build-evidence-absolute-path.util';
+export { buildCaptchaServiceNotes } from './build-captcha-service-notes.util';
+export { mappingOk } from '../../portal-core';
+export { maskSensitiveValue } from '../../portal-core';
+export { buildReport } from '../../portal-core';
+export { buildEvidenceRelativePath } from '../../portal-core';
+export { buildEvidenceAbsolutePath } from '../../portal-core';
 export { resolveEvidenceAbsolutePath } from './resolve-evidence-absolute-path.util';
-export { ensureEvidenceDir } from './ensure-evidence-dir.util';
-export { evidenceFileExists } from './evidence-file-exists.util';
+export { ensureEvidenceDir } from '../../portal-core';
+export { evidenceFileExists } from '../../portal-core';
 export { openEvidenceStream } from './open-evidence-stream.util';
-export { unlinkEvidenceBestEffort } from './unlink-evidence-best-effort.util';
+export { unlinkEvidenceBestEffort } from '../../portal-core';
 export { buildPortalAutofillScreenshotDownloadPath } from './build-portal-autofill-screenshot-download-path.util';
 export { mapPortalAutofillRunListItem } from './map-portal-autofill-run-list-item.util';
-export { summarizePortalFieldProgressJson } from './summarize-portal-field-progress-json.util';
+export { summarizePortalFieldProgressJson } from '../../portal-core';
 export { buildPortalAutofillCaptchaSummary } from './build-portal-autofill-captcha-summary.util';
 export { resolvePortalAutofillCapMonsterCbState } from './resolve-portal-autofill-capmonster-cb-state.util';
 export { resolvePortalAutofillRunStatus } from './resolve-portal-autofill-run-status.util';
@@ -28,118 +23,139 @@ export { computePortalAutofillRetryEligibility } from './compute-portal-autofill
 export { hasPortalAutofillLiveNonStaleLock } from './has-portal-autofill-live-non-stale-lock.util';
 export { isPortalAutofillCaptchaBudgetExhausted } from './is-portal-autofill-captcha-budget-exhausted.util';
 export { looksLikePortalCaptchaMismatchReason } from './looks-like-portal-captcha-mismatch-reason.util';
-export { isPortalSubmitCountryBelarusAllowlisted } from './is-portal-submit-country-belarus-allowlisted.util';
-export { mapPortalClientPortalProgress } from './map-portal-client-portal-progress.util';
-export { resolvePortalSiteOutcomeForAdapter } from './resolve-portal-site-outcome-for-adapter.util';
+export { isPortalSubmitCountryBelarusAllowlisted } from '../../portal-core';
+export { mapPortalClientPortalProgress } from '../../portal-core';
+export { resolvePortalSiteOutcomeForAdapter } from '../../portal-core';
 export { resolvePortalAutofillEligibilityApplicantId } from './resolve-portal-autofill-eligibility-applicant-id.util';
 export { buildPortalAutofillEmptyRetryEligibility } from './build-portal-autofill-empty-retry-eligibility.util';
-export { listApplicationApplicantIds } from './list-application-applicant-ids.util';
+export { listApplicationApplicantIds } from '../../portal-core';
 export { clampPortalAutofillRunListLimit } from './clamp-portal-autofill-run-list-limit.util';
-export { assertCaptchaSelectorsReady } from './assert-captcha-selectors-ready.util';
-export { extractBlsChallenge } from './extract-bls-challenge.util';
-export { applyBlsAnswer } from './apply-bls-answer.util';
-export { resolveCaptchaFrame } from './portal-captcha-frame.util';
-export { solvePortalBlsCaptcha } from './portal-captcha-solve.util';
-export { isPortalCaptchaVerified } from './is-portal-captcha-verified.util';
-export { createCapMonsterCircuitBreaker } from './create-capmonster-circuit-breaker.util';
-export { assertCapMonsterCircuitAllowsCall } from './assert-capmonster-circuit-allows-call.util';
-export { recordCapMonsterCircuitSuccess } from './record-capmonster-circuit-success.util';
-export { recordCapMonsterCircuitFailure } from './record-capmonster-circuit-failure.util';
-export { isPortalCaptchaChallengeAbsentError } from './is-portal-captcha-challenge-absent-error.util';
-export { clickPortalCaptchaVerifyControl } from './click-portal-captcha-verify-control.util';
-export { portalCaptchaVerifiedLoopSleep } from './portal-captcha-verified-loop-sleep.util';
-export { ensurePortalCaptchaChallengeReady } from './ensure-portal-captcha-challenge-ready.util';
-export { runPortalCaptchaVerifiedLoop } from './run-portal-captcha-verified-loop.util';
-export { clickPortalGenerateOtp } from './click-portal-generate-otp.util';
-export { clickPortalResendOtp } from './click-portal-resend-otp.util';
-export { dismissPortalOtpOkModal } from './dismiss-portal-otp-ok-modal.util';
-export { otpOkModalActionInPage } from './otp-ok-modal-action-in-page.util';
-export { fillPortalEmailOtp } from './fill-portal-email-otp.util';
-export { fillPortalEmail } from './fill-portal-email.util';
-export { discoverLoginEmailControl } from './discover-login-email-control.util';
-export { fillPortalLoginEmail } from './fill-portal-login-email.util';
-export { discoverLoginPasswordControl } from './discover-login-password-control.util';
-export { fillPortalLoginPassword } from './fill-portal-login-password.util';
-export { waitForPortalLoginPasswordControl } from './wait-for-portal-login-password-control.util';
-export { isPortalLoginFormVisible } from './is-portal-login-form-visible.util';
-export { verifyPortalLoginAuthenticated } from './verify-portal-login-authenticated.util';
-export { clickPortalLoginVerifyControl } from './click-portal-login-verify-control.util';
-export { runPortalLoginPrepPipeline } from './run-portal-login-prep-pipeline.util';
 export { buildLoginPrepEvidenceAbsolutePath } from './build-login-prep-evidence-absolute-path.util';
-export { isPortalPasswordChangeFormVisible } from './is-portal-password-change-form-visible.util';
-export { fillPortalPasswordChangeForm } from './fill-portal-password-change-form.util';
-export { clickPortalPasswordChangeSubmit } from './click-portal-password-change-submit.util';
-export { verifyPortalPasswordChangeSuccess } from './verify-portal-password-change-success.util';
-export { runPortalPasswordChangePipeline } from './run-portal-password-change-pipeline.util';
-export { isBlsWorkflowTaskExecutorSkipped } from './is-bls-workflow-task-executor-skipped.util';
-export { normalizeBlsApplicantPortalStatus } from './normalize-bls-applicant-portal-status.util';
-export { isBlsApplicantPortalStatusReadyToBook } from './is-bls-applicant-portal-status-ready-to-book.util';
-export { areRequiredApplicantsReadyToBook } from './are-required-applicants-ready-to-book.util';
-export { matchPortalApplicantStatusRow } from './match-portal-applicant-status-row.util';
-export { scrapePortalApplicantStatusRows } from './scrape-portal-applicant-status-rows.util';
-export { waitForPortalManageApplicantsPage } from './wait-for-portal-manage-applicants-page.util';
-export { clickPortalApplicantEdit } from './click-portal-applicant-edit.util';
-export { acceptPortalAttentionModal } from './accept-portal-attention-modal.util';
-export { isPortalApplicantEditFormVisible } from './is-portal-applicant-edit-form-visible.util';
-export { fillPortalApplicantEditForm } from './fill-portal-applicant-edit-form.util';
-export { clickPortalApplicantEditSubmit } from './click-portal-applicant-edit-submit.util';
-export { runPortalStatusValidatePipeline } from './run-portal-status-validate-pipeline.util';
-export { isPortalBookingSelectionUiVisible } from './is-portal-booking-selection-ui-visible.util';
-export { waitForPortalBookingSelectionUi } from './wait-for-portal-booking-selection-ui.util';
-export { clickPortalBookNewAppointment } from './click-portal-book-new-appointment.util';
-export { prefillPortalBookingSelectionFields } from './prefill-portal-booking-selection-fields.util';
-export { classifyPortalBookingUnsafeAction } from './classify-portal-booking-unsafe-action.util';
-export { runPortalBookingSafeStopPipeline } from './run-portal-booking-safe-stop-pipeline.util';
-export { buildEmailOtpNotes } from './build-email-otp-notes.util';
-export { shouldRetainMailTmMailboxAfterOtp } from './should-retain-mailtm-mailbox-after-otp.util';
-export { formatPortalLogContext } from './format-portal-log-context.util';
-export { summarizeFieldFillCounts } from './summarize-field-fill-counts.util';
+export { classifyPortalBookingUnsafeAction } from '../../bls-workflow';
+export { resolvePortalTemporaryEmailProvider } from '../../browser-mail';
+export { formatPortalLogContext } from '../../portal-core';
+export { summarizeFieldFillCounts } from '../../portal-core';
 export { isPortalAutofillLockStale } from './is-portal-autofill-lock-stale.util';
 export { isPortalAutofillRunResumeEligible } from './is-portal-autofill-run-resume-eligible.util';
-export { buildPortalAutofillLockOwner } from './build-portal-autofill-lock-owner.util';
-export { serializeCapMonsterCircuitForCheckpoint } from './serialize-capmonster-circuit-for-checkpoint.util';
-export { restoreCapMonsterCircuitFromCheckpoint } from './restore-capmonster-circuit-from-checkpoint.util';
-export { shouldAbandonCapMonsterInflightTaskOnResume } from './should-abandon-capmonster-inflight-task-on-resume.util';
-export { mergePortalAutofillFieldProgress } from './merge-portal-autofill-field-progress.util';
-export { mapFieldResultToProgressEntry } from './map-field-result-to-progress-entry.util';
-export { buildPortalAutofillCaptchaRestore } from './build-portal-autofill-captcha-restore.util';
-export { parseSecretsMasterKey } from './parse-secrets-master-key.util';
-export { aesGcmSeal } from './aes-gcm-seal.util';
-export { aesGcmOpen } from './aes-gcm-open.util';
-export { wrapDek } from './wrap-dek.util';
-export { unwrapDek } from './unwrap-dek.util';
-export { generatePortalPassword } from './generate-portal-password.util';
-export { isBlsWorkflowStatusActive } from './is-bls-workflow-status-active.util';
-export { isBlsWorkflowStatusTerminal } from './is-bls-workflow-status-terminal.util';
-export { isBlsWorkflowMailboxCleanupEligible } from './is-bls-workflow-mailbox-cleanup-eligible.util';
-export { computeBlsWorkflowEventRetentionCutoff } from './compute-bls-workflow-event-retention-cutoff.util';
-export { isBlsWorkflowTaskDoneStatus } from './is-bls-workflow-task-done-status.util';
-export { isBlsWorkflowStepDoneStatus } from './is-bls-workflow-step-done-status.util';
-export { isBlsWorkflowStepSkippable } from './is-bls-workflow-step-skippable.util';
-export { assertBlsCompleteVerified } from './assert-bls-complete-verified.util';
-export { buildBlsWorkflowStepTaskDrafts } from './build-bls-workflow-step-task-drafts.util';
-export { buildBlsWorkflowGraphDraft } from './build-bls-workflow-graph-draft.util';
-export { planBlsWorkflowAdvance } from './plan-bls-workflow-advance.util';
-export { findNextBlsWorkflowOpenTask } from './find-next-bls-workflow-open-task.util';
-export { isBlsWorkflowLockStale } from './is-bls-workflow-lock-stale.util';
-export { hasBlsWorkflowLiveNonStaleLock } from './has-bls-workflow-live-non-stale-lock.util';
-export { buildBlsWorkflowLockOwner } from './build-bls-workflow-lock-owner.util';
-export { createBlsWorkflowLockError } from './create-bls-workflow-lock-error.util';
-export { isBlsWorkflowLockError } from './is-bls-workflow-lock-error.util';
-export { isBlsWorkflowErrorClassSafeToRepeat } from './is-bls-workflow-error-class-safe-to-repeat.util';
-export { isBlsWorkflowErrorClassVerifyThenRepeat } from './is-bls-workflow-error-class-verify-then-repeat.util';
-export { isBlsWorkflowErrorClassNotSafeToRepeat } from './is-bls-workflow-error-class-not-safe-to-repeat.util';
-export { isBlsWorkflowErrorClassAutoRetryable } from './is-bls-workflow-error-class-auto-retryable.util';
-export { computeBlsWorkflowRetryBackoffMs } from './compute-bls-workflow-retry-backoff-ms.util';
-export { computeBlsWorkflowNextRunAt } from './compute-bls-workflow-next-run-at.util';
-export { findCurrentBlsWorkflowReadyTask } from './find-current-bls-workflow-ready-task.util';
-export { mapBlsWorkflowGraphToOut } from './map-bls-workflow-graph-to-out.util';
-export { mapBlsWorkflowEventToOut } from './map-bls-workflow-event-to-out.util';
-export { clampBlsWorkflowEventsLimit } from './clamp-bls-workflow-events-limit.util';
-export { parseBlsWorkflowSinceEventId } from './parse-bls-workflow-since-event-id.util';
-export { mapBlsWorkflowToStartOut } from './map-bls-workflow-to-start-out.util';
-export { mapBlsWorkflowToControlOut } from './map-bls-workflow-to-control-out.util';
-export { isBlsWorkflowManualRetryEligible } from './is-bls-workflow-manual-retry-eligible.util';
-export { resolveBlsWorkflowManualRetryTask } from './resolve-bls-workflow-manual-retry-task.util';
-export { isBlsWorkflowResumeEligible } from './is-bls-workflow-resume-eligible.util';
-export { isBlsWorkflowPauseEligible } from './is-bls-workflow-pause-eligible.util';
+export { buildPortalAutofillLockOwner } from '../../portal-core';
+export { parseSecretsMasterKey } from '../../bls-secrets';
+export { aesGcmSeal } from '../../bls-secrets';
+export { aesGcmOpen } from '../../bls-secrets';
+export { wrapDek } from '../../bls-secrets';
+export { unwrapDek } from '../../bls-secrets';
+export { generatePortalPassword } from '../../bls-secrets';
+
+/** Fill-owned helpers re-exported for transitional façade / client imports. */
+export {
+  runPortalFillPipeline,
+  clickPortalRegisterSubmit,
+  verifyPortalRegisterSuccess,
+  dismissConsentModalsInOrder,
+  consentModalStepBudgetMs,
+  consentModalPresenceWindowMs,
+  assertCaptchaSelectorsReady,
+  extractBlsChallenge,
+  applyBlsAnswer,
+  resolveCaptchaFrame,
+  solvePortalBlsCaptcha,
+  isPortalCaptchaVerified,
+  createCaptchaCircuitBreaker,
+  assertCaptchaCircuitAllowsCall,
+  recordCaptchaCircuitSuccess,
+  recordCaptchaCircuitFailure,
+  isPortalCaptchaChallengeAbsentError,
+  clickPortalCaptchaVerifyControl,
+  portalCaptchaVerifiedLoopSleep,
+  waitForPortalCaptchaVerified,
+  ensurePortalCaptchaChallengeReady,
+  runPortalCaptchaVerifiedLoop,
+  clickPortalGenerateOtp,
+  clickPortalResendOtp,
+  dismissPortalOtpOkModal,
+  otpOkModalActionInPage,
+  fillPortalEmailOtp,
+  fillPortalEmail,
+  discoverLoginEmailControl,
+  fillPortalLoginEmail,
+  discoverLoginPasswordControl,
+  fillPortalLoginPassword,
+  waitForPortalLoginPasswordControl,
+  isPortalLoginFormVisible,
+  verifyPortalLoginAuthenticated,
+  clickPortalLoginVerifyControl,
+  runPortalLoginPrepPipeline,
+  isPortalPasswordChangeFormVisible,
+  fillPortalPasswordChangeForm,
+  clickPortalPasswordChangeSubmit,
+  verifyPortalPasswordChangeSuccess,
+  runPortalPasswordChangePipeline,
+  normalizeBlsApplicantPortalStatus,
+  isBlsApplicantPortalStatusReadyToBook,
+  areRequiredApplicantsReadyToBook,
+  matchPortalApplicantStatusRow,
+  scrapePortalApplicantStatusRows,
+  waitForPortalManageApplicantsPage,
+  clickPortalApplicantEdit,
+  acceptPortalAttentionModal,
+  isPortalApplicantEditFormVisible,
+  fillPortalApplicantEditForm,
+  clickPortalApplicantEditSubmit,
+  runPortalStatusValidatePipeline,
+  isPortalBookingSelectionUiVisible,
+  waitForPortalBookingSelectionUi,
+  clickPortalBookNewAppointment,
+  prefillPortalBookingSelectionFields,
+  runPortalBookingSafeStopPipeline,
+  buildEmailOtpNotes,
+  isPortalEmailOtpArmed,
+  resolvePortalEmailOtpArmReason,
+  shouldRetainMailTmMailboxAfterOtp,
+  serializeCaptchaCircuitForCheckpoint,
+  restoreCaptchaCircuitFromCheckpoint,
+  shouldAbandonCapMonsterInflightTaskOnResume,
+  mergePortalAutofillFieldProgress,
+  mapFieldResultToProgressEntry,
+  buildPortalAutofillCaptchaRestore,
+} from '../../portal-fill';
+
+/** Workflow-owned helpers re-exported for transitional façade imports. */
+export {
+  isBlsWorkflowTaskExecutorSkipped,
+  isBlsWorkflowStatusActive,
+  isBlsWorkflowStatusTerminal,
+  isBlsWorkflowStatusPaused,
+  isBlsWorkflowMailboxCleanupEligible,
+  isBlsWorkflowPortalCredentialsRevealEligible,
+  computeBlsWorkflowMailboxCleanupDueAt,
+  computeBlsWorkflowEventRetentionCutoff,
+  isBlsWorkflowTaskDoneStatus,
+  isBlsWorkflowStepDoneStatus,
+  isBlsWorkflowStepSkippable,
+  assertBlsCompleteVerified,
+  buildBlsWorkflowStepTaskDrafts,
+  buildBlsWorkflowGraphDraft,
+  planBlsWorkflowAdvance,
+  findNextBlsWorkflowOpenTask,
+  isBlsWorkflowLockStale,
+  hasBlsWorkflowLiveNonStaleLock,
+  buildBlsWorkflowLockOwner,
+  createBlsWorkflowLockError,
+  isBlsWorkflowLockError,
+  isBlsWorkflowErrorClassSafeToRepeat,
+  isBlsWorkflowErrorClassVerifyThenRepeat,
+  isBlsWorkflowErrorClassNotSafeToRepeat,
+  isBlsWorkflowErrorClassAutoRetryable,
+  computeBlsWorkflowRetryBackoffMs,
+  computeBlsWorkflowNextRunAt,
+  findCurrentBlsWorkflowReadyTask,
+  mapBlsWorkflowGraphToOut,
+  mapBlsWorkflowEventToOut,
+  clampBlsWorkflowEventsLimit,
+  parseBlsWorkflowSinceEventId,
+  mapBlsWorkflowToStartOut,
+  mapBlsWorkflowToControlOut,
+  isBlsWorkflowManualRetryEligible,
+  resolveBlsWorkflowManualRetryTask,
+  isBlsWorkflowResumeEligible,
+  isBlsWorkflowPauseEligible,
+} from '../../bls-workflow';

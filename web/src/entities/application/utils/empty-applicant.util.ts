@@ -17,10 +17,12 @@ export const emptyApplicant = (relationship = 'Self'): Applicant => {
     gender: 'female',
     maritalStatus: 'Single',
     nationalId: '',
-    passportType: 'Ordinary passport',
+    passportType: 'Ordinary Passport',
     passportNumber: '',
     passportIssued: '',
     passportExpires: '',
+    // CON-003 / DEC-010 — exact portal spelling (not BELARUS / Беларусь).
+    passportIssueCountry: 'Belarus',
     passportIssuedBy: '',
     email: '',
     phone: '',

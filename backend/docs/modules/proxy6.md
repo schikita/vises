@@ -25,6 +25,7 @@ Methods: `getproxy`, `getprice`, `getcount`, `getcountry`, `buy`, `prolong`, `de
 ### `Proxy6InventoryService`
 
 - Force refresh from remote; optional debounce for non-forced reconcile.
+- Non-forced refresh also uses **in-process single-flight** (concurrent callers share one in-flight `getproxy` after a debounce miss). Admin `POST /proxies/refresh` remains forced and does **not** join that coalesce as owner.
 - Upsert from buy/prolong (persists `period_days` / `date_end`).
 - Soft `active=false` for remote-missing rows (including when `in_use`).
 
@@ -33,6 +34,9 @@ Methods: `getproxy`, `getprice`, `getcount`, `getcountry`, `buy`, `prolong`, `de
 - `acquire(config)` → lease handle with Patchright proxy config (`http://host:port` + optional `bypass`).
 - `release` / handle `release` — idempotent clear of in-use fields.
 - Empty/whitespace `PROXY6_API_KEY` → caller skips lease (direct browser). Non-empty + empty/all-leased pool → fail closed.
+- **Empty usable pool:** before returning `empty_pool`, acquire runs a non-forced `refreshFromRemote(false)` **outside** the lease DB transaction, then retries fair selection **once**. Sync/API errors propagate as existing `Proxy6ApiError` codes (not remapped to `empty_pool`). Still-empty after a successful sync uses a clarified Russian message. **No auto-buy** from this path — restock via admin buy/refresh.
+- **`all_leased`** (usable rows exist but all busy): no remote reconcile; same message as before.
+- Coalesce/debounce are **per Nest process**. Multi-replica deploys may each issue their own coalesced `getproxy` after a wipe (residual; no shared cluster lock in v1).
 
 ## Env
 

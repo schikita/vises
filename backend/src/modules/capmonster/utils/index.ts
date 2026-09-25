@@ -7,3 +7,4 @@ export { stripDataUriPrefix } from './strip-data-uri-prefix.util';
 export { classifyCapMonsterFailure } from './classify-capmonster-failure.util';
 export { createCapMonsterClientError } from './create-capmonster-client-error.util';
 export { isCapMonsterClientError } from './is-capmonster-client-error.util';
+export { isCapMonsterCaptchaUnsolvableError } from './is-capmonster-captcha-unsolvable-error.util';

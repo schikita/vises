@@ -1,8 +1,8 @@
 import type { PortalAutofillCaptureStatus } from '../constants';
 import type { PortalAutofillCaptchaSummary } from './portal-autofill-captcha-summary.types';
 import type { PortalAutofillRetryEligibility } from './portal-autofill-retry-eligibility.types';
-import type { PortalAutofillRunStatus } from './portal-autofill-run-lifecycle.types';
-import type { PortalFieldProgressSummary } from './portal-field-progress-summary.types';
+import type { PortalAutofillRunStatus } from '../../portal-core';
+import type { PortalFieldProgressSummary } from '../../portal-core';
 
 /**
  * Staff list item for portal autofill runs (DEC-001 / DEC-007).

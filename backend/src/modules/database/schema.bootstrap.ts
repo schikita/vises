@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { backfillApplicationApplicantPassportFields } from './utils';
 
 /**
  * After TypeORM synchronize:
@@ -9,6 +10,8 @@ import { DataSource } from 'typeorm';
  * - durable-bls-workflow DEC-012 / DEC-020: ensure BLS indexes + partial unique
  *   for one active workflow per application (synchronize cannot express partial
  *   unique). Does **not** drop `portal_autofill_runs`.
+ * - bls-register-ymd-passport-fields: backfill applicant jsonb
+ *   `passportType` / `passportIssueCountry` (defaults + known legacy labels).
  * Seed-if-empty runs in SeedService.onModuleInit (keeps database ↔ seed imports one-way).
  */
 @Injectable()
@@ -34,6 +37,16 @@ export class SchemaBootstrap implements OnModuleInit {
     );
 
     await this.ensureBlsWorkflowIndexes();
+    await this.ensureApplicantPassportFields();
+  }
+
+  private async ensureApplicantPassportFields(): Promise<void> {
+    const updated = await backfillApplicationApplicantPassportFields(
+      this.dataSource,
+    );
+    this.logger.log(
+      `Schema ensure: applications.applicants passportType/passportIssueCountry backfill OK (rows updated=${updated})`,
+    );
   }
 
   /**
@@ -68,6 +81,17 @@ export class SchemaBootstrap implements OnModuleInit {
     await this.dataSource.query(`
       CREATE INDEX IF NOT EXISTS idx_bls_workflows_application_created_at_desc
       ON bls_workflows (application_id, created_at DESC)
+    `);
+
+    await this.dataSource.query(`
+      ALTER TABLE bls_workflows
+      ADD COLUMN IF NOT EXISTS mailbox_cleanup_due_at TIMESTAMPTZ NULL
+    `);
+
+    await this.dataSource.query(`
+      CREATE INDEX IF NOT EXISTS idx_bls_workflows_mailbox_cleanup_due_at
+      ON bls_workflows (mailbox_cleanup_due_at)
+      WHERE mailbox_cleanup_due_at IS NOT NULL
     `);
 
     await this.dataSource.query(`

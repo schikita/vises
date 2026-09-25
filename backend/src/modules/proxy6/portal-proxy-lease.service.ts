@@ -6,11 +6,13 @@ import { Proxy6Proxy } from '../database/entities/proxy6-proxy.entity';
 import {
   PROXY6_LEASE_STALE_MS,
   PROXY6_MSG_ALL_LEASED,
-  PROXY6_MSG_EMPTY_POOL,
+  PROXY6_MSG_EMPTY_POOL_AFTER_SYNC,
   PROXY6_MSG_MISCONFIGURED,
 } from './constants';
+import { Proxy6InventoryService } from './proxy6-inventory.service';
 import type {
   PortalProxyLease,
+  Proxy6LeaseSelectResult,
   Proxy6ProxyRuntimeConfig,
 } from './types';
 import { buildPatchrightProxyConfig } from './utils/build-patchright-proxy-config.util';
@@ -21,6 +23,7 @@ import { toUsableProxy6Proxy } from './utils/to-usable-proxy6-proxy.util';
 /**
  * DB fair lease with FOR UPDATE SKIP LOCKED (DEC-003 / DEC-004).
  * One lease per browser session; fail closed when none free (REQ-010/024).
+ * Empty usable pool → non-forced inventory sync + one retry (DEC-001).
  */
 @Injectable()
 export class PortalProxyLeaseService {
@@ -30,17 +33,53 @@ export class PortalProxyLeaseService {
     private readonly dataSource: DataSource,
     @InjectRepository(Proxy6Proxy)
     private readonly repo: Repository<Proxy6Proxy>,
+    private readonly inventory: Proxy6InventoryService,
   ) {}
 
   async acquire(config: Proxy6ProxyRuntimeConfig): Promise<PortalProxyLease> {
-    if (config.proxy6Misconfigured || !config.proxy6ApiKey?.trim()) {
+    if (config.proxyMisconfigured || !config.proxyProviderApiKey?.trim()) {
       throw createProxy6ApiError({
         code: 'misconfigured',
         message: PROXY6_MSG_MISCONFIGURED,
       });
     }
 
-    const row = await this.dataSource.transaction(async (manager) => {
+    const first = await this.selectLeaseCandidate();
+    if (first.status === 'leased') {
+      return this.finalizeLease(first.row);
+    }
+    if (first.status === 'all_leased') {
+      throw createProxy6ApiError({
+        code: 'all_leased',
+        message: PROXY6_MSG_ALL_LEASED,
+      });
+    }
+
+    // REQ-001 / DEC-001: reconcile outside the lease selection transaction.
+    await this.inventory.refreshFromRemote(false);
+
+    const second = await this.selectLeaseCandidate();
+    if (second.status === 'leased') {
+      return this.finalizeLease(second.row);
+    }
+    if (second.status === 'all_leased') {
+      throw createProxy6ApiError({
+        code: 'all_leased',
+        message: PROXY6_MSG_ALL_LEASED,
+      });
+    }
+    throw createProxy6ApiError({
+      code: 'empty_pool',
+      message: PROXY6_MSG_EMPTY_POOL_AFTER_SYNC,
+    });
+  }
+
+  /**
+   * One fair-lease selection attempt inside its own DB transaction.
+   * Does not throw for empty/busy — outer acquire maps outcomes (DEC-001).
+   */
+  private async selectLeaseCandidate(): Promise<Proxy6LeaseSelectResult> {
+    return this.dataSource.transaction(async (manager) => {
       const now = new Date();
 
       await manager
@@ -84,15 +123,9 @@ export class PortalProxyLeaseService {
           .andWhere("TRIM(p.password) <> ''")
           .getCount();
         if (usableCount === 0) {
-          throw createProxy6ApiError({
-            code: 'empty_pool',
-            message: PROXY6_MSG_EMPTY_POOL,
-          });
+          return { status: 'empty_pool' };
         }
-        throw createProxy6ApiError({
-          code: 'all_leased',
-          message: PROXY6_MSG_ALL_LEASED,
-        });
+        return { status: 'all_leased' };
       }
 
       const leaseToken = uid('p6').replace(/[^a-zA-Z0-9]/g, '').slice(0, 24);
@@ -103,9 +136,11 @@ export class PortalProxyLeaseService {
       candidate.lastLeasedAt = now;
       candidate.leaseCount = (candidate.leaseCount ?? 0) + 1;
       await manager.save(candidate);
-      return candidate;
+      return { status: 'leased', row: candidate };
     });
+  }
 
+  private finalizeLease(row: Proxy6Proxy): PortalProxyLease {
     const proxy = toUsableProxy6Proxy(row);
     const browserProxy = buildPatchrightProxyConfig(proxy);
 

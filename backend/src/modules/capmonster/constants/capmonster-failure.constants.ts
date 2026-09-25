@@ -1,11 +1,20 @@
 /**
  * CapMonster transient / permanent classification tables (DEC-001 / REQ-004).
+ * `ERROR_CAPTCHA_UNSOLVABLE` is transient (capmonster-unsolvable-retry DEC-001).
  */
+
+/**
+ * CapMonster business `errorCode` for captcha unsolvable (usually temporary;
+ * Verified loop free re-submit — see DEC-006).
+ */
+export const CAPMONSTER_ERROR_CAPTCHA_UNSOLVABLE =
+  'ERROR_CAPTCHA_UNSOLVABLE' as const;
 
 /** CapMonster JSON business `errorCode` values that are retryable. */
 export const CAPMONSTER_TRANSIENT_ERROR_CODES = [
   'ERROR_NO_SLOT_AVAILABLE',
   'ERROR_TOO_MANY_REQUESTS',
+  CAPMONSTER_ERROR_CAPTCHA_UNSOLVABLE,
 ] as const;
 
 /**
@@ -19,7 +28,6 @@ export const CAPMONSTER_PERMANENT_ERROR_CODES = [
   'ERROR_IP_NOT_ALLOWED',
   'ERROR_IP_BLOCKED',
   'ERROR_TASK_NOT_SUPPORTED',
-  'ERROR_CAPTCHA_UNSOLVABLE',
 ] as const;
 
 /** HTTP statuses treated as transient transport failures. */

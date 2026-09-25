@@ -4,7 +4,7 @@
 |-------|-------|
 | Task ID | `FE-TASK-002` |
 | Title | Unambiguous current-task resolution + applicant labels |
-| Status | **TODO** |
+| Status | **DONE** |
 | Feature | `bls-workflow-frontend` |
 | REQ/NFR | REQ-011, REQ-012 |
 | DEC | DEC-004 |

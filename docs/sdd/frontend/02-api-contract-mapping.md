@@ -46,8 +46,9 @@ Legacy (unchanged primary path):
 
 | Method | Path | Owner | Notes |
 |--------|------|-------|-------|
-| POST | `…/portal-autofill` | Store / portal-autofill entity | Secondary diagnostic |
-| GET | `…/portal-autofill-runs` | Store / portal-autofill entity | Evidence list; deep-link via runId Should |
+| POST | `…/portal-autofill` | — (hard-cut) | **410 Gone**; registration via BLS workflow only |
+| GET | `…/portal-autofill-runs` | Store / portal-autofill entity | Evidence list API retained; no staff start UI |
+| GET | `…/portal-autofill-runs/:runId/screenshot` | `openPortalAutofillScreenshot` | Opened from workflow `AUTOFILL_RUN_LINKED` |
 
 ---
 

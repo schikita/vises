@@ -3,8 +3,8 @@
 | Field | Value |
 |-------|-------|
 | Feature id | `bls-workflow-frontend` |
-| Status | **READY_FOR_IMPLEMENTATION** |
-| Date | 2026-09-22 |
+| Status | **DONE** |
+| Date | 2026-09-23 |
 | Primary docs | `docs/sdd/frontend/` (authoritative for this initiative) |
 | Specs mirror | `specs/features/bls-workflow-frontend/` |
 | Spec SoT (REQ/NFR/CON) | `specs/features/bls-workflow-frontend/02-spec.md` |
@@ -12,7 +12,7 @@
 | Design / plan / tasks | [`01-target-ux.md`](./01-target-ux.md) … [`05-tasks.md`](./05-tasks.md) + [`tasks/`](./tasks/) |
 | Handoff | [`HANDOFF.md`](./HANDOFF.md) |
 | Upstream | `durable-bls-workflow` (**DONE**, `APPROVE_WITH_ISSUES`) |
-| Product implementation | **Not started** |
+| Product implementation | **Complete** — FE-TASK-001…010 DONE; feature **DONE** |
 
 ## Raw request
 
@@ -39,11 +39,14 @@ Staff-facing SPA enhancements for durable BLS workflow visualization, controls, 
 
 | Artifact | Status |
 |----------|--------|
-| `00-request.md` | **READY_FOR_IMPLEMENTATION** |
+| `00-request.md` | **DONE** |
 | `00-discovery.md` | **Complete** |
 | Spec `02-spec.md` | **SPECIFIED** (SoT) |
 | `01`–`03` design docs | **DESIGNED** |
 | `04-plan.md` | **PLANNED** |
-| `05-tasks.md` + `tasks/FE-TASK-*` | **READY_FOR_IMPLEMENTATION** |
-| `HANDOFF.md` | Ready for orchestrator |
-| IMPLEMENTING | **Not started** |
+| `05-tasks.md` + `tasks/FE-TASK-*` | **Complete** (001–010 DONE) |
+| `HANDOFF.md` | DONE |
+| IMPLEMENTING | **Complete** |
+| VERIFYING | **PASS** |
+| REVIEWING | **APPROVE_WITH_ISSUES** |
+| Feature | **DONE** |

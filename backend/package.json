@@ -6,7 +6,7 @@
   "scripts": {
     "build": "nest build",
     "start": "nest start",
-    "start:dev": "node --env-file-if-exists=.env.dev --env-file-if-exists=.env.dev.local ./node_modules/@nestjs/cli/bin/nest.js start --watch",
+    "start:dev": "node --env-file-if-exists=.env.dev.local ./node_modules/@nestjs/cli/bin/nest.js start --watch",
     "start:prod": "node dist/main.js",
     "test:workflow": "npm run build && node --test ./test/workflow/crypto-and-state.test.cjs"
   },

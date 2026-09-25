@@ -4,6 +4,7 @@ export {
   SUBMIT_COUNTRIES,
   CITIES_BY_COUNTRY,
   PASSPORT_TYPES,
+  PASSPORT_ISSUE_COUNTRIES,
   RELATIONSHIPS,
   MARITAL_STATUSES,
   PURPOSES,
@@ -20,8 +21,16 @@ export {
   STAFF_TRIP_STEP_FIELDS,
   STAFF_PEOPLE_STEP_FIELDS,
   applicationDetailFormSchema,
+  applicationDetailStartFormSchema,
 } from './constants'
-export { getNestedFormError, toLatin, formatBelarusLocalPhoneDisplay, parseBelarusLocalPhoneDigits } from './utils'
+export {
+  getNestedFormError,
+  toLatin,
+  formatBelarusLocalPhoneDisplay,
+  parseBelarusLocalPhoneDigits,
+  mapApplicantDateFieldToSection,
+  mapApplicantStartFieldToSection,
+} from './utils'
 export type {
   ApplicantFormValues,
   ClientTripFormValues,

@@ -34,6 +34,13 @@ export class UpsertAppDto {
   @IsString()
   portalFormEmail?: string | null;
 
+  /**
+   * Accepted so SPA full-object upserts pass `forbidNonWhitelisted`.
+   * Ignored on write — computed on read via `withPortalProgress` (DEC-007).
+   */
+  @IsOptional()
+  portalProgress?: unknown;
+
   @IsOptional()
   @IsString()
   @IsIn([...ALL_APP_STATUSES])

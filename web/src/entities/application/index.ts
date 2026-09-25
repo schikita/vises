@@ -14,7 +14,7 @@
   FetchVisitsPageParams,
   FetchPaymentsPageParams,
 } from './types'
-export { STATUSES, DOC_TYPES } from './constants'
+export { STATUSES, APPLICATION_STATUS_NEEDS_FIXES, DOC_TYPES } from './constants'
 export {
   statusLabel,
   money,
@@ -27,4 +27,5 @@ export {
   fetchAppById,
   fetchVisitsPage,
   fetchPaymentsPage,
+  toAppUpsertPayload,
 } from './utils'

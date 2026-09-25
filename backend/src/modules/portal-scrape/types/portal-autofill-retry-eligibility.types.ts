@@ -23,7 +23,7 @@ export type PortalAutofillRetryEligibility = {
 
 /**
  * Inputs for `computePortalAutofillRetryEligibility` (no secrets).
- * CapMonster key presence is a boolean flag only.
+ * Captcha service key presence is a boolean flag only.
  */
 export type PortalAutofillRetryEligibilityInput = {
   inProgressRun: {
@@ -46,7 +46,7 @@ export type PortalAutofillRetryEligibilityInput = {
   applicantReady: boolean;
   adapterSupported: boolean;
   /** True when trimmed `CAPMONSTER_API_KEY` is non-empty. */
-  capMonsterKeyConfigured: boolean;
+  captchaServiceKeyConfigured: boolean;
   nowMs: number;
   staleMs?: number;
 };

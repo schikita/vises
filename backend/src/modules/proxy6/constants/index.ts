@@ -19,6 +19,7 @@ export { PROXY6_AUTO_RECONCILE_DEBOUNCE_MS } from './proxy6-inventory.constants'
 export {
   PROXY6_LEASE_STALE_MS,
   PROXY6_MSG_EMPTY_POOL,
+  PROXY6_MSG_EMPTY_POOL_AFTER_SYNC,
   PROXY6_MSG_ALL_LEASED,
   PROXY6_MSG_REPLACE_PARTIAL,
 } from './proxy6-lease.constants';

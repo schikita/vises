@@ -1,32 +1,26 @@
 import {
-  Body,
   Controller,
   Get,
-  HttpCode,
+  HttpException,
   HttpStatus,
   Param,
   Post,
   Query,
-  Res,
   StreamableFile,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { RolesGuard } from '../../shared/guards/roles.guard';
-import { User } from '../database/entities/user.entity';
-import { PortalAutofillDto } from './dto/portal-autofill.dto';
+import { PORTAL_AUTOFILL_MSG_GONE } from './constants';
 import { PortalAutofillService } from './portal-autofill.service';
-import type { AutofillReport, PortalAutofillRunListResponse } from './types';
+import type { PortalAutofillRunListResponse } from './types';
 import { clampPortalAutofillRunListLimit } from './utils';
 
 /**
- * Authenticated RegisterUser autofill trigger (DEC-001 / DEC-002).
- * Sync long HTTP — await fill on the same request (DEC-007).
  * Evidence download: GET portal-autofill-runs/:runId/screenshot (DEC-003).
  * Evidence list: GET :applicationId/portal-autofill-runs (DEC-001 / DEC-004).
+ * Staff POST portal-autofill is hard-cut to 410 Gone (portal-autofill-workflow-cutover DEC-002).
  */
 @Controller('apps')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -68,25 +62,12 @@ export class PortalAutofillController {
     );
   }
 
+  /**
+   * Former RegisterUser execute path — non-executing 410 (DEC-002 / REQ-003).
+   * Registration starts only via BLS workflow.
+   */
   @Post(':applicationId/portal-autofill')
-  @HttpCode(HttpStatus.OK)
-  async portalAutofill(
-    @Param('applicationId') applicationId: string,
-    @Body() body: PortalAutofillDto,
-    @CurrentUser() user: User,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<AutofillReport> {
-    const outcome = await this.autofill.runForHttp({
-      applicationId,
-      applicantId: body.applicantId,
-      triggeredByUserId: user.id,
-      supersede: body.supersede === true,
-    });
-
-    if (outcome.httpStatus !== HttpStatus.OK) {
-      res.status(outcome.httpStatus);
-    }
-
-    return outcome.report;
+  portalAutofill(): never {
+    throw new HttpException(PORTAL_AUTOFILL_MSG_GONE, HttpStatus.GONE);
   }
 }

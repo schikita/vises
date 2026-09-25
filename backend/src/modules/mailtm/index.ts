@@ -3,6 +3,7 @@ export { MailTmService } from './mailtm.service';
 export {
   TEMPORARY_EMAIL_PROVIDER,
   DISPOSABLE_EMAIL,
+  MAIL_PROVIDER,
   MAILTM_DOMAINS_PATH,
   MAILTM_ACCOUNTS_PATH,
   MAILTM_TOKEN_PATH,
@@ -14,6 +15,8 @@ export {
   MAILTM_BACKOFF_MAX_MS,
   MAILTM_OTP_CUE_PATTERN,
   MAILTM_OTP_BODY_FALLBACK_PATTERN,
+  MAILTM_PORTAL_PASSWORD_CUE_PATTERN,
+  MAILTM_PORTAL_PASSWORD_BODY_FALLBACK_PATTERN,
   MAILTM_TRANSIENT_HTTP_STATUSES,
   MAILTM_PERMANENT_HTTP_STATUSES,
   MAILTM_CLIENT_ERROR_NAME,
@@ -21,7 +24,11 @@ export {
   MAILTM_CB_OPEN_MS,
   MAILTM_CIRCUIT_OPEN_REASON,
 } from './constants';
-export type { TemporaryEmailProvider, IDisposableEmail } from './interfaces';
+export type {
+  TemporaryEmailProvider,
+  IDisposableEmail,
+  MailPort,
+} from './interfaces';
 export type {
   MailTmAccountHandle,
   FetchMailTmJsonInput,
@@ -31,13 +38,17 @@ export type {
   MailTmMessageSummary,
   MailTmMessagesCollection,
   MailTmMessageDetail,
-  CreateMailTmAccountResult,
-  WaitMailTmLatestMessageInput,
-  WaitMailTmLatestMessageResult,
-  ExtractMailTmOtpInput,
-  ExtractMailTmOtpResult,
-  DeleteMailTmAccountInput,
-  DeleteMailTmAccountResult,
+  TemporaryMailboxAccount,
+  CreateTemporaryMailboxInput,
+  TemporaryEmailCallOptions,
+  WaitTemporaryEmailMessageInput,
+  WaitTemporaryEmailMessageResult,
+  ExtractTemporaryEmailOtpInput,
+  ExtractTemporaryEmailOtpResult,
+  ExtractTemporaryEmailPortalPasswordInput,
+  ExtractTemporaryEmailPortalPasswordResult,
+  DeleteTemporaryMailboxInput,
+  DeleteTemporaryMailboxResult,
   LoginMailTmAccountInput,
   ResolveMailTmAccountResult,
   MailTmFailureClass,
@@ -47,7 +58,6 @@ export type {
   MailTmCircuitState,
   MailTmCircuitBreaker,
   MailTmCircuitRecordFailureResult,
-  MailTmCircuitCallOptions,
 } from './types';
 export {
   formatMailTmError,
@@ -59,6 +69,7 @@ export {
   computeMailTmBackoffMs,
   mailTmSleep,
   extractMailTmOtp,
+  extractMailTmPortalPassword,
   classifyMailTmFailure,
   createMailTmClientError,
   isMailTmClientError,

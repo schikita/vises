@@ -1,11 +1,13 @@
+import type { ApplicationApplicant } from '../../database/types';
+
 /**
  * REQ-012: copy resolved client email onto primary applicant when blank.
  * Does not rewrite applicant ids (DEC-007).
  */
 export const copyPrimaryApplicantEmailIfBlank = (
-  applicants: unknown[],
+  applicants: ApplicationApplicant[],
   email: string,
-): unknown[] => {
+): ApplicationApplicant[] => {
   if (!applicants.length || !email.trim()) {
     return applicants;
   }
@@ -13,11 +15,9 @@ export const copyPrimaryApplicantEmailIfBlank = (
   if (!primary || typeof primary !== 'object') {
     return applicants;
   }
-  const record = { ...(primary as Record<string, unknown>) };
-  const existing = String(record.email ?? '').trim();
+  const existing = String(primary.email ?? '').trim();
   if (existing) {
     return applicants;
   }
-  record.email = email.trim();
-  return [record, ...applicants.slice(1)];
+  return [{ ...primary, email: email.trim() }, ...applicants.slice(1)];
 };

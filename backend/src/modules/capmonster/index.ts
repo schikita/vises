@@ -13,6 +13,7 @@ export {
   CAPMONSTER_STATUS_PROCESSING,
   PORTAL_CAPMONSTER_TIMEOUT_MS,
   PORTAL_CAPMONSTER_POLL_INTERVAL_MS,
+  CAPMONSTER_ERROR_CAPTCHA_UNSOLVABLE,
   CAPMONSTER_TRANSIENT_ERROR_CODES,
   CAPMONSTER_PERMANENT_ERROR_CODES,
   CAPMONSTER_TRANSIENT_HTTP_STATUSES,
@@ -43,4 +44,5 @@ export {
   classifyCapMonsterFailure,
   createCapMonsterClientError,
   isCapMonsterClientError,
+  isCapMonsterCaptchaUnsolvableError,
 } from './utils';

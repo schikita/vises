@@ -1,11 +1,15 @@
 import {
-  blsWorkflowRowStatusLabel,
+  BLS_WORKFLOW_STATUS,
   blsWorkflowStatusLabel,
   blsWorkflowStepKeyLabel,
   blsWorkflowTaskKeyLabel,
 } from '@/entities/bls-workflow'
 import { formatDateTime } from '@/shared/lib'
 import { Btn, Card, Empty } from '@/shared/ui'
+import { BlsWorkflowBookingHandoffRender } from './BlsWorkflowBookingHandoffRender'
+import { BlsWorkflowEventsFeedRender } from './BlsWorkflowEventsFeedRender'
+import { BlsWorkflowStepRailRender } from './BlsWorkflowStepRailRender'
+import { BlsWorkflowTaskListRender } from './BlsWorkflowTaskListRender'
 import { BLS_WORKFLOW_PANEL_COPY as copy } from './constants'
 import type { BlsWorkflowPanelRenderProps } from './types'
 
@@ -15,11 +19,17 @@ export const BlsWorkflowPanelRender = ({
   polling,
   error,
   actionError,
+  liveStatusText,
   snapshot,
+  events,
+  applicants,
+  currentTaskId,
   currentAttempt,
   safeError,
+  retryableTaskIds,
   canStart,
   canStartSupersede,
+  startFormBlocked,
   canRetry,
   canResume,
   canPause,
@@ -27,23 +37,37 @@ export const BlsWorkflowPanelRender = ({
   onStart,
   onStartSupersede,
   onRetry,
+  onRetryTask,
   onResume,
   onPause,
   onCancel,
+  onAutofillRunLinked,
 }: BlsWorkflowPanelRenderProps) => {
+  /**
+   * Start stays clickable while the form has Start-gate errors so «Запустить»
+   * always runs a full form check (Dialog + field chrome) before any API call.
+   * Only busy blocks the control; `startFormBlocked` surfaces a hint only.
+   */
+  const startDisabled = busy
+
   return (
     <Card className="mb-5 lg:col-span-2">
       <p className="mb-1 font-bold">{copy.title}</p>
       <p className="mb-4 text-xs text-muted">{copy.hint}</p>
 
+      {/* Polite live region for poll / status / empty / error (NFR-004). */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true" role="status">
+        {liveStatusText}
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {canStart ? (
-          <Btn disabled={busy} onClick={onStart}>
+          <Btn disabled={startDisabled} onClick={onStart}>
             {busy ? copy.busy : copy.start}
           </Btn>
         ) : null}
         {canStartSupersede ? (
-          <Btn disabled={busy} onClick={onStartSupersede}>
+          <Btn disabled={startDisabled} onClick={onStartSupersede}>
             {busy ? copy.busy : copy.startSupersede}
           </Btn>
         ) : null}
@@ -67,14 +91,26 @@ export const BlsWorkflowPanelRender = ({
             {copy.cancel}
           </Btn>
         ) : null}
-        {polling ? <span className="text-xs text-muted">{copy.polling}</span> : null}
+        {polling ? (
+          <span className="text-xs text-muted" aria-hidden="true">
+            {copy.polling}
+          </span>
+        ) : null}
       </div>
+
+      {startFormBlocked && (canStart || canStartSupersede) ? (
+        <p className="mb-3 text-xs font-semibold text-clay">
+          {copy.startFormBlockedHint}
+        </p>
+      ) : null}
 
       {actionError ? (
         <p className="mb-3 text-sm font-semibold text-clay">{actionError}</p>
       ) : null}
 
-      {loading ? <p className="text-sm text-muted">{copy.loading}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted">{copy.loading}</p>
+      ) : null}
       {!loading && error ? (
         <p className="text-sm font-semibold text-clay">{error}</p>
       ) : null}
@@ -84,6 +120,12 @@ export const BlsWorkflowPanelRender = ({
 
       {!loading && !error && snapshot != null ? (
         <div className="space-y-4">
+          {snapshot.status === BLS_WORKFLOW_STATUS.AWAITING_STAFF_BOOKING ? (
+            <BlsWorkflowBookingHandoffRender
+              terminalReason={snapshot.terminalReason}
+            />
+          ) : null}
+
           <div className="grid gap-2 rounded-xl border border-line bg-white px-4 py-3 text-sm sm:grid-cols-2">
             <p>
               <span className="font-semibold text-muted">{copy.status}: </span>
@@ -91,9 +133,16 @@ export const BlsWorkflowPanelRender = ({
             </p>
             <p>
               <span className="font-semibold text-muted">
+                {/* lockHeld boolean only — never lockOwner / vault (REQ-016). */}
                 {snapshot.lockHeld ? copy.lockHeld : copy.noLock}
               </span>
             </p>
+            {snapshot.status === BLS_WORKFLOW_STATUS.PAUSED &&
+            snapshot.lockHeld ? (
+              <p className="sm:col-span-2 text-xs text-muted">
+                {copy.pauseCooperativeHint}
+              </p>
+            ) : null}
             <p>
               <span className="font-semibold text-muted">{copy.currentStep}: </span>
               {snapshot.currentStepKey
@@ -112,9 +161,7 @@ export const BlsWorkflowPanelRender = ({
             </p>
             <p>
               <span className="font-semibold text-muted">{copy.nextRunAt}: </span>
-              {snapshot.nextRunAt
-                ? formatDateTime(snapshot.nextRunAt)
-                : copy.dash}
+              {snapshot.nextRunAt ? formatDateTime(snapshot.nextRunAt) : copy.dash}
             </p>
             {snapshot.terminalReason ? (
               <p className="sm:col-span-2">
@@ -135,60 +182,24 @@ export const BlsWorkflowPanelRender = ({
             ) : null}
           </div>
 
-          {snapshot.steps.length > 0 ? (
-            <div>
-              <p className="mb-2 text-sm font-bold">{copy.stepsHeading}</p>
-              <ul className="space-y-1">
-                {snapshot.steps.map((step) => (
-                  <li
-                    key={`${step.ordinal}-${step.stepKey}`}
-                    className="rounded-lg border border-line bg-white px-3 py-2 text-sm"
-                  >
-                    <span className="font-semibold">
-                      {blsWorkflowStepKeyLabel(step.stepKey)}
-                    </span>
-                    <span className="text-muted">
-                      {' '}
-                      · {blsWorkflowRowStatusLabel(step.status)}
-                    </span>
-                    {step.skipReason ? (
-                      <span className="text-xs text-muted"> — {step.skipReason}</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          <BlsWorkflowStepRailRender
+            steps={snapshot.steps}
+            currentStepKey={snapshot.currentStepKey}
+          />
 
-          {snapshot.tasks.length > 0 ? (
-            <div>
-              <p className="mb-2 text-sm font-bold">{copy.tasksHeading}</p>
-              <ul className="space-y-1">
-                {snapshot.tasks.map((task) => (
-                  <li
-                    key={`${task.ordinal}-${task.stepKey}-${task.taskKey}-${task.applicantId ?? ''}`}
-                    className="rounded-lg border border-line bg-white px-3 py-2 text-sm"
-                  >
-                    <span className="font-semibold">
-                      {blsWorkflowTaskKeyLabel(task.taskKey)}
-                    </span>
-                    <span className="text-muted">
-                      {' '}
-                      · {blsWorkflowStepKeyLabel(task.stepKey)} ·{' '}
-                      {blsWorkflowRowStatusLabel(task.status)} · попытка{' '}
-                      {task.attemptCount}
-                    </span>
-                    {task.lastErrorMessage ? (
-                      <p className="mt-1 text-xs font-semibold text-clay">
-                        {task.lastErrorMessage}
-                        {task.lastErrorClass ? ` (${task.lastErrorClass})` : ''}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          <BlsWorkflowTaskListRender
+            tasks={snapshot.tasks}
+            currentTaskId={currentTaskId}
+            applicants={applicants}
+            busy={busy}
+            retryableTaskIds={retryableTaskIds}
+            onRetryTask={onRetryTask}
+          />
+
+          <BlsWorkflowEventsFeedRender
+            events={events}
+            onAutofillRunLinked={onAutofillRunLinked}
+          />
         </div>
       ) : null}
     </Card>

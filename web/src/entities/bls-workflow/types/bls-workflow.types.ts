@@ -6,14 +6,16 @@ export type BlsWorkflowStep = {
   skipReason: string | null
 }
 
-/** Task row from GET …/bls-workflow snapshot. */
+/** Task row from GET …/bls-workflow snapshot (DEC-003: id + maxAttempts). */
 export type BlsWorkflowTask = {
+  id: string
   stepKey: string
   taskKey: string
   applicantId: string | null
   ordinal: number
   status: string
   attemptCount: number
+  maxAttempts: number
   lastErrorClass: string | null
   lastErrorMessage: string | null
 }

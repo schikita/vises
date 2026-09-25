@@ -5,11 +5,7 @@ import type {
   Status,
   UpsertAppResult,
 } from '@/entities/application'
-import type {
-  PortalAutofillRunListResponse,
-  PortalAutofillRunResult,
-} from '@/entities/portal-autofill'
-import { runPortalAutofillRequest } from '@/entities/portal-autofill'
+import { toAppUpsertPayload } from '@/entities/application'
 import { SESSION_KEY, TOKEN_KEY, toSession } from '@/entities/session'
 import type { Session } from '@/entities/session'
 import { DEFAULT_SETTINGS } from '@/entities/settings'
@@ -137,7 +133,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const upsert = useCallback(async (app: Application): Promise<UpsertAppResult> => {
     const saved = await apiRequest<UpsertAppResult>('/apps', {
       method: 'POST',
-      data: app,
+      data: toAppUpsertPayload(app),
     })
     const { issuedClientAccess, ...appFields } = saved
     const application = appFields as Application
@@ -209,19 +205,6 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  const listPortalAutofillRuns = useCallback(
-    async (applicationId: string, applicantId?: string) => {
-      const query =
-        applicantId != null && applicantId !== ''
-          ? `?applicantId=${encodeURIComponent(applicantId)}`
-          : ''
-      return apiRequest<PortalAutofillRunListResponse>(
-        `/apps/${applicationId}/portal-autofill-runs${query}`,
-      )
-    },
-    [],
-  )
-
   const openPortalAutofillScreenshot = useCallback(async (runId: string) => {
     try {
       const blob = await fetchApiBlob(`/apps/portal-autofill-runs/${runId}/screenshot`)
@@ -230,16 +213,6 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('Не удалось открыть скриншот')
     }
   }, [])
-
-  const runPortalAutofill = useCallback(
-    async (
-      applicationId: string,
-      applicantId: string,
-      options?: { supersede?: boolean },
-    ): Promise<PortalAutofillRunResult> =>
-      runPortalAutofillRequest(applicationId, applicantId, options),
-    [],
-  )
 
   const createUser = useCallback(
     async (input: { name: string; email: string; login?: string; role: Role }) => {
@@ -320,9 +293,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       setStatus,
       addDoc,
       openDoc,
-      listPortalAutofillRuns,
       openPortalAutofillScreenshot,
-      runPortalAutofill,
       createUser,
       updateUser,
       reissueAccess,
@@ -347,9 +318,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       setStatus,
       addDoc,
       openDoc,
-      listPortalAutofillRuns,
       openPortalAutofillScreenshot,
-      runPortalAutofill,
       createUser,
       updateUser,
       reissueAccess,

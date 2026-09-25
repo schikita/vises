@@ -9,7 +9,7 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { StatsModule } from './modules/stats';
 import { DatabaseModule } from './modules/database/database.module';
 import { SeedModule } from './modules/seed/seed.module';
-import { PortalScrapeModule } from './modules/portal-scrape/portal-scrape.module';
+import { PortalScrapeModule } from './modules/portal-scrape';
 import { Proxy6Module } from './modules/proxy6';
 
 @Module({

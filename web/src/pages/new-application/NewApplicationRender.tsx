@@ -5,9 +5,10 @@ import type {
   UseFormSetValue,
   UseFormWatch,
 } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import type { Application } from '@/entities/application'
 import { Btn, Card, Field } from '@/shared/ui'
-import { getNestedFormError, PASSPORT_TYPES } from '@/features/application-form'
+import { getNestedFormError, PASSPORT_ISSUE_COUNTRIES, PASSPORT_TYPES } from '@/features/application-form'
 import { NEW_APPLICATION_STEPS } from './constants'
 
 type NewApplicationRenderProps = {
@@ -41,6 +42,7 @@ export const NewApplicationRender = ({
   onBack,
   onFormSubmit,
 }: NewApplicationRenderProps) => {
+  const { t } = useTranslation()
   const upper = (path: 'applicants.0.firstName' | 'applicants.0.lastName' | 'applicants.0.lastNameAtBirth' | 'applicants.0.placeOfBirth' | 'applicants.0.passportNumber' | 'applicants.0.passportIssuedBy') => {
     const reg = register(path)
     return {
@@ -157,7 +159,22 @@ export const NewApplicationRender = ({
                 <Field label="Тип паспорта" required error={err('applicants.0.passportType')}>
                   <select className="field" {...register('applicants.0.passportType')}>
                     {PASSPORT_TYPES.map((x) => (
-                      <option key={x}>{x}</option>
+                      <option key={x} value={x}>
+                        {t(`applicant.options.passportType.${x}`)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field
+                  label="Страна выдачи паспорта"
+                  required
+                  error={err('applicants.0.passportIssueCountry')}
+                >
+                  <select className="field" {...register('applicants.0.passportIssueCountry')}>
+                    {PASSPORT_ISSUE_COUNTRIES.map((x, index) => (
+                      <option key={`${x}-${index}`} value={x}>
+                        {x}
+                      </option>
                     ))}
                   </select>
                 </Field>

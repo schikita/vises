@@ -29,9 +29,22 @@ export const appEnvSchema = z.object({
   PROXY6_API_KEY: z.string(),
   /**
    * Mail.tm API origin (e.g. https://api.mail.tm). Required non-empty when
-   * Settings email OTP is armed; empty is allowed at boot.
+   * VISES_PORTAL_EMAIL_PROVIDER=mailtm and email OTP is armed; empty is
+   * allowed at boot. Not required when provider is tempmail_plus (DEC-007).
    */
   MAILTM_API_BASE_URL: z.string(),
+  /**
+   * Temporary-email backend for portal OTP (DEC-001).
+   * `mailtm` (default) = Mail.tm HTTP API; `tempmail_plus` = browser site.
+   * Empty or invalid values coerce to `mailtm` for ops safety.
+   */
+  VISES_PORTAL_EMAIL_PROVIDER: z.preprocess((raw) => {
+    const trimmed = typeof raw === 'string' ? raw.trim() : '';
+    if (trimmed === 'mailtm' || trimmed === 'tempmail_plus') {
+      return trimmed;
+    }
+    return 'mailtm';
+  }, z.enum(['mailtm', 'tempmail_plus'])),
   /**
    * Envelope encryption master key (DEC-005 / REQ-014): base64 of exactly 32 bytes.
    * Empty allowed at boot (crypto unused); encrypt/decrypt fail-closed with 503.

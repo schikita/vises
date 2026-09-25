@@ -4,7 +4,7 @@
 |-------|-------|
 | Task ID | `FE-TASK-005` |
 | Title | REGISTER→BOOK step rail with current emphasis |
-| Status | **TODO** |
+| Status | **DONE** |
 | Feature | `bls-workflow-frontend` |
 | REQ/NFR | REQ-002, NFR-001, REQ-020 |
 | DEC | — (UX in 01-target-ux §3) |

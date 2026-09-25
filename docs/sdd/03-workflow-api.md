@@ -76,12 +76,14 @@ type BlsWorkflowOut = {
     skipReason: string | null;
   }>;
   tasks: Array<{
+    id: string; // additive (DEC-003 / bls-workflow-frontend) — retry body.taskId
     stepKey: string;
     taskKey: string;
     applicantId: string | null;
     ordinal: number;
     status: string;
     attemptCount: number;
+    maxAttempts: number; // additive (DEC-003) — attempt budget display
     lastErrorClass: string | null;
     lastErrorMessage: string | null;
   }>;
@@ -143,13 +145,13 @@ For `PAUSED` or `WAITING_RETRY` / `WAITING_STAFF` when eligible — alias semant
 
 `POST /api/apps/:applicationId/bls-workflow/:workflowId/pause`
 
-Sets `PAUSED`; runner must not claim. If running, cooperative stop after attempt finishes (do not kill browser mid-flight unless lock abandoned — **Assumption:** pause takes effect after current attempt ends).
+Sets `PAUSED` (non-terminal, resumable); clears workflow and current-task `nextRunAt` so the runner must not claim or auto-retry while paused. If an attempt is in flight, **immediately signals abort** of portal/browser automation for that `workflowId` (force-close hooks; proxy release via existing `finally`). The HTTP handler persists status + schedule clear, signals abort, and returns — it does **not** await full browser teardown. Resume / manual retry are the paths to run again.
 
 ### 2.7 Cancel
 
 `POST /api/apps/:applicationId/bls-workflow/:workflowId/cancel`
 
-→ `CANCELLED`; release lock; schedule mailbox cleanup per policy.
+→ `CANCELLED` (terminal); release lock; clear workflow and current-task `nextRunAt`; schedule mailbox cleanup per policy. Same class of **immediate abort** of in-flight portal/browser work as pause. No auto-retry after cancel. HTTP remains short (signal + durable write + return; do not await browser close).
 
 ### 2.8 Supersede
 
@@ -165,11 +167,12 @@ Preferred via `start` with `supersede: true` (autofill parity). Optional dedicat
 
 | Endpoint | Fate |
 |----------|------|
-| `POST …/portal-autofill` | Remains for RegisterUser-only / evidence path during transition; workflow is multi-stage SoT |
+| `POST …/portal-autofill` | **410 Gone** — non-executing; registration starts only via BLS workflow (`portal-autofill-workflow-cutover` DEC-002 / REQ-003) |
 | `GET …/portal-autofill-runs` | Remains; REGISTER step may link `runId` in events/payloadSafe |
-| `POST …/portal-login-prep` | Remains as diagnostic one-shot; workflow LOGIN supersedes product path for full auth |
+| `GET …/portal-autofill-runs/:runId/screenshot` | Remains; staff open via workflow `AUTOFILL_RUN_LINKED` event |
+| `POST …/portal-login-prep` | Remains as diagnostic one-shot (non-REGISTER); workflow LOGIN is the product path for full auth |
 
-Staff SPA primary control becomes **bls-workflow** panel; autofill widget may deep-link evidence.
+Staff SPA control on **Автозаполнение** is **bls-workflow** only (`BlsWorkflowPanel`). Legacy RegisterUser start UI is removed.
 
 ---
 
@@ -198,3 +201,9 @@ Staff SPA primary control becomes **bls-workflow** panel; autofill widget may de
 ## 6. Phase gate
 
 API shapes fixed for implementers (TASK-013 / TASK-014). **No product code in this phase.**
+
+---
+
+## 7. Nest packaging note (portal-scrape-module-split)
+
+HTTP paths, auth roles, and response contracts in this document are unchanged. Implementation ownership after the packaging split: workflow controller/runner/executor → `BlsWorkflowModule`; domain clients + `PROXY_PROVIDER` → `BlsClientsModule`; fill/captcha → `PortalFillModule`; vault → `BlsSecretsModule`; temporary-email factory → `BrowserMailModule`. `AppModule` still imports only the `PortalScrapeModule` façade. Operator module map: [`backend/docs/modules/portal-scrape.md`](../../backend/docs/modules/portal-scrape.md) § Nest module map.

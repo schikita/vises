@@ -4,7 +4,7 @@
 |-------|-------|
 | Task ID | `FE-TASK-004` |
 | Title | Panel container: snapshot + events poll (no WS) |
-| Status | **TODO** |
+| Status | **DONE** |
 | Feature | `bls-workflow-frontend` |
 | REQ/NFR | REQ-005, REQ-006, REQ-007, REQ-019, NFR-003, NFR-005 |
 | DEC | DEC-001 |
@@ -58,4 +58,7 @@ Validate: cd web && npm run lint && npm run build
 
 ## Test notes
 
-Lint + build. Manual poll with running API if available.
+Lint + build **PASS** (2026-09-23). Manual poll with running API deferred to verifier.
+Events held in panel state / passed to render props; timeline UI deferred to FE-TASK-007.
+Grep `web/src`: no `WebSocket` / `EventSource` / `socket.io`.
+

@@ -44,5 +44,24 @@ export const BLS_WORKFLOW_TASK_STATUS = {
 /** Staff UI poll interval while non-terminal (DEC-006 / NFR-007). */
 export const BLS_WORKFLOW_POLL_INTERVAL_MS = 3_000
 
+/** Default page size for GET …/events (backend BLS_WORKFLOW_EVENTS_DEFAULT_LIMIT). */
+export const BLS_WORKFLOW_EVENTS_DEFAULT_LIMIT = 100
+
+/** Max page size for GET …/events (backend BLS_WORKFLOW_EVENTS_MAX_LIMIT). */
+export const BLS_WORKFLOW_EVENTS_MAX_LIMIT = 200
+
+/** Known append-only event types (mirrors backend BLS_WORKFLOW_EVENT_TYPE). */
+export const BLS_WORKFLOW_EVENT_TYPE = {
+  WORKFLOW_CREATED: 'WORKFLOW_CREATED',
+  TASK_COMPLETED: 'TASK_COMPLETED',
+  STEP_COMPLETED: 'STEP_COMPLETED',
+  STEP_SKIPPED: 'STEP_SKIPPED',
+  TASK_FAILED: 'TASK_FAILED',
+  WORKFLOW_STATUS_CHANGED: 'WORKFLOW_STATUS_CHANGED',
+  WORKFLOW_ABANDONED: 'WORKFLOW_ABANDONED',
+  AWAITING_STAFF_BOOKING: 'AWAITING_STAFF_BOOKING',
+  AUTOFILL_RUN_LINKED: 'AUTOFILL_RUN_LINKED',
+} as const
+
 /** Backend 404 detail when no workflow exists for the application. */
 export const BLS_WORKFLOW_MSG_NOT_FOUND = 'Сценарий не найден'

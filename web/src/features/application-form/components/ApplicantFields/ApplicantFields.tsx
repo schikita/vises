@@ -8,6 +8,7 @@ import {
   BELARUS_PHONE_PLACEHOLDER,
   ENTRIES,
   MARITAL_STATUSES,
+  PASSPORT_ISSUE_COUNTRIES,
   PASSPORT_TYPES,
   PURPOSES,
   RELATIONSHIPS,
@@ -36,6 +37,22 @@ export const ApplicantFields = ({
   const showPersonal = section === 'all' || section === 'personal'
   const showDocuments = section === 'all' || section === 'documents'
   const showContactJourney = section === 'all' || section === 'contactJourney'
+  const personalSectionError = Boolean(
+    fieldError('dob') ||
+      fieldError('firstName') ||
+      fieldError('lastName') ||
+      fieldError('lastNameAtBirth') ||
+      fieldError('countryOfBirth'),
+  )
+  const documentsSectionError = Boolean(
+    fieldError('passportIssued') ||
+      fieldError('passportExpires') ||
+      fieldError('passportNumber') ||
+      fieldError('passportType') ||
+      fieldError('passportIssueCountry') ||
+      fieldError('passportIssuedBy'),
+  )
+  const contactSectionError = Boolean(fieldError('phone'))
   const phonePath = `${namePrefix}.phone`
 
   const latinField = (key: string) => {
@@ -56,7 +73,11 @@ export const ApplicantFields = ({
       {showPersonal && (
         <div>
           {section === 'all' && (
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
+            <p
+              className={`mb-3 text-xs font-bold uppercase tracking-wide ${
+                personalSectionError ? 'text-clay' : 'text-muted'
+              }`}
+            >
               {t('applicant.sections.personal')}
             </p>
           )}
@@ -145,7 +166,11 @@ export const ApplicantFields = ({
       {showDocuments && (
         <div>
           {section === 'all' && (
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
+            <p
+              className={`mb-3 text-xs font-bold uppercase tracking-wide ${
+                documentsSectionError ? 'text-clay' : 'text-muted'
+              }`}
+            >
               {t('applicant.sections.travelDocument')}
             </p>
           )}
@@ -159,6 +184,20 @@ export const ApplicantFields = ({
                 {PASSPORT_TYPES.map((x) => (
                   <option key={x} value={x}>
                     {t(`applicant.options.passportType.${x}`)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field
+              label={t('applicant.fields.passportIssueCountry')}
+              required
+              error={fieldError('passportIssueCountry')}
+            >
+              {/* DEC-010: full ordered CON-003 including duplicate Yemen; index keys. */}
+              <select className="field" {...register(`${namePrefix}.passportIssueCountry`)}>
+                {PASSPORT_ISSUE_COUNTRIES.map((x, index) => (
+                  <option key={`${x}-${index}`} value={x}>
+                    {x}
                   </option>
                 ))}
               </select>
@@ -201,7 +240,11 @@ export const ApplicantFields = ({
         <>
           <div>
             {section === 'all' && (
-              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
+              <p
+                className={`mb-3 text-xs font-bold uppercase tracking-wide ${
+                  contactSectionError ? 'text-clay' : 'text-muted'
+                }`}
+              >
                 {t('applicant.sections.contact')}
               </p>
             )}

@@ -13,7 +13,7 @@ import { isPortalAutofillLockStale } from './utils';
 /**
  * Boot-time reconcile for durable autofill runs (DEC-006).
  * Clears stale locks and terminalizes expired/permanent/CB-open rows.
- * Never launches Patchright or calls CapMonster (CON-006).
+ * Never launches Patchright or calls the captcha service (CON-006).
  */
 @Injectable()
 export class PortalAutofillResumeReconciler implements OnModuleInit {
@@ -80,7 +80,7 @@ export class PortalAutofillResumeReconciler implements OnModuleInit {
   }
 
   /**
-   * Budget expired, permanent CapMonster, or CB-open → failed (DEC-003 / DEC-006).
+   * Budget expired, permanent captcha failure, or CB-open → failed (DEC-003 / DEC-006).
    * Eligible in_progress rows are left for the next staff POST to resume.
    */
   private resolveBootTerminalReason(

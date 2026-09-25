@@ -75,6 +75,18 @@ export class BlsWorkflow {
   })
   supersedesWorkflowId!: string | null;
 
+  /**
+   * When set, runner tick soft-fails Mail.tm delete + MAILTM_* vault purge
+   * after this instant (portal-credential-reveal DEC-004). Null when not
+   * scheduled or already cleaned.
+   */
+  @Column({
+    name: 'mailbox_cleanup_due_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  mailboxCleanupDueAt!: Date | null;
+
   @Column({
     name: 'triggered_by_user_id',
     type: 'varchar',

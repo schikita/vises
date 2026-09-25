@@ -10,5 +10,6 @@ export const PORTAL_AUTOFILL_REQUIRED_FIELDS: (keyof Applicant)[] = [
   'passportIssued',
   'passportExpires',
   'passportType',
+  'passportIssueCountry',
   'passportIssuedBy',
 ]

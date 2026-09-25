@@ -1,8 +1,13 @@
 import type {
+  FocusEvent,
+  FormEvent,
+} from 'react'
+import type {
   UseFormRegister,
   UseFormSetValue,
   UseFormWatch,
 } from 'react-hook-form'
+import { useFormContext } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Trash2, Upload } from 'lucide-react'
@@ -19,17 +24,28 @@ import {
   CATEGORIES,
   CITIES_BY_COUNTRY,
   SUBMIT_COUNTRIES,
+  getNestedFormError,
 } from '@/features/application-form'
-import { Avatar, Btn, Card, Empty, Field, StatusBadge } from '@/shared/ui'
-import { BlsWorkflowPanel } from '@/widgets/bls-workflow-panel'
-import { PortalAutofillEvidenceSection } from '@/widgets/portal-autofill-evidence'
+import { Avatar, Btn, Card, Dialog, Empty, Field, StatusBadge } from '@/shared/ui'
+import {
+  BlsWorkflowPanel,
+  type BeforeStartBlsWorkflow,
+  type OnStartBlsWorkflowApiError,
+} from '@/widgets/bls-workflow-panel'
 import { formatDateTime } from '@/shared/lib'
-import { APPLICATION_DETAIL_TABS } from './constants'
-import type { ApplicationDetailTabId } from './types'
+import {
+  APPLICATION_DETAIL_START_VALIDATION_COPY,
+  APPLICATION_DETAIL_TABS,
+} from './constants'
+import type { ApplicationDetailStartIssue, ApplicationDetailTabId } from './types'
+import {
+  hasApplicationDetailApplicantErrors,
+  hasApplicationDetailTabErrors,
+  resolveApplicationDetailFieldControlName,
+} from './utils'
 
 type ApplicationDetailRenderProps = {
   form: Application | null
-  found: Application | null
   loading: boolean
   saved: boolean
   saveError: string
@@ -40,19 +56,29 @@ type ApplicationDetailRenderProps = {
   managerNames: string[]
   appsListPath: string
   activeTab: ApplicationDetailTabId
+  startValidationOpen: boolean
+  startValidationIssues: ApplicationDetailStartIssue[]
+  /** Detail-owned Start disable signal for BLS panel (DEC-003). */
+  startFormBlocked: boolean
   register: UseFormRegister<Application>
   setValue: UseFormSetValue<Application>
   watch: UseFormWatch<Application>
   onTabChange: (tab: ApplicationDetailTabId) => void
+  onCloseStartValidation: () => void
+  onStartRelevantBlur: (fieldName: string) => void
+  onStartRelevantChange: (fieldName: string) => void
+  onBeforeStartBlsWorkflow: BeforeStartBlsWorkflow
+  onStartBlsWorkflowApiError: OnStartBlsWorkflowApiError
   onSave: () => void
   onRemove: () => void
   onUpload: (type: DocType, file: File) => void
   onOpenDoc: (docId: string) => void
+  /** Opens RegisterUser screenshot for AUTOFILL_RUN_LINKED (DEC-007). */
+  onAutofillRunLinked: (runId: string) => void | Promise<void>
 }
 
 export const ApplicationDetailRender = ({
   form,
-  found,
   loading,
   saved,
   saveError,
@@ -63,16 +89,28 @@ export const ApplicationDetailRender = ({
   managerNames,
   appsListPath,
   activeTab,
+  startValidationOpen,
+  startValidationIssues,
+  startFormBlocked,
   register,
   setValue,
   watch,
   onTabChange,
+  onCloseStartValidation,
+  onStartRelevantBlur,
+  onStartRelevantChange,
+  onBeforeStartBlsWorkflow,
+  onStartBlsWorkflowApiError,
   onSave,
   onRemove,
   onUpload,
   onOpenDoc,
+  onAutofillRunLinked,
 }: ApplicationDetailRenderProps) => {
   const { t } = useTranslation()
+  const {
+    formState: { errors },
+  } = useFormContext<Application>()
 
   if (loading) {
     return <Empty title="Загрузка…" text="Открываем заявку." />
@@ -91,9 +129,22 @@ export const ApplicationDetailRender = ({
   const submitCountry = watch('submitCountry')
   const submitCity = watch('submitCity')
   const portalFormEmail = (form.portalFormEmail ?? '').trim()
+  const applicantCount = form.applicants.length
+
+  const handleStartRelevantBlur = (event: FocusEvent<HTMLDivElement>) => {
+    const fieldName = resolveApplicationDetailFieldControlName(event.target)
+    if (!fieldName) return
+    onStartRelevantBlur(fieldName)
+  }
+
+  const handleStartRelevantChange = (event: FormEvent<HTMLDivElement>) => {
+    const fieldName = resolveApplicationDetailFieldControlName(event.target)
+    if (!fieldName) return
+    onStartRelevantChange(fieldName)
+  }
 
   return (
-    <div>
+    <div onBlur={handleStartRelevantBlur} onChange={handleStartRelevantChange}>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link
           to={appsListPath}
@@ -144,18 +195,27 @@ export const ApplicationDetailRender = ({
       >
         {APPLICATION_DETAIL_TABS.map((tab) => {
           const selected = activeTab === tab.id
+          const tabHasError = hasApplicationDetailTabErrors(errors, tab.id, applicantCount)
           return (
             <button
               key={tab.id}
               type="button"
               role="tab"
               aria-selected={selected}
+              aria-invalid={tabHasError || undefined}
               className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                selected ? 'bg-forest text-white' : 'border border-line bg-white text-ink'
+                tabHasError
+                  ? `border border-clay bg-[#fbe7e0] text-clay ${selected ? 'ring-2 ring-clay' : ''}`
+                  : selected
+                    ? 'bg-forest text-white'
+                    : 'border border-line bg-white text-ink'
               }`}
               onClick={() => onTabChange(tab.id)}
             >
               {tab.label}
+              {tabHasError
+                ? ` · ${APPLICATION_DETAIL_START_VALIDATION_COPY.tabErrorCue}`
+                : ''}
             </button>
           )
         })}
@@ -236,6 +296,23 @@ export const ApplicationDetailRender = ({
               <Field label="Въезд в Шенген">
                 <input type="date" className="field" {...register('travelDate')} />
               </Field>
+              <Field
+                label={t('staffCreate.fields.clientEmail')}
+                error={getNestedFormError(errors, 'clientEmail')}
+              >
+                <input
+                  className="field"
+                  type="email"
+                  autoComplete="email"
+                  {...register('clientEmail')}
+                />
+              </Field>
+              <Field
+                label="Дата выезда"
+                error={getNestedFormError(errors, 'returnDate')}
+              >
+                <input type="date" className="field" {...register('returnDate')} />
+              </Field>
               <div className="sm:col-span-2 flex flex-wrap gap-5">
                 <label className="flex items-center gap-2 text-sm font-semibold">
                   <input
@@ -300,16 +377,25 @@ export const ApplicationDetailRender = ({
           <Card>
             <p className="mb-4 font-bold">Заявители</p>
             <div className="space-y-6">
-              {form.applicants.map((applicant, index) => (
-                <div key={applicant.id} className={index ? 'border-t border-line pt-6' : ''}>
-                  <p className="mb-3 text-sm font-bold">
-                    {applicant.firstName || applicant.lastName
-                      ? `${applicant.firstName} ${applicant.lastName}`
-                      : `Заявитель ${index + 1}`}
-                  </p>
-                  <ApplicantFields namePrefix={`applicants.${index}`} />
-                </div>
-              ))}
+              {form.applicants.map((applicant, index) => {
+                const applicantHasError = hasApplicationDetailApplicantErrors(errors, index)
+                return (
+                  <div key={applicant.id} className={index ? 'border-t border-line pt-6' : ''}>
+                    <p
+                      className={`mb-3 text-sm font-bold ${
+                        applicantHasError
+                          ? 'border-l-4 border-clay bg-[#fbe7e0] pl-3 text-clay'
+                          : ''
+                      }`}
+                    >
+                      {applicant.firstName || applicant.lastName
+                        ? `${applicant.firstName} ${applicant.lastName}`
+                        : `Заявитель ${index + 1}`}
+                    </p>
+                    <ApplicantFields namePrefix={`applicants.${index}`} />
+                  </div>
+                )
+              })}
             </div>
           </Card>
         </div>
@@ -417,12 +503,13 @@ export const ApplicationDetailRender = ({
 
       {activeTab === 'autofill' ? (
         <div role="tabpanel">
-          <BlsWorkflowPanel applicationId={form.id} />
-          <PortalAutofillEvidenceSection
+          <BlsWorkflowPanel
             applicationId={form.id}
             applicants={form.applicants}
-            persistedApplicantIds={(found?.applicants ?? []).map((a) => a.id).filter(Boolean)}
-            clientEmail={form.clientEmail}
+            startFormBlocked={startFormBlocked}
+            onAutofillRunLinked={onAutofillRunLinked}
+            onBeforeStartBlsWorkflow={onBeforeStartBlsWorkflow}
+            onStartBlsWorkflowApiError={onStartBlsWorkflowApiError}
           />
         </div>
       ) : null}
@@ -444,6 +531,30 @@ export const ApplicationDetailRender = ({
           </Card>
         </div>
       ) : null}
+
+      <Dialog
+        open={startValidationOpen}
+        title={APPLICATION_DETAIL_START_VALIDATION_COPY.dialogTitle}
+        onClose={onCloseStartValidation}
+      >
+        <div role="alert">
+          {startValidationIssues.length > 0 ? (
+            <ul className="list-disc space-y-2 pl-5 text-sm font-semibold text-clay">
+              {startValidationIssues.map((issue) => (
+                <li
+                  key={`${issue.tabId ?? 'api'}-${issue.applicantIndex ?? 'app'}-${issue.message}`}
+                >
+                  {issue.message}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm font-semibold text-clay">
+              {APPLICATION_DETAIL_START_VALIDATION_COPY.dialogListFallback}
+            </p>
+          )}
+        </div>
+      </Dialog>
     </div>
   )
 }

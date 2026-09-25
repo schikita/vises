@@ -1,5 +1,6 @@
 /**
  * Mail.tm REST I/O shapes (DEC-002 / DEC-006 / DEC-008 / DEC-009).
+ * Port-facing types live in temporary-email.types.ts (REQ-002).
  * Never place passwords, Bearer tokens, or raw bodies in reports (NFR-001).
  */
 
@@ -65,52 +66,6 @@ export type MailTmMessageDetail = {
   html?: string[];
   seen?: boolean;
   intro?: string;
-};
-
-export type CreateMailTmAccountResult = MailTmAccountHandle;
-
-export type WaitMailTmLatestMessageInput = {
-  token: string;
-  /** Max wait ms (DEC-003). Defaults to MAILTM_WAIT_FOR_EMAIL_MS when omitted by caller. */
-  timeoutMs: number;
-  /** Prefer unread when true (default). */
-  unreadOnly?: boolean;
-};
-
-export type WaitMailTmLatestMessageResult = {
-  messageId: string;
-  /**
-   * Combined text/html body for OTP extract. Callers must not log this
-   * (NFR-001); pass only into extractOtp / extractMailTmOtp.
-   */
-  body: string;
-};
-
-export type ExtractMailTmOtpInput = {
-  body: string;
-};
-
-export type ExtractMailTmOtpResult =
-  | {
-      ok: true;
-      otp: string;
-      source: 'cue' | 'body-fallback';
-    }
-  | {
-      ok: false;
-      reason: string;
-    };
-
-export type DeleteMailTmAccountInput = {
-  accountId: string;
-  token: string;
-};
-
-/** Soft-fail delete outcome (REQ-010). Never throws to caller. */
-export type DeleteMailTmAccountResult = {
-  ok: boolean;
-  /** Soft-fail detail; never includes token/password. */
-  warnMessage?: string;
 };
 
 /** Soft-fail login input for terminal cleanup re-auth (REQ-016). */

@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -6,8 +6,6 @@ import type { AppEnv } from '../config';
 import { uid } from '../../shared/utils';
 import {
   isProxy6ApiError,
-  PortalProxyLeaseService,
-  type PortalProxyLease,
   PROXY6_MSG_MISCONFIGURED,
 } from '../proxy6';
 import { Application } from '../database/entities/application.entity';
@@ -19,8 +17,13 @@ import {
   PORTAL_LOGIN_PREP_MSG_LOGIN_PATH,
   PORTAL_LOGIN_PREP_MSG_MISSING_PORTAL_EMAIL,
 } from './constants';
-import { PortalConfigService } from './portal-config.service';
-import { PortalLoginPrepFillService } from './portal-login-prep-fill.service';
+import {
+  PROXY_PROVIDER,
+  type ProxyProvider,
+  type ProxyProviderLease,
+} from '../bls-clients';
+import { PortalConfigService } from '../portal-core';
+import { PortalLoginPrepFillService } from '../portal-fill';
 import type { PortalLoginPrepHttpOutcome, PortalLoginPrepReport } from './types';
 import {
   buildLoginPrepEvidenceAbsolutePath,
@@ -32,10 +35,10 @@ import {
 
 /**
  * Staff HTTP portal login preparation (DEC-002 / DEC-006–008 / DEC-012).
- * Navigates login URL, fills portalFormEmail among decoys, optional CapMonster
- * Verify. Browser egress via Proxy6 lease when PROXY6_API_KEY set (DEC-003/005).
- * Stops before password / OTP-after-verify / status scrape (workflow LOGIN
- * opts in via submitPassword on the shared pipeline — TASK-009).
+ * Navigates login URL, fills portalFormEmail among decoys, optional captcha
+ * Verify. Browser egress via proxy provider lease when proxy is enabled
+ * (DEC-003/005). Stops before password / OTP-after-verify / status scrape
+ * (workflow LOGIN opts in via submitPassword on the shared pipeline — TASK-009).
  */
 @Injectable()
 export class PortalLoginPrepService {
@@ -45,7 +48,8 @@ export class PortalLoginPrepService {
   constructor(
     private readonly configService: PortalConfigService,
     private readonly fillService: PortalLoginPrepFillService,
-    private readonly proxyLeaseService: PortalProxyLeaseService,
+    @Inject(PROXY_PROVIDER)
+    private readonly proxyProvider: ProxyProvider,
     @InjectRepository(Application)
     private readonly appsRepo: Repository<Application>,
     config: ConfigService<AppEnv, true>,
@@ -64,7 +68,7 @@ export class PortalLoginPrepService {
       applicationId,
       applicantId: 'login-prep',
     });
-    let lease: PortalProxyLease | undefined;
+    let lease: ProxyProviderLease | undefined;
     let absolutePath: string | undefined;
     let relativePath: string | undefined;
 
@@ -108,16 +112,16 @@ export class PortalLoginPrepService {
         throw new HttpException(message, HttpStatus.BAD_REQUEST);
       }
 
-      if (config.proxy6Misconfigured) {
+      if (config.proxyMisconfigured) {
         throw new HttpException(
           PROXY6_MSG_MISCONFIGURED,
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      if (config.proxy6Enabled) {
+      if (config.proxyEnabled) {
         try {
-          lease = await this.proxyLeaseService.acquire(config);
+          lease = await this.proxyProvider.acquire(config);
           this.logger.log(`${logPrefix} decision proxy=leased`);
         } catch (err) {
           throw this.mapProxyAcquireFailure(err);
@@ -137,7 +141,7 @@ export class PortalLoginPrepService {
       ensureEvidenceDir(absolutePath);
 
       const headed = this.configService.resolveHeaded();
-      const capMonsterKey = config.capMonsterApiKey?.trim() ?? '';
+      const captchaServiceKey = config.captchaServiceApiKey?.trim() ?? '';
 
       this.logger.log(`${logPrefix} stage=fill start url=${loginUrl}`);
       const fill = await this.fillService.fillLoginPrep({
@@ -145,7 +149,7 @@ export class PortalLoginPrepService {
         portalFormEmail,
         headed,
         screenshotPath: absolutePath,
-        capMonsterApiKey: config.capMonsterApiKey,
+        captchaServiceApiKey: config.captchaServiceApiKey,
         browserProxy: lease?.browserProxy,
         applicationId,
       });
@@ -159,10 +163,10 @@ export class PortalLoginPrepService {
       const notes = [
         ...fill.notes,
         headed ? 'browser headed=true' : 'browser headed=false',
-        lease ? 'proxy lease used (Proxy6; DEC-003/005)' : 'direct egress',
-        capMonsterKey
-          ? 'CapMonster key present'
-          : 'CapMonster key empty (fill-only)',
+        lease ? 'proxy lease used (DEC-003/005)' : 'direct egress',
+        captchaServiceKey
+          ? 'captcha service key present'
+          : 'captcha service key empty (fill-only)',
       ];
 
       if (!fill.navigationOk) {
@@ -172,8 +176,8 @@ export class PortalLoginPrepService {
           loginUrl,
           emailFilled: fill.emailFilled,
           verifyClicked: fill.verifyClicked,
-          capMonsterAttempted: fill.capMonsterAttempted,
-          capMonsterOk: fill.capMonsterOk,
+          captchaAttempted: fill.captchaAttempted,
+          captchaOk: fill.captchaOk,
           screenshotRelativePath: pngPresent ? relativePath : null,
           notes,
           error: fill.error ?? 'login prep failed',
@@ -190,8 +194,8 @@ export class PortalLoginPrepService {
         loginUrl,
         emailFilled: fill.emailFilled,
         verifyClicked: fill.verifyClicked,
-        capMonsterAttempted: fill.capMonsterAttempted,
-        capMonsterOk: fill.capMonsterOk,
+        captchaAttempted: fill.captchaAttempted,
+        captchaOk: fill.captchaOk,
         screenshotRelativePath: pngPresent ? relativePath : null,
         notes,
       };

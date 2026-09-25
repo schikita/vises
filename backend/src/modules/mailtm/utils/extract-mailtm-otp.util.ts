@@ -3,17 +3,17 @@ import {
   MAILTM_OTP_CUE_PATTERN,
 } from '../constants';
 import type {
-  ExtractMailTmOtpInput,
-  ExtractMailTmOtpResult,
+  ExtractTemporaryEmailOtpInput,
+  ExtractTemporaryEmailOtpResult,
 } from '../types';
 
 /**
- * Extract a 6-digit OTP from a Mail.tm message body (REQ-008 / DEC-009).
+ * Extract a 6-digit OTP from a temporary-email message body (REQ-008 / DEC-009).
  * Cue pattern first, then word-boundary fallback. Never logs body or OTP.
  */
 export const extractMailTmOtp = (
-  input: ExtractMailTmOtpInput,
-): ExtractMailTmOtpResult => {
+  input: ExtractTemporaryEmailOtpInput,
+): ExtractTemporaryEmailOtpResult => {
   const body = input.body ?? '';
   if (body.length === 0) {
     return {

@@ -27,7 +27,6 @@ export {
   resolveCrmStatusAfterPortalAutofill,
   portalAutofillPhoneDigits,
   isPortalAutofillApplicantReady,
-  runPortalAutofillRequest,
   portalRunStatusLabel,
   portalPipelineStageLabel,
   listPortalPassedPipelineStageLabels,

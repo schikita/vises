@@ -60,6 +60,7 @@ on terminal (incl. AWAITING_STAFF_BOOKING): stop both polls
 | **Facts** | Tab already dual-mode (discovery F4). REQ-014 / CON-008 prefer extend. |
 | **Rejected** | Replace-only Autofill tab (unnecessary regression; blocks AC-007). |
 | **REQ** | REQ-014, CON-008, RISK-001 |
+| **Superseded** | `portal-autofill-workflow-cutover` DEC-001/002/008 — legacy RegisterUser start UI removed; staff POST → 410 Gone; workflow-only registration. |
 
 ### DEC-003 — Targeted retry via small snapshot DTO extension
 

@@ -1,32 +1,48 @@
 import type {
-  CreateMailTmAccountResult,
-  DeleteMailTmAccountInput,
-  DeleteMailTmAccountResult,
-  ExtractMailTmOtpInput,
-  ExtractMailTmOtpResult,
-  MailTmCircuitCallOptions,
-  WaitMailTmLatestMessageInput,
-  WaitMailTmLatestMessageResult,
+  CreateTemporaryMailboxInput,
+  DeleteTemporaryMailboxInput,
+  DeleteTemporaryMailboxResult,
+  ExtractTemporaryEmailOtpInput,
+  ExtractTemporaryEmailOtpResult,
+  ExtractTemporaryEmailPortalPasswordInput,
+  ExtractTemporaryEmailPortalPasswordResult,
+  TemporaryEmailCallOptions,
+  TemporaryMailboxAccount,
+  WaitTemporaryEmailMessageInput,
+  WaitTemporaryEmailMessageResult,
 } from '../types';
 
 /**
- * Vendor-agnostic temporary inbox + OTP extraction port (DEC-007 / REQ-015).
- * Mail.tm is the default adapter. Callers retain the mailbox after OTP success
- * and delete only on terminal cleanup / explicit admin (REQ-016).
+ * Purpose-named temporary inbox + OTP / portal-password extraction port
+ * (DEC-007 / REQ-002 / DEC-013 / DEC-015). Mail.tm is the default adapter.
+ * Callers retain the mailbox after OTP success and delete only on terminal
+ * cleanup / explicit admin (REQ-016).
  */
 export interface TemporaryEmailProvider {
   createAccount(
-    options?: MailTmCircuitCallOptions,
-  ): Promise<CreateMailTmAccountResult>;
+    input: CreateTemporaryMailboxInput,
+    options?: TemporaryEmailCallOptions,
+  ): Promise<TemporaryMailboxAccount>;
   waitLatestMessage(
-    input: WaitMailTmLatestMessageInput,
-    options?: MailTmCircuitCallOptions,
-  ): Promise<WaitMailTmLatestMessageResult>;
-  extractOtp(input: ExtractMailTmOtpInput): ExtractMailTmOtpResult;
+    input: WaitTemporaryEmailMessageInput,
+    options?: TemporaryEmailCallOptions,
+  ): Promise<WaitTemporaryEmailMessageResult>;
+  extractOtp(input: ExtractTemporaryEmailOtpInput): ExtractTemporaryEmailOtpResult;
+  extractPortalPassword(
+    input: ExtractTemporaryEmailPortalPasswordInput,
+  ): ExtractTemporaryEmailPortalPasswordResult;
   deleteAccount(
-    input: DeleteMailTmAccountInput,
-  ): Promise<DeleteMailTmAccountResult>;
+    input: DeleteTemporaryMailboxInput,
+  ): Promise<DeleteTemporaryMailboxResult>;
+  /**
+   * Dispose provider session for contextKey (browser Map entry).
+   * Mail.tm HTTP adapter: soft no-op success.
+   */
+  disposeSession(contextKey: string): Promise<DeleteTemporaryMailboxResult>;
 }
 
 /** Legacy alias — prefer `TemporaryEmailProvider`. */
 export type IDisposableEmail = TemporaryEmailProvider;
+
+/** Purpose alias per DEC-015. */
+export type MailPort = TemporaryEmailProvider;

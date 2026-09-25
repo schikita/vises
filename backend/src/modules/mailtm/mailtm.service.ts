@@ -15,22 +15,25 @@ import {
 } from './constants';
 import type { TemporaryEmailProvider } from './interfaces';
 import type {
-  CreateMailTmAccountResult,
-  DeleteMailTmAccountInput,
-  DeleteMailTmAccountResult,
-  ExtractMailTmOtpInput,
-  ExtractMailTmOtpResult,
+  CreateTemporaryMailboxInput,
+  DeleteTemporaryMailboxInput,
+  DeleteTemporaryMailboxResult,
+  ExtractTemporaryEmailOtpInput,
+  ExtractTemporaryEmailOtpResult,
+  ExtractTemporaryEmailPortalPasswordInput,
+  ExtractTemporaryEmailPortalPasswordResult,
   FetchMailTmJsonInput,
   FetchMailTmJsonResult,
   LoginMailTmAccountInput,
-  MailTmCircuitCallOptions,
   MailTmFailureClassifyInput,
   MailTmHydraCollection,
   MailTmMessageDetail,
   MailTmMessagesCollection,
   ResolveMailTmAccountResult,
-  WaitMailTmLatestMessageInput,
-  WaitMailTmLatestMessageResult,
+  TemporaryEmailCallOptions,
+  TemporaryMailboxAccount,
+  WaitTemporaryEmailMessageInput,
+  WaitTemporaryEmailMessageResult,
 } from './types';
 import { assertMailTmCircuitAllowsCall } from './utils/assert-mailtm-circuit-allows-call.util';
 import { classifyMailTmFailure } from './utils/classify-mailtm-failure.util';
@@ -38,6 +41,7 @@ import { combineMailTmMessageBody } from './utils/combine-mailtm-message-body.ut
 import { computeMailTmBackoffMs } from './utils/compute-mailtm-backoff-ms.util';
 import { createMailTmClientError } from './utils/create-mailtm-client-error.util';
 import { extractMailTmOtp } from './utils/extract-mailtm-otp.util';
+import { extractMailTmPortalPassword } from './utils/extract-mailtm-portal-password.util';
 import { formatMailTmError } from './utils/format-mailtm-error.util';
 import { generateMailTmLocalPart } from './utils/generate-mailtm-local-part.util';
 import { generateMailTmPassword } from './utils/generate-mailtm-password.util';
@@ -61,11 +65,14 @@ export class MailTmService implements TemporaryEmailProvider {
   /**
    * Create a Mail.tm account and obtain a Bearer token.
    * Returns password on the handle for vault retain only — never log it.
+   * `input.contextKey` is accepted for port uniformity (ignored for HTTP).
    * When `options.circuit` is set, asserts the breaker before any HTTP.
    */
   async createAccount(
-    options?: MailTmCircuitCallOptions,
-  ): Promise<CreateMailTmAccountResult> {
+    input: CreateTemporaryMailboxInput,
+    options?: TemporaryEmailCallOptions,
+  ): Promise<TemporaryMailboxAccount> {
+    void input.contextKey;
     if (options?.circuit) {
       assertMailTmCircuitAllowsCall(options.circuit, Date.now());
     }
@@ -177,9 +184,10 @@ export class MailTmService implements TemporaryEmailProvider {
    * When `options.circuit` is set, asserts the breaker before polling.
    */
   async waitLatestMessage(
-    input: WaitMailTmLatestMessageInput,
-    options?: MailTmCircuitCallOptions,
-  ): Promise<WaitMailTmLatestMessageResult> {
+    input: WaitTemporaryEmailMessageInput,
+    options?: TemporaryEmailCallOptions,
+  ): Promise<WaitTemporaryEmailMessageResult> {
+    void input.contextKey;
     if (options?.circuit) {
       assertMailTmCircuitAllowsCall(options.circuit, Date.now());
     }
@@ -237,7 +245,19 @@ export class MailTmService implements TemporaryEmailProvider {
       rateLimitAttempt = 0;
       const collection = listRes.data as MailTmMessagesCollection | undefined;
       const members = collection?.['hydra:member'] ?? [];
-      const picked = pickMailTmNewestMessage(members, unreadOnly);
+      const excludeIds = new Set(
+        (input.excludeMessageIds ?? [])
+          .map((id) => id.trim())
+          .filter((id) => id.length > 0),
+      );
+      const eligible =
+        excludeIds.size === 0
+          ? members
+          : members.filter((m) => {
+              const id = m.id?.trim() ?? '';
+              return id.length === 0 || !excludeIds.has(id);
+            });
+      const picked = pickMailTmNewestMessage(eligible, unreadOnly);
       const messageId = picked?.id?.trim() ?? '';
 
       if (messageId) {
@@ -303,8 +323,16 @@ export class MailTmService implements TemporaryEmailProvider {
     );
   }
 
-  extractOtp(input: ExtractMailTmOtpInput): ExtractMailTmOtpResult {
+  extractOtp(
+    input: ExtractTemporaryEmailOtpInput,
+  ): ExtractTemporaryEmailOtpResult {
     return extractMailTmOtp(input);
+  }
+
+  extractPortalPassword(
+    input: ExtractTemporaryEmailPortalPasswordInput,
+  ): ExtractTemporaryEmailPortalPasswordResult {
+    return extractMailTmPortalPassword(input);
   }
 
   /**
@@ -430,12 +458,38 @@ export class MailTmService implements TemporaryEmailProvider {
    * Best-effort Mail.tm account delete after a run.
    * Never throws; soft-fail message must not include the Bearer token.
    * Not gated by open CB; delete failures do not open CB (DEC-010).
+   * Resolves accountId via /me or login when only token / address+password
+   * are supplied (terminal cleanup path).
+   * `input.contextKey` accepted for port uniformity (ignored for HTTP).
    */
   async deleteAccount(
-    input: DeleteMailTmAccountInput,
-  ): Promise<DeleteMailTmAccountResult> {
-    const accountId = input.accountId.trim();
-    const token = input.token.trim();
+    input: DeleteTemporaryMailboxInput,
+  ): Promise<DeleteTemporaryMailboxResult> {
+    void input.contextKey;
+
+    let accountId = input.accountId?.trim() ?? '';
+    let token = input.token?.trim() ?? '';
+
+    if (token && !accountId) {
+      const fromMe = await this.resolveAccountIdFromToken(token);
+      if (fromMe.ok) {
+        accountId = fromMe.accountId;
+        token = fromMe.token;
+      }
+    }
+
+    if ((!accountId || !token) && input.address && input.password) {
+      const login = await this.loginAccount({
+        address: input.address,
+        password: input.password,
+      });
+      if (!login.ok) {
+        return { ok: false, warnMessage: login.warnMessage };
+      }
+      accountId = login.accountId;
+      token = login.token;
+    }
+
     if (!accountId || !token) {
       return {
         ok: false,
@@ -471,6 +525,16 @@ export class MailTmService implements TemporaryEmailProvider {
         warnMessage: formatMailTmError('delete account', err, [token]),
       };
     }
+  }
+
+  /**
+   * HTTP adapter has no browser session — soft no-op success (DEC-013).
+   */
+  async disposeSession(
+    contextKey: string,
+  ): Promise<DeleteTemporaryMailboxResult> {
+    void contextKey;
+    return { ok: true };
   }
 
   private throwClassified(

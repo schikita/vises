@@ -1,5 +1,8 @@
 import type { Status } from '../types'
 
+/** CRM status id for «Нужны правки». */
+export const APPLICATION_STATUS_NEEDS_FIXES: Status = 'fixes'
+
 export const STATUSES: { id: Status; label: string; hint: string }[] = [
   { id: 'new', label: 'Новая', hint: 'Заявка только создана' },
   { id: 'docs', label: 'Документы', hint: 'Ждём файлы от клиента' },

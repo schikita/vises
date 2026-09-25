@@ -4,7 +4,7 @@
 |-------|-------|
 | Task ID | `FE-TASK-010` |
 | Title | Final web lint+build (and backend build if DTO shipped) verification sweep |
-| Status | **TODO** |
+| Status | **DONE** |
 | Feature | `bls-workflow-frontend` |
 | REQ/NFR | NFR-002, NFR-005, NFR-006, AC-009, AC-010 |
 | DEC | DEC-001 |
@@ -50,3 +50,13 @@ Do not mark the feature DONE — lifecycle VERIFYING is separate.
 ## Test notes
 
 Lint + build only (NFR-002).
+
+## Results (2026-09-23)
+
+| Command | Result |
+|---------|--------|
+| `cd web && npm run lint` | PASS (exit 0; warnings only) |
+| `cd web && npm run build` | PASS |
+| `cd backend && npm run build` | PASS |
+| Grep `web/src` WebSocket / EventSource / socket.io / `\bws\b` | No matches |
+| Product code fixes | None required |

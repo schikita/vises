@@ -1,28 +1,34 @@
-/** Public API for portal-scrape (Nest HTTP autofill). */
+/** Public API for portal-scrape (Nest HTTP autofill façade). */
 export { PortalScrapeModule } from './portal-scrape.module';
 export { PortalAutofillController } from './portal-autofill.controller';
 export { PortalAutofillService } from './portal-autofill.service';
 export { PortalLoginPrepController } from './portal-login-prep.controller';
 export { PortalLoginPrepService } from './portal-login-prep.service';
-export { BlsWorkflowController } from './bls-workflow.controller';
-export { PortalConfigService } from './portal-config.service';
-export { PortalDataService } from './portal-data.service';
-export { PortalFieldMapperService } from './portal-field-mapper.service';
-export { PortalFillService } from './portal-fill.service';
-export { SecretsCryptoService } from './secrets-crypto.service';
-export { BlsSecretVaultService } from './bls-secret-vault.service';
-export { BlsWorkflowTerminalCleanupService } from './bls-workflow-terminal-cleanup.service';
-export { BlsWorkflowService, BlsWorkflowRepository, BlsWorkflowLockService, BlsWorkflowRunner } from './workflow';
+export { PortalConfigService } from '../portal-core';
+export { PortalDataService } from '../portal-core';
+export { PortalFieldMapperService } from '../portal-core';
+export { PortalFillService } from '../portal-fill';
+export { SecretsCryptoService } from '../bls-secrets';
+export { BlsSecretVaultService } from '../bls-secrets';
 export {
+  BlsWorkflowController,
+  BlsWorkflowTerminalCleanupService,
+  BlsWorkflowService,
+  BlsWorkflowRepository,
+  BlsWorkflowLockService,
+  BlsWorkflowRunner,
   BlsWorkflowTaskExecutor,
+  BLS_WORKFLOW_TASK_EXECUTOR,
+} from '../bls-workflow';
+export {
   PROXY_PROVIDER,
-  CAPTCHA_PROVIDER,
   BLS_REGISTER_CLIENT,
   BLS_LOGIN_CLIENT,
   BLS_PASSWORD_CHANGE_CLIENT,
   BLS_STATUS_CLIENT,
   BLS_BOOKING_CLIENT,
-} from './bls-clients';
+} from '../bls-clients';
+export { CAPTCHA_PROVIDER } from '../portal-fill';
 
 export type {
   AutofillConfig,
@@ -48,7 +54,6 @@ export {
   PORTAL_FIELD_MAPPER,
   PORTAL_FORM_FILLER,
   PORTAL_SITE_ADAPTER_REGISTRY,
-  BLS_WORKFLOW_TASK_EXECUTOR,
 } from './constants';
 
 export type {
@@ -70,10 +75,10 @@ export type {
   BlsPasswordChangeClient,
   BlsStatusClient,
   BlsBookingClient,
-} from './bls-clients';
+} from '../bls-clients';
 export type {
   PortalClientPortalProgress,
   PortalSiteOutcome,
 } from './types';
 
-export { generatePortalPassword } from './utils';
+export { generatePortalPassword } from '../bls-secrets';

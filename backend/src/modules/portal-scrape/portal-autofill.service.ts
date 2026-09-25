@@ -1,16 +1,11 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
 import type { AppEnv } from '../config';
 import { uid } from '../../shared/utils';
 import {
-  MailTmService,
-} from '../mailtm';
-import {
   isProxy6ApiError,
-  PortalProxyLeaseService,
-  type PortalProxyLease,
   PROXY6_MSG_MISCONFIGURED,
 } from '../proxy6';
 import { Application } from '../database/entities/application.entity';
@@ -27,13 +22,23 @@ import {
   PORTAL_AUTOFILL_RUN_STATUS,
 } from './constants';
 import type { IPortalAutofill } from './interfaces';
-import { BlsSecretVaultService } from './bls-secret-vault.service';
-import { PortalAutofillRunPersistenceService } from './portal-autofill-run-persistence.service';
-import { PortalConfigService } from './portal-config.service';
-import { PortalDataService } from './portal-data.service';
-import { PortalFieldMapperService } from './portal-field-mapper.service';
-import { PortalFillService } from './portal-fill.service';
-import { PortalSiteAdapterRegistry } from './portal-site-adapter.registry';
+import {
+  TEMPORARY_EMAIL_PROVIDER,
+  type DeleteTemporaryMailboxInput,
+  type TemporaryEmailProvider,
+} from '../browser-mail';
+import {
+  PROXY_PROVIDER,
+  type ProxyProvider,
+  type ProxyProviderLease,
+} from '../bls-clients';
+import { BlsSecretVaultService } from '../bls-secrets';
+import { PortalAutofillRunPersistenceService } from '../portal-core';
+import { PortalConfigService } from '../portal-core';
+import { PortalDataService } from '../portal-core';
+import { PortalFieldMapperService } from '../portal-core';
+import { PortalFillService } from '../portal-fill';
+import { PortalSiteAdapterRegistry } from '../portal-core';
 import type {
   AutofillEvidence,
   MappingResult,
@@ -45,6 +50,8 @@ import type {
   PortalClientPortalProgress,
 } from './types';
 import {
+  buildCaptchaServiceNotes,
+  buildEmailOtpNotes,
   buildEvidenceAbsolutePath,
   buildPortalAutofillCaptchaRestore,
   buildPortalAutofillEmptyRetryEligibility,
@@ -57,6 +64,7 @@ import {
   formatPortalLogContext,
   isPortalAutofillLockStale,
   isPortalAutofillRunResumeEligible,
+  isPortalEmailOtpArmed,
   listApplicationApplicantIds,
   mapAutofillReportToHttpOutcome,
   mapPortalAutofillRunListItem,
@@ -65,12 +73,11 @@ import {
   openEvidenceStream,
   resolveEvidenceAbsolutePath,
   resolvePortalAutofillEligibilityApplicantId,
+  resolvePortalEmailOtpArmReason,
   resolvePortalSiteOutcomeForAdapter,
   shouldRetainMailTmMailboxAfterOtp,
   unlinkEvidenceBestEffort,
 } from './utils';
-import { buildCapMonsterNotes } from './utils/build-cap-monster-notes.util';
-import { buildEmailOtpNotes } from './utils/build-email-otp-notes.util';
 import { resolveUploadDir } from '../apps/utils';
 
 /**
@@ -78,10 +85,9 @@ import { resolveUploadDir } from '../apps/utils';
  * (portal-autofill-api DEC-001 / DEC-003). CLI / map-check removed.
  * Evidence capture + persist for HTTP path (portal-autofill-screenshot-evidence).
  * Staff list-by-application (portal-autofill-evidence-ui DEC-001 / DEC-004).
- * Optional Proxy6 proxy lease around fill (proxy6-migration DEC-003/005).
- * Email OTP: arm when CapMonster key ∧ config.emailOtpEnabled ∧
- * non-empty MAILTM_API_BASE_URL (portal-email-otp-mailtm DEC-004;
- * product enable hardcoded true in portal-config).
+ * Optional proxy provider lease around fill (proxy6-migration DEC-003/005).
+ * Email OTP: arm via isPortalEmailOtpArmed (DEC-007 — tempmail_plus does not
+ * require MAILTM_API_BASE_URL).
  */
 @Injectable()
 export class PortalAutofillService implements IPortalAutofill {
@@ -93,8 +99,10 @@ export class PortalAutofillService implements IPortalAutofill {
     private readonly dataService: PortalDataService,
     private readonly mapper: PortalFieldMapperService,
     private readonly fillService: PortalFillService,
-    private readonly proxyLeaseService: PortalProxyLeaseService,
-    private readonly mailTm: MailTmService,
+    @Inject(PROXY_PROVIDER)
+    private readonly proxyProvider: ProxyProvider,
+    @Inject(TEMPORARY_EMAIL_PROVIDER)
+    private readonly mailProvider: TemporaryEmailProvider,
     private readonly secretVault: BlsSecretVaultService,
     private readonly siteAdapters: PortalSiteAdapterRegistry,
     private readonly runPersistence: PortalAutofillRunPersistenceService,
@@ -115,11 +123,11 @@ export class PortalAutofillService implements IPortalAutofill {
    * Assigns managed screenshot path, persists run row, attaches `evidence` (DEC-004–008).
    * Durable early create + always-terminal persist (portal-autofill-durable-resume REQ-002 / REQ-016).
    * Checkpoint / heartbeat sinks + POST resume / supersede / live-lock 409 (REQ-003–007 / REQ-014–015).
-   * When Proxy6 proxying is enabled: acquire after mapping OK, release in finally.
-   * When OTP path armed: create Mail.tm during fill; retain after OTP success
+   * When proxy provider is enabled: acquire after mapping OK, release in finally.
+   * When OTP path armed: create temporary mailbox during fill; retain after OTP success
    * (REQ-016 / DEC-007); vault MAILTM_* when `workflowId` is set; delete only
    * on failure / portalFormEmail persist hard-fail (terminal delete TASK-018).
-   * On resume: always re-navigate; fresh Mail.tm when OTP armed; restore captcha budgets only (DEC-002/004/005).
+   * On resume: always re-navigate; fresh temporary mailbox when OTP armed; restore captcha budgets only (DEC-002/004/005).
    */
   async runForHttp(
     input: PortalAutofillHttpInput,
@@ -153,11 +161,9 @@ export class PortalAutofillService implements IPortalAutofill {
 
     this.logger.log(`${logPrefix()} workflow.start`);
 
-    let lease: PortalProxyLease | undefined;
-    let mailTmCleanup:
-      | { accountId: string; token: string }
-      | undefined;
-    let mailTmPassword: string | undefined;
+    let lease: ProxyProviderLease | undefined;
+    let temporaryMailboxCleanup: DeleteTemporaryMailboxInput | undefined;
+    let temporaryMailboxPassword: string | undefined;
     let accountDeleted: boolean | undefined;
     let accountDeleteWarn: string | undefined;
     let accountRetained = false;
@@ -216,28 +222,13 @@ export class PortalAutofillService implements IPortalAutofill {
         `${logPrefix()} decision siteAdapter=${siteAdapter.siteId}`,
       );
 
-      const capMonsterKey = config.capMonsterApiKey?.trim() ?? '';
-      const capMonsterEnabled = capMonsterKey.length > 0;
-      const mailTmBaseUrl = config.mailTmApiBaseUrl?.trim() ?? '';
-      const mailTmBaseUrlConfigured = mailTmBaseUrl.length > 0;
-      const otpPathArmed =
-        capMonsterEnabled &&
-        config.emailOtpEnabled &&
-        mailTmBaseUrlConfigured;
+      const otpPathArmed = isPortalEmailOtpArmed(config);
 
       this.logger.log(
-        `${logPrefix()} decision CapMonster enabled=${capMonsterEnabled}`,
+        `${logPrefix()} decision captchaService enabled=${(config.captchaServiceApiKey?.trim() ?? '').length > 0}`,
       );
       this.logger.log(
-        `${logPrefix()} decision emailOtpPath armed=${otpPathArmed} reason=${
-          otpPathArmed
-            ? 'capMonster_and_emailOtpEnabled_and_mailtm_base_url'
-            : !capMonsterEnabled
-              ? 'capMonster_off'
-              : !config.emailOtpEnabled
-                ? 'emailOtp_disabled'
-                : 'mailtm_base_url_empty'
-        }`,
+        `${logPrefix()} decision emailOtpPath armed=${otpPathArmed} reason=${resolvePortalEmailOtpArmReason(config, otpPathArmed)}`,
       );
 
       this.logger.log(`${logPrefix()} stage=mapping start`);
@@ -260,7 +251,7 @@ export class PortalAutofillService implements IPortalAutofill {
 
       this.logger.log(`${logPrefix()} decision mapping=continue_to_browser`);
 
-      if (config.proxy6Misconfigured) {
+      if (config.proxyMisconfigured) {
         endWorkflow('error', 'failure', 'proxy6_misconfigured');
         throw new HttpException(
           PROXY6_MSG_MISCONFIGURED,
@@ -268,9 +259,9 @@ export class PortalAutofillService implements IPortalAutofill {
         );
       }
 
-      if (config.proxy6Enabled) {
+      if (config.proxyEnabled) {
         try {
-          lease = await this.proxyLeaseService.acquire(config);
+          lease = await this.proxyProvider.acquire(config);
           this.logger.log(
             `${logPrefix()} decision proxy6=leased`,
           );
@@ -385,9 +376,10 @@ export class PortalAutofillService implements IPortalAutofill {
           mapping,
           headed,
           screenshotPath: absolutePath,
-          capMonsterApiKey: config.capMonsterApiKey,
+          captchaServiceApiKey: config.captchaServiceApiKey,
           browserProxy: lease?.browserProxy,
           otpPathArmed,
+          emailContextKey: runId,
           runId,
           captchaRestore,
           checkpoint: {
@@ -402,20 +394,20 @@ export class PortalAutofillService implements IPortalAutofill {
         `${logPrefix()} stage=fill complete navigationOk=${fill.navigationOk}`,
       );
 
-      if (fill.mailTmCleanup) {
-        mailTmCleanup = fill.mailTmCleanup;
+      if (fill.temporaryMailboxCleanup) {
+        temporaryMailboxCleanup = fill.temporaryMailboxCleanup;
       }
-      if (fill.mailTmPassword) {
-        mailTmPassword = fill.mailTmPassword;
+      if (fill.temporaryMailboxPassword) {
+        temporaryMailboxPassword = fill.temporaryMailboxPassword;
       }
-      const emailFromMailTm = Boolean(fill.mailTmAddress ?? fill.mailTmCleanup);
-      const portalFormEmailToPersist = fill.mailTmAddress?.trim() ?? '';
+      const emailFromTemporaryMailbox = Boolean(fill.temporaryMailboxAddress ?? fill.temporaryMailboxCleanup);
+      const portalFormEmailToPersist = fill.temporaryMailboxAddress?.trim() ?? '';
       const retainMailbox = shouldRetainMailTmMailboxAfterOtp(
         fill.emailOtpOk,
-        Boolean(mailTmCleanup),
+        Boolean(temporaryMailboxCleanup),
       );
 
-      // DEC-011: durable portal-form email before mail.tm delete; persist fail ⇒ hard fail.
+      // DEC-011: durable portal-form email before temporary-mailbox delete; persist fail ⇒ hard fail.
       if (portalFormEmailToPersist) {
         try {
           await this.appsRepo.update(
@@ -433,15 +425,15 @@ export class PortalAutofillService implements IPortalAutofill {
           this.logger.error(
             `${logPrefix()} stage=portal_form_email_persist failure ${persistDetail}`,
           );
-          if (mailTmCleanup) {
-            const del = await this.mailTm.deleteAccount(mailTmCleanup);
+          if (temporaryMailboxCleanup) {
+            const del = await this.mailProvider.deleteAccount(temporaryMailboxCleanup);
             accountDeleted = del.ok;
             accountDeleteWarn = del.warnMessage;
             if (del.warnMessage) {
               this.logger.warn(del.warnMessage);
             }
-            mailTmCleanup = undefined;
-            mailTmPassword = undefined;
+            temporaryMailboxCleanup = undefined;
+            temporaryMailboxPassword = undefined;
           }
           unlinkEvidenceBestEffort(absolutePath);
           const hardFailReason = 'Failed to persist portal form email';
@@ -468,15 +460,15 @@ export class PortalAutofillService implements IPortalAutofill {
               notes: [
                 ...mapping.metadata.notes,
                 hardFailReason,
-                ...buildCapMonsterNotes(fill, config.capMonsterApiKey),
+                ...buildCaptchaServiceNotes(fill, config.captchaServiceApiKey),
                 ...buildEmailOtpNotes({
                   otpPathArmed,
-                  emailFromMailTm,
+                  emailFromTemporaryMailbox,
                   emailOtpTouched: fill.emailOtpTouched,
                   emailOtpAttempted: fill.emailOtpAttempted,
                   emailOtpOk: fill.emailOtpOk,
-                  resendAttempts: fill.mailTmResendAttempts,
-                  mailTmCircuitOpen: fill.mailTmCircuitOpen,
+                  resendAttempts: fill.emailOtpResendAttempts,
+                  mailProviderCircuitOpen: fill.mailProviderCircuitOpen,
                   accountDeleted,
                   accountDeleteWarn,
                   error: fill.error,
@@ -495,11 +487,11 @@ export class PortalAutofillService implements IPortalAutofill {
       }
 
       // REQ-016 / DEC-007: retain after OTP success; delete only on failure paths.
-      if (retainMailbox && mailTmCleanup) {
+      if (retainMailbox && temporaryMailboxCleanup) {
         const workflowId = input.workflowId?.trim() ?? '';
         if (workflowId) {
-          const passwordPlain = mailTmPassword?.trim() ?? '';
-          const tokenPlain = mailTmCleanup.token.trim();
+          const passwordPlain = temporaryMailboxPassword?.trim() ?? '';
+          const tokenPlain = temporaryMailboxCleanup.token?.trim() ?? '';
           if (passwordPlain && tokenPlain) {
             try {
               await this.secretVault.persistSecret({
@@ -538,28 +530,28 @@ export class PortalAutofillService implements IPortalAutofill {
         }
         accountRetained = true;
         accountDeleted = false;
-        mailTmCleanup = undefined;
-        mailTmPassword = undefined;
-      } else if (mailTmCleanup) {
+        temporaryMailboxCleanup = undefined;
+        temporaryMailboxPassword = undefined;
+      } else if (temporaryMailboxCleanup) {
         // Failure path: prefer delete before notes so soft-fail is visible; finally is backup.
-        const del = await this.mailTm.deleteAccount(mailTmCleanup);
+        const del = await this.mailProvider.deleteAccount(temporaryMailboxCleanup);
         accountDeleted = del.ok;
         accountDeleteWarn = del.warnMessage;
         if (del.warnMessage) {
           this.logger.warn(del.warnMessage);
         }
-        mailTmCleanup = undefined;
-        mailTmPassword = undefined;
+        temporaryMailboxCleanup = undefined;
+        temporaryMailboxPassword = undefined;
       }
 
       const emailOtpNotes = buildEmailOtpNotes({
         otpPathArmed,
-        emailFromMailTm,
+        emailFromTemporaryMailbox,
         emailOtpTouched: fill.emailOtpTouched,
         emailOtpAttempted: fill.emailOtpAttempted,
         emailOtpOk: fill.emailOtpOk,
-        resendAttempts: fill.mailTmResendAttempts,
-        mailTmCircuitOpen: fill.mailTmCircuitOpen,
+        resendAttempts: fill.emailOtpResendAttempts,
+        mailProviderCircuitOpen: fill.mailProviderCircuitOpen,
         accountDeleted,
         accountDeleteWarn,
         accountRetained,
@@ -592,10 +584,10 @@ export class PortalAutofillService implements IPortalAutofill {
             notes: [
               ...mapping.metadata.notes,
               fill.error ?? 'navigation failed',
-              ...buildCapMonsterNotes(fill, config.capMonsterApiKey),
+              ...buildCaptchaServiceNotes(fill, config.captchaServiceApiKey),
               ...emailOtpNotes,
-              config.capMonsterApiKey
-                ? 'CAPTCHA guard: CapMonster enabled (ignore captcha clues; DEC-005)'
+              config.captchaServiceApiKey
+                ? 'CAPTCHA guard: captcha service enabled (ignore captcha clues; DEC-005)'
                 : 'CAPTCHA guard active (CON-007)',
               fill.verifyClicked
                 ? '#btnVerify clicked'
@@ -621,12 +613,12 @@ export class PortalAutofillService implements IPortalAutofill {
           notes: [
             ...mapping.metadata.notes,
             fill.verifyClicked
-              ? '#btnVerify clicked after fill (CapMonster path)'
+              ? '#btnVerify clicked after fill (captcha service path)'
               : 'fill-only: #btnVerify not clicked; EmailOtp not filled (DEC-007)',
-            ...buildCapMonsterNotes(fill, config.capMonsterApiKey),
+            ...buildCaptchaServiceNotes(fill, config.captchaServiceApiKey),
             ...emailOtpNotes,
-            config.capMonsterApiKey
-              ? 'CAPTCHA guard: CapMonster enabled (ignore captcha clues; DEC-005)'
+            config.captchaServiceApiKey
+              ? 'CAPTCHA guard: captcha service enabled (ignore captcha clues; DEC-005)'
               : 'CAPTCHA guard active (CON-007)',
             fill.usedStandIn
               ? 'HTML fixture Kendo stand-in used (RISK-009 / DEC-006) — live Kendo may differ'
@@ -720,13 +712,13 @@ export class PortalAutofillService implements IPortalAutofill {
         await lease.release().catch(() => undefined);
       }
       // Backup delete only when mailbox was not retained (OTP failure / early abort).
-      if (mailTmCleanup) {
-        const del = await this.mailTm.deleteAccount(mailTmCleanup);
+      if (temporaryMailboxCleanup) {
+        const del = await this.mailProvider.deleteAccount(temporaryMailboxCleanup);
         if (del.warnMessage) {
           this.logger.warn(del.warnMessage);
         }
       }
-      mailTmPassword = undefined;
+      temporaryMailboxPassword = undefined;
     }
   }
 
@@ -774,8 +766,8 @@ export class PortalAutofillService implements IPortalAutofill {
     }
 
     const config = await this.configService.load();
-    const capMonsterKeyConfigured = Boolean(
-      config.capMonsterApiKey?.trim().length,
+    const captchaServiceKeyConfigured = Boolean(
+      config.captchaServiceApiKey?.trim().length,
     );
 
     const inProgressRun = await this.runRepo.findOne({
@@ -840,7 +832,7 @@ export class PortalAutofillService implements IPortalAutofill {
         : null,
       applicantReady,
       adapterSupported,
-      capMonsterKeyConfigured,
+      captchaServiceKeyConfigured,
       nowMs,
     });
 

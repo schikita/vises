@@ -1,4 +1,8 @@
 import {
+  APPLICATION_APPLICANT_DEFAULT_PASSPORT_ISSUE_COUNTRY,
+  APPLICATION_APPLICANT_DEFAULT_PASSPORT_TYPE,
+} from '../../database/constants';
+import {
   SEED_BIRTH_PLACES,
   SEED_FIRST_NAMES_FEMALE,
   SEED_FIRST_NAMES_MALE,
@@ -41,7 +45,9 @@ export const buildSeedApplicant = (
     nationality: 'Беларусь',
     gender,
     maritalStatus: pickSeedItem(SEED_MARITAL_STATUSES, rng),
-    passportType: 'Обычный паспорт',
+    passportType: APPLICATION_APPLICANT_DEFAULT_PASSPORT_TYPE,
+    // CON-003 / DEC-010 — exact portal BirthCountry label.
+    passportIssueCountry: APPLICATION_APPLICANT_DEFAULT_PASSPORT_ISSUE_COUNTRY,
     passportNumber: formatSeedPassportNumber(rng),
     passportIssued,
     passportExpires: `${issuedYear + 10}${passportIssued.slice(4)}`,

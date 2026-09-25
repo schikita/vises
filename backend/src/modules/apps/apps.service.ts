@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { AppEnv } from '../config';
 import { Application } from '../database/entities/application.entity';
+import type { ApplicationApplicant } from '../database/types';
 import { User } from '../database/entities/user.entity';
 import { appOut } from '../../shared/mappers';
 import {
@@ -226,7 +227,7 @@ export class AppsService implements IAppsService {
     const isClient = user.role === 'client';
     const isStaff = user.role === 'admin' || user.role === 'manager';
 
-    let applicants = (body.applicants ?? []) as unknown[];
+    let applicants = (body.applicants ?? []) as ApplicationApplicant[];
     let clientEmail = body.clientEmail || user.email || user.login;
     let issuedClientAccess: UpsertAppResult['issuedClientAccess'];
 

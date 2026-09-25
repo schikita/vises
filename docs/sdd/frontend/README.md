@@ -7,9 +7,10 @@
 | Specs mirror | `specs/features/bls-workflow-frontend/` |
 | REQ/NFR/CON SoT | `specs/features/bls-workflow-frontend/02-spec.md` |
 | Upstream | `durable-bls-workflow` (**DONE**, ISSUE-003 residual) |
-| Status | **READY_FOR_IMPLEMENTATION** |
-| Updated | 2026-09-22 |
-| Product code | **Not started** (IMPLEMENTING not begun) |
+| Status | **DONE** |
+| Updated | 2026-09-23 |
+| Product code | **Complete** — FE-TASK-001…010 **DONE** |
+| Review | **APPROVE_WITH_ISSUES** (ISSUE-004 non-blocking) |
 
 ## Purpose
 
@@ -27,7 +28,7 @@ Enhance the staff SPA durable BLS workflow experience on application-detail **«
 
 | Topic | DEC | Choice |
 |-------|-----|--------|
-| Автозаполнение | **DEC-002** | **Extend dual-mode** — workflow primary, legacy RegisterUser secondary (REQ-014 / CON-008) |
+| Автозаполнение | **Superseded** | Workflow-only registration (`portal-autofill-workflow-cutover` DEC-001/002); legacy RegisterUser start UI removed |
 | Targeted retry | **DEC-003** | Small backend snapshot DTO: expose `tasks[].id` (+ `maxAttempts`); SPA targeted retry Should |
 | Applicant labels | **DEC-004** | Show `applicantId` Must; resolve name from `form.applicants` when props available |
 | CON-006 copy | **DEC-005** | Distinct success handoff banner (RU) — manual booking finish |
@@ -37,15 +38,15 @@ Enhance the staff SPA durable BLS workflow experience on application-detail **«
 
 | Doc | Role | Status |
 |-----|------|--------|
-| [`00-request.md`](./00-request.md) | Request / lifecycle | READY_FOR_IMPLEMENTATION |
+| [`00-request.md`](./00-request.md) | Request / lifecycle | IMPLEMENTING |
 | [`00-discovery.md`](./00-discovery.md) | Phase 0 discovery | Complete |
 | [`01-target-ux.md`](./01-target-ux.md) | Phase 1 Target UX / FE architecture | DESIGNED |
 | [`02-api-contract-mapping.md`](./02-api-contract-mapping.md) | Phase 2 API → hooks / poll / cache | DESIGNED |
 | [`03-fsd-component-design.md`](./03-fsd-component-design.md) | Phase 3 FSD file layout | DESIGNED |
 | [`04-plan.md`](./04-plan.md) | Implementation strategy + DAG | PLANNED |
-| [`05-tasks.md`](./05-tasks.md) | FE task index | READY_FOR_IMPLEMENTATION |
-| [`tasks/`](./tasks/) | Atomic `FE-TASK-###` prompts | TODO |
-| [`HANDOFF.md`](./HANDOFF.md) | Pack for next `/sdd-orchestrator` | Ready |
+| [`05-tasks.md`](./05-tasks.md) | FE task index | IMPLEMENTING |
+| [`tasks/`](./tasks/) | Atomic `FE-TASK-###` prompts | 001–003 in progress |
+| [`HANDOFF.md`](./HANDOFF.md) | Pack for next `/sdd-orchestrator` | IMPLEMENTING |
 
 ## Task list (execution order)
 

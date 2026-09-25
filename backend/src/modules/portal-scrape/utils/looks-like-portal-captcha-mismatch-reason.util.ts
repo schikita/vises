@@ -1,6 +1,6 @@
 /**
  * Heuristic: terminal reason looks like a portal captcha / Verified mismatch
- * (REQ-011c) without requiring CapMonster permanent failure.
+ * (REQ-011c) without requiring captcha-service permanent failure.
  *
  * Do not match bare "bls" — portal hostnames like `blsspainbelarus.by` appear in
  * navigation timeouts and produced false captcha-retry button labels.

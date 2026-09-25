@@ -19,7 +19,7 @@ export const CAPMONSTER_STATUS_READY = 'ready';
 export const CAPMONSTER_STATUS_PROCESSING = 'processing';
 
 /** CapMonster createTask + getTaskResult total budget (ms). */
-export const PORTAL_CAPMONSTER_TIMEOUT_MS = 120_000;
+export const PORTAL_CAPMONSTER_TIMEOUT_MS = 180_000;
 
 /** CapMonster getTaskResult poll interval (ms). */
 export const PORTAL_CAPMONSTER_POLL_INTERVAL_MS = 2_000;

@@ -1,4 +1,4 @@
-import type { AutofillReport } from './portal-report.types';
+import type { AutofillReport } from '../../portal-core';
 
 /** HTTP autofill input (DEC-001 / DEC-003 API path). */
 export type PortalAutofillHttpInput = {

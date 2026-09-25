@@ -4,7 +4,7 @@
 |-------|-------|
 | Task ID | `FE-TASK-007` |
 | Title | Compact events feed + safe runId linkage hint |
-| Status | **TODO** |
+| Status | **DONE** |
 | Feature | `bls-workflow-frontend` |
 | REQ/NFR | REQ-007, REQ-017, REQ-018, NFR-001, NFR-007 |
 | DEC | DEC-006 |
@@ -18,19 +18,20 @@ Operator-visible compact event timeline from polled events; allowlisted payload 
 
 ## Acceptance criteria
 
-- Compact feed renders eventType (RU), time, step/task keys when present.
-- Uses allowlist util — no raw object dump.
-- Bounded by API limit / local ring (no unbounded DOM).
-- Optional expand control still bounded (NFR-007).
-- `AUTOFILL_RUN_LINKED`: show runId; call optional `onAutofillRunLinked` or display hint to scroll to RegisterUser section.
-- Graceful if run list missing (edge 12).
-- Closes ISSUE-003 for SPA timeline visibility.
-- Lint + build PASS.
+- Compact feed renders eventType (RU), time, step/task keys when present. ✅
+- Uses allowlist util — no raw object dump. ✅
+- Bounded by API limit / local ring (no unbounded DOM). ✅
+- Optional expand control still bounded (NFR-007). ✅
+- `AUTOFILL_RUN_LINKED`: show runId; call optional `onAutofillRunLinked` or display hint to scroll to RegisterUser section. ✅
+- Graceful if run list missing (edge 12). ✅
+- Closes ISSUE-003 for SPA timeline visibility. ✅
+- Lint + build PASS. ✅
 
 ## Verification
 
-- Grep: no `JSON.stringify(payloadSafe)` into UI.
-- `cd web && npm run lint && npm run build`
+- Grep: no `JSON.stringify(payloadSafe)` into UI. ✅
+- Grep: no WebSocket / EventSource. ✅
+- `cd web && npm run lint && npm run build` ✅ PASS
 
 ## IMPLEMENTATION AGENT PROMPT
 
@@ -49,4 +50,4 @@ Validate: cd web && npm run lint && npm run build
 
 ## Test notes
 
-Lint + build. Manual events growth with running workflow.
+Lint + build PASS. Manual events growth with running workflow (operator smoke deferred).

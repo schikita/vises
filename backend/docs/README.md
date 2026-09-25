@@ -24,7 +24,7 @@ NestJS 11 API for the Vises CRM (visa applications). Global prefix: **`/api`**. 
 | [settings](modules/settings.md) | Yes | Company settings + demo reset |
 | [portal-scrape](modules/portal-scrape.md) | Yes | Durable BLS workflow + RegisterUser autofill + login prep |
 | [capmonster](modules/capmonster.md) | No | Captcha solver (used by portal) |
-| [mailtm](modules/mailtm.md) | No | Disposable email OTP (portal; retain until workflow terminal) |
+| [mailtm](modules/mailtm.md) | No | Mail.tm HTTP disposable-email adapter (portal OTP; bound via portal-scrape when `VISES_PORTAL_EMAIL_PROVIDER=mailtm`) |
 | [proxy6](modules/proxy6.md) | Yes (admin) | Proxy6 inventory + lease (portal / BLS workflow) |
 | [config](modules/config.md) | No | Env validation / ConfigService |
 | [database](modules/database.md) | No | TypeORM + entities |
@@ -81,7 +81,7 @@ All paths below are under `/api`.
 | `PATCH` | `/users/:userId` | admin | users |
 | `POST` | `/users/:userId/reissue` | admin | users |
 | `DELETE` | `/users/:userId` | admin | users |
-| `POST` | `/apps/:applicationId/portal-autofill` | admin, manager | portal-scrape |
+| `POST` | `/apps/:applicationId/portal-autofill` | admin, manager | portal-scrape (**410 Gone** — non-executing) |
 | `GET` | `/apps/:applicationId/portal-autofill-runs` | admin, manager | portal-scrape |
 | `GET` | `/apps/portal-autofill-runs/:runId/screenshot` | admin, manager | portal-scrape |
 | `POST` | `/apps/:applicationId/portal-login-prep` | admin, manager | portal-scrape |

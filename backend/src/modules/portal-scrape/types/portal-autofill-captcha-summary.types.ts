@@ -1,8 +1,8 @@
-import type { PortalAutofillCapMonsterCbState } from './portal-autofill-run-lifecycle.types';
+import type { PortalAutofillCapMonsterCbState } from '../../portal-core';
 
 /**
- * Staff-safe CapMonster / captcha budget flags for run list enrichment (REQ-007 / DEC-008).
- * Never includes API keys, images, or raw CapMonster payloads.
+ * Staff-safe captcha-service budget flags for run list enrichment (REQ-007 / DEC-008).
+ * Never includes API keys, images, or raw captcha-service payloads.
  */
 export type PortalAutofillCaptchaSummary = {
   /** Persisted CB state; null when never armed / legacy row. */

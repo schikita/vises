@@ -10,54 +10,81 @@ const assert = require('node:assert/strict');
 const { randomBytes } = require('node:crypto');
 const path = require('node:path');
 
-const distUtils = path.join(
+const distSecretsUtils = path.join(
   __dirname,
   '..',
   '..',
   'dist',
   'modules',
-  'portal-scrape',
+  'bls-secrets',
   'utils',
 );
-const distConstants = path.join(
+const distWorkflowUtils = path.join(
   __dirname,
   '..',
   '..',
   'dist',
   'modules',
-  'portal-scrape',
+  'bls-workflow',
+  'utils',
+);
+const distWorkflowConstants = path.join(
+  __dirname,
+  '..',
+  '..',
+  'dist',
+  'modules',
+  'bls-workflow',
   'constants',
 );
 
-const { aesGcmSeal } = require(path.join(distUtils, 'aes-gcm-seal.util.js'));
-const { aesGcmOpen } = require(path.join(distUtils, 'aes-gcm-open.util.js'));
-const { wrapDek } = require(path.join(distUtils, 'wrap-dek.util.js'));
-const { unwrapDek } = require(path.join(distUtils, 'unwrap-dek.util.js'));
+const { aesGcmSeal } = require(
+  path.join(distSecretsUtils, 'aes-gcm-seal.util.js'),
+);
+const { aesGcmOpen } = require(
+  path.join(distSecretsUtils, 'aes-gcm-open.util.js'),
+);
+const { wrapDek } = require(path.join(distSecretsUtils, 'wrap-dek.util.js'));
+const { unwrapDek } = require(
+  path.join(distSecretsUtils, 'unwrap-dek.util.js'),
+);
 const { assertBlsCompleteVerified } = require(
-  path.join(distUtils, 'assert-bls-complete-verified.util.js'),
+  path.join(distWorkflowUtils, 'assert-bls-complete-verified.util.js'),
 );
 const { isBlsWorkflowErrorClassAutoRetryable } = require(
-  path.join(distUtils, 'is-bls-workflow-error-class-auto-retryable.util.js'),
+  path.join(
+    distWorkflowUtils,
+    'is-bls-workflow-error-class-auto-retryable.util.js',
+  ),
 );
 const { isBlsWorkflowErrorClassNotSafeToRepeat } = require(
-  path.join(distUtils, 'is-bls-workflow-error-class-not-safe-to-repeat.util.js'),
+  path.join(
+    distWorkflowUtils,
+    'is-bls-workflow-error-class-not-safe-to-repeat.util.js',
+  ),
 );
 const { isBlsWorkflowErrorClassSafeToRepeat } = require(
-  path.join(distUtils, 'is-bls-workflow-error-class-safe-to-repeat.util.js'),
+  path.join(
+    distWorkflowUtils,
+    'is-bls-workflow-error-class-safe-to-repeat.util.js',
+  ),
 );
 const { isBlsWorkflowErrorClassVerifyThenRepeat } = require(
   path.join(
-    distUtils,
+    distWorkflowUtils,
     'is-bls-workflow-error-class-verify-then-repeat.util.js',
   ),
 );
 const { classifyPortalBookingUnsafeAction } = require(
-  path.join(distUtils, 'classify-portal-booking-unsafe-action.util.js'),
+  path.join(
+    distWorkflowUtils,
+    'classify-portal-booking-unsafe-action.util.js',
+  ),
 );
 const {
   BLS_WORKFLOW_ERROR_CLASS,
   BLS_WORKFLOW_MSG_COMPLETE_WITHOUT_VERIFY,
-} = require(path.join(distConstants, 'bls-workflow.constants.js'));
+} = require(path.join(distWorkflowConstants, 'bls-workflow.constants.js'));
 
 /** Runner-style gate: only auto-retryable classes may set nextRunAt. */
 const mayAutoScheduleRetry = (errorClass) =>

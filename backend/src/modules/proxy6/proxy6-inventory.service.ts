@@ -25,6 +25,8 @@ import { parseProxy6Date } from './utils/parse-proxy6-date.util';
 export class Proxy6InventoryService {
   private readonly logger = new Logger(Proxy6InventoryService.name);
   private lastAutoReconcileAtMs = 0;
+  /** In-process single-flight for non-forced refresh (DEC-002 / REQ-005). */
+  private inFlightNonForcedRefresh: Promise<Proxy6ProxiesOut> | null = null;
 
   constructor(
     private readonly api: Proxy6ApiService,
@@ -32,7 +34,11 @@ export class Proxy6InventoryService {
     private readonly repo: Repository<Proxy6Proxy>,
   ) {}
 
-  /** Force remote getproxy reconcile into DB (admin refresh). */
+  /**
+   * Reconcile remote getproxy into DB.
+   * Non-forced: debounce + in-flight coalesce (DEC-002). Forced admin: own remote
+   * path, does not join non-forced coalesce ownership (DEC-006).
+   */
   async refreshFromRemote(force = true): Promise<Proxy6ProxiesOut> {
     if (!force) {
       const elapsed = Date.now() - this.lastAutoReconcileAtMs;
@@ -42,7 +48,21 @@ export class Proxy6InventoryService {
       ) {
         return this.listMasked();
       }
+      if (this.inFlightNonForcedRefresh) {
+        return this.inFlightNonForcedRefresh;
+      }
+      const work = this.runRemoteReconcile().finally(() => {
+        if (this.inFlightNonForcedRefresh === work) {
+          this.inFlightNonForcedRefresh = null;
+        }
+      });
+      this.inFlightNonForcedRefresh = work;
+      return work;
     }
+    return this.runRemoteReconcile();
+  }
+
+  private async runRemoteReconcile(): Promise<Proxy6ProxiesOut> {
     const response = await this.api.getProxy({ state: 'all' });
     await this.upsertFromGetProxy(response);
     this.lastAutoReconcileAtMs = Date.now();

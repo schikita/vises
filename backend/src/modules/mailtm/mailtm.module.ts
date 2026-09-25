@@ -1,20 +1,17 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { DISPOSABLE_EMAIL, TEMPORARY_EMAIL_PROVIDER } from './constants';
 import { MailTmService } from './mailtm.service';
 
 /**
- * Mail.tm temporary email + OTP client (HttpModule / axios).
- * Exports MailTmService as TemporaryEmailProvider adapter (DEC-007).
+ * Mail.tm temporary email + OTP HTTP client (HttpModule / axios).
+ * Exports MailTmService for BrowserMailModule factory binding
+ * (portal-scrape-module-split REQ-013).
+ * TEMPORARY_EMAIL_PROVIDER is bound in BrowserMailModule, not here.
  * Attribution: https://mail.tm
  */
 @Module({
   imports: [HttpModule],
-  providers: [
-    MailTmService,
-    { provide: TEMPORARY_EMAIL_PROVIDER, useExisting: MailTmService },
-    { provide: DISPOSABLE_EMAIL, useExisting: MailTmService },
-  ],
-  exports: [MailTmService, TEMPORARY_EMAIL_PROVIDER, DISPOSABLE_EMAIL],
+  providers: [MailTmService],
+  exports: [MailTmService],
 })
 export class MailTmModule {}

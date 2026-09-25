@@ -16,8 +16,3 @@ export type MailTmCircuitRecordFailureResult =
   | { outcome: 'fail_fast'; reason: 'permanent' }
   | { outcome: 'continue'; state: MailTmCircuitState; opened: false }
   | { outcome: 'circuit_open'; state: 'open'; opened: true };
-
-/** Optional run-scoped breaker passed into protected Mail.tm calls (DEC-002). */
-export type MailTmCircuitCallOptions = {
-  circuit?: MailTmCircuitBreaker;
-};

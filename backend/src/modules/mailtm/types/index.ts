@@ -7,16 +7,22 @@ export type {
   MailTmMessageSummary,
   MailTmMessagesCollection,
   MailTmMessageDetail,
-  CreateMailTmAccountResult,
-  WaitMailTmLatestMessageInput,
-  WaitMailTmLatestMessageResult,
-  ExtractMailTmOtpInput,
-  ExtractMailTmOtpResult,
-  DeleteMailTmAccountInput,
-  DeleteMailTmAccountResult,
   LoginMailTmAccountInput,
   ResolveMailTmAccountResult,
 } from './mailtm.types';
+export type {
+  TemporaryMailboxAccount,
+  CreateTemporaryMailboxInput,
+  TemporaryEmailCallOptions,
+  WaitTemporaryEmailMessageInput,
+  WaitTemporaryEmailMessageResult,
+  ExtractTemporaryEmailOtpInput,
+  ExtractTemporaryEmailOtpResult,
+  ExtractTemporaryEmailPortalPasswordInput,
+  ExtractTemporaryEmailPortalPasswordResult,
+  DeleteTemporaryMailboxInput,
+  DeleteTemporaryMailboxResult,
+} from './temporary-email.types';
 export type {
   MailTmFailureClass,
   MailTmFailureClassifyInput,
@@ -27,5 +33,4 @@ export type {
   MailTmCircuitState,
   MailTmCircuitBreaker,
   MailTmCircuitRecordFailureResult,
-  MailTmCircuitCallOptions,
 } from './mailtm-circuit.types';

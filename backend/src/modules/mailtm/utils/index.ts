@@ -7,6 +7,7 @@ export { combineMailTmMessageBody } from './combine-mailtm-message-body.util';
 export { computeMailTmBackoffMs } from './compute-mailtm-backoff-ms.util';
 export { mailTmSleep } from './mailtm-sleep.util';
 export { extractMailTmOtp } from './extract-mailtm-otp.util';
+export { extractMailTmPortalPassword } from './extract-mailtm-portal-password.util';
 export { classifyMailTmFailure } from './classify-mailtm-failure.util';
 export { createMailTmClientError } from './create-mailtm-client-error.util';
 export { isMailTmClientError } from './is-mailtm-client-error.util';

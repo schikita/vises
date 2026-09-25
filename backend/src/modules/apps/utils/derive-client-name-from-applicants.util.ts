@@ -1,13 +1,14 @@
+import type { ApplicationApplicant } from '../../database/types';
+
 /** Display name for new client from primary applicant (DEC-003). */
 export const deriveClientNameFromApplicants = (
-  applicants: unknown[],
+  applicants: ApplicationApplicant[],
 ): string => {
   const primary = applicants[0];
-  if (!primary || typeof primary !== 'object') {
+  if (!primary) {
     return '';
   }
-  const record = primary as Record<string, unknown>;
-  const first = String(record.firstName ?? '').trim();
-  const last = String(record.lastName ?? '').trim();
+  const first = String(primary.firstName ?? '').trim();
+  const last = String(primary.lastName ?? '').trim();
   return [first, last].filter(Boolean).join(' ');
 };

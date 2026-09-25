@@ -103,7 +103,7 @@ export const computePortalAutofillRetryEligibility = (
       input.inProgressRun.terminalReason,
     );
     const captchaRetryViaNewRun =
-      input.capMonsterKeyConfigured &&
+      input.captchaServiceKeyConfigured &&
       (cbOpen || budgetExhausted || portalMismatch);
 
     return {
@@ -126,7 +126,7 @@ export const computePortalAutofillRetryEligibility = (
     terminal?.terminalReason,
   );
   const captchaRetryViaNewRun =
-    input.capMonsterKeyConfigured &&
+    input.captchaServiceKeyConfigured &&
     (cbOpen || budgetExhausted || portalMismatch);
 
   return {

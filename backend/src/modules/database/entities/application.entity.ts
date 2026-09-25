@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
+import type { ApplicationApplicant } from '../types';
 
 @Entity({ name: 'applications' })
 export class Application {
@@ -44,8 +45,9 @@ export class Application {
   @Column({ type: 'text', default: '' })
   comment!: string;
 
+  /** Applicant payloads (jsonb); includes passportType / passportIssueCountry. */
   @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
-  applicants!: unknown[];
+  applicants!: ApplicationApplicant[];
 
   @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
   documents!: unknown[];

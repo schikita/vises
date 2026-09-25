@@ -4,7 +4,7 @@
 |-------|-------|
 | Task ID | `FE-TASK-001` |
 | Title | Events entity types, fetch util, labels, payloadSafe allowlist |
-| Status | **TODO** |
+| Status | **DONE** |
 | Feature | `bls-workflow-frontend` |
 | REQ/NFR | REQ-007, REQ-016, REQ-017, REQ-019, NFR-001, NFR-007 |
 | DEC | DEC-001, DEC-006 |
