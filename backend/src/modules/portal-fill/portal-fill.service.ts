@@ -6,6 +6,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TEMPORARY_EMAIL_PROVIDER } from '../mailtm/constants/mailtm-di.tokens';
 import type { TemporaryEmailProvider } from '../mailtm/interfaces/temporary-email-provider.interface';
 import {
+  PORTAL_BROWSER_LAUNCH_TIMEOUT_MS,
   PORTAL_KEEP_OPEN_MS,
   PORTAL_NAV_TIMEOUT_MS,
 } from '../portal-core/constants/portal-config.defaults.constants';
@@ -83,6 +84,7 @@ export class PortalFillService implements IPortalFormFiller {
         browser = await chromium.launch({
           headless: !options.headed,
           channel: 'chrome',
+          timeout: PORTAL_BROWSER_LAUNCH_TIMEOUT_MS,
         });
         this.logger.log(`${logPrefix} phase=browser_launch success`);
       } catch (err) {

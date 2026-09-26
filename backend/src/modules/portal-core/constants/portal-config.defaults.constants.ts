@@ -14,6 +14,12 @@ export const DEFAULT_MANAGE_APPLICANTS_PATH =
 export const PORTAL_NAV_TIMEOUT_MS = 30_000;
 
 /**
+ * Max wait for `chromium.launch` to return a ready browser (ms).
+ * Independent of page navigation timeouts after the browser is open.
+ */
+export const PORTAL_BROWSER_LAUNCH_TIMEOUT_MS = 60_000;
+
+/**
  * When true, skip CAPTCHA/anti-bot page abort (operator-owned CAPTCHA).
  * Fixed false — live autofill always runs the guard unless captcha service is on.
  */

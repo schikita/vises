@@ -1,21 +1,27 @@
 /**
- * RegisterUser BLS CAPTCHA selector contract (DEC-009 / REQ-015).
+ * BLS CAPTCHA selector contract — dual surface (portal-login-inline-captcha DEC-005).
  *
- * Evidence: operator sample `capcha.html` (Verify Registration Kendo window +
- * `iframe.k-content-frame` → `/Global/CaptchaPublic/GenerateCaptcha`).
+ * Surfaces:
+ * - **iframe (register / GenerateCaptcha):** parent
+ *   `iframe.k-content-frame` → `/Global/CaptchaPublic/GenerateCaptcha`.
+ *   Confirm control is `#submit` (Submit Selection) after cell clicks
+ *   (prefer portal `onSubmit()` in that document when present).
+ * - **inline (login password/captcha page):** challenge lives in the main
+ *   document under `#captcha-main-div` / `.main-div-container` (CON-004
+ *   sample `login_captcha.html` — no GenerateCaptcha iframe). Confirm
+ *   control is `#btnVerify` with portal `onSubmit()` when available
+ *   (NOT `#submit`).
  *
  * Live DOM quirks (must not use naïve `querySelectorAll('.captcha-img')`):
- * - Challenge runs inside an iframe (not the RegisterUser parent document).
  * - Dozens of decoy `img.captcha-img` cells; only ~9 are visible in the 3×3.
  * - Many decoy `.box-label` lines; real TaskArgument is the readable
  *   (non-camouflaged near-white) label: "Please select all boxes with number NNN".
- * - Confirm control is `#submit` (Submit Selection) after cell clicks.
  */
 
 export type PortalCaptchaSelectorSet = {
-  /** Parent-page iframe that hosts GenerateCaptcha. */
+  /** Parent-page iframe that hosts GenerateCaptcha (iframe surface only). */
   iframe: string;
-  /** Root inside the iframe (330×330 grid host). */
+  /** Root of the 3×3 grid host (iframe document or main-frame inline). */
   challengeRoot: string;
   /**
    * Candidate cell images; extract/apply keep only **visible** nodes and sort
@@ -26,12 +32,18 @@ export type PortalCaptchaSelectorSet = {
   cellClickTargets: string;
   /** Candidate TaskArgument labels; extract keeps the visible non-decoy one. */
   taskArgument: string;
-  /** Post-answer confirm (`#submit` / Submit Selection). */
+  /**
+   * Post-answer confirm control.
+   * Iframe/register default: `#submit`. Inline/login: `#btnVerify`
+   * (`PORTAL_CAPTCHA_INLINE_CONFIRM_CONTROL`) — see DEC-005.
+   */
   confirmControl: string;
 };
 
 /**
- * Sample-backed selectors for BLS GenerateCaptcha iframe content.
+ * Default selectors for BLS GenerateCaptcha **iframe** content
+ * (`confirmControl` = `#submit`). Inline surface clones this set and
+ * overrides `confirmControl` to `PORTAL_CAPTCHA_INLINE_CONFIRM_CONTROL`.
  */
 export const PORTAL_CAPTCHA_SELECTORS: PortalCaptchaSelectorSet = {
   iframe:
@@ -42,6 +54,23 @@ export const PORTAL_CAPTCHA_SELECTORS: PortalCaptchaSelectorSet = {
   taskArgument: '.box-label',
   confirmControl: '#submit',
 };
+
+/**
+ * Main-document wrapper for login inline captcha (CON-004 sample).
+ * Presence probe may use this and/or `PORTAL_CAPTCHA_INLINE_CHALLENGE_ROOT`.
+ */
+export const PORTAL_CAPTCHA_INLINE_ROOT = '#captcha-main-div';
+
+/**
+ * Inline / shared challenge grid host (same class as iframe challenge root).
+ */
+export const PORTAL_CAPTCHA_INLINE_CHALLENGE_ROOT = '.main-div-container';
+
+/**
+ * Login inline confirm control after cell clicks (DEC-005 / REQ-005).
+ * Sample button text may be "Submit"; selector remains `#btnVerify`.
+ */
+export const PORTAL_CAPTCHA_INLINE_CONFIRM_CONTROL = '#btnVerify';
 
 /** Required selectors that must be non-empty before extract/apply. */
 export const PORTAL_CAPTCHA_REQUIRED_SELECTOR_KEYS = [

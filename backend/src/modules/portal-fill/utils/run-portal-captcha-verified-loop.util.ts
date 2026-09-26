@@ -24,14 +24,16 @@ import { computePortalCapmonsterUnsolvableBackoffMs } from './compute-portal-cap
 import { createCaptchaCircuitBreaker } from './create-captcha-circuit-breaker.util';
 import { ensurePortalCaptchaChallengeReady } from './ensure-portal-captcha-challenge-ready.util';
 import { formatPortalLogContext } from '../../portal-core/utils/format-portal-log-context.util';
-import { isPortalCaptchaVerified } from './is-portal-captcha-verified.util';
+import { isPortalCaptchaVerifiedAfterNav } from './is-portal-captcha-verified-after-nav.util';
 import { isPortalFillAbortRequested } from './is-portal-fill-abort-requested.util';
+import { isPortalLoginFormVisibleAfterNav } from './is-portal-login-form-visible-after-nav.util';
+import { isPortalPasswordChangeFormVisibleAfterNav } from './is-portal-password-change-form-visible-after-nav.util';
 import { portalCaptchaVerifiedLoopSleep } from './portal-captcha-verified-loop-sleep.util';
 import { solvePortalBlsCaptcha } from './portal-captcha-solve.util';
 import { recordCaptchaCircuitFailure } from './record-captcha-circuit-failure.util';
 import { recordCaptchaCircuitSuccess } from './record-captcha-circuit-success.util';
 import { runPortalCaptchaChainAfterPass } from './run-portal-captcha-chain-after-pass.util';
-import { waitForPortalCaptchaVerified } from './wait-for-portal-captcha-verified.util';
+import { waitForPortalCaptchaEpisodeSuccess } from './wait-for-portal-captcha-episode-success.util';
 import { waitPortalCaptchaVerifiedLoopMs } from './wait-portal-captcha-verified-loop-ms.util';
 
 const logger = new Logger('PortalCaptchaVerifiedLoop');
@@ -84,10 +86,33 @@ export const runPortalCaptchaVerifiedLoop = async (
   };
 
   const remainingMs = () => budgetDeadlineAt.getTime() - Date.now();
+  const acceptLoginAuthSuccess = input.acceptLoginAuthSuccess === true;
 
-  if (await isPortalCaptchaVerified(page)) {
+  if (await isPortalCaptchaVerifiedAfterNav(page)) {
     logger.log(
-      `${logPrefix} phase=captcha_verified_loop success attempts=${attempts} reason=already_verified`,
+      `${logPrefix} phase=captcha_verified_loop success attempts=${attempts} reason=already_verified via=btnVerified`,
+    );
+    await emitCheckpoint({ attempts });
+    return { ok: true, attempts, stopReason: 'verified' };
+  }
+
+  if (
+    acceptLoginAuthSuccess &&
+    (await isPortalPasswordChangeFormVisibleAfterNav(page))
+  ) {
+    logger.log(
+      `${logPrefix} phase=captcha_verified_loop success attempts=${attempts} reason=already_verified via=password_change`,
+    );
+    await emitCheckpoint({ attempts });
+    return { ok: true, attempts, stopReason: 'verified' };
+  }
+
+  if (
+    acceptLoginAuthSuccess &&
+    !(await isPortalLoginFormVisibleAfterNav(page))
+  ) {
+    logger.log(
+      `${logPrefix} phase=captcha_verified_loop success attempts=${attempts} reason=already_verified via=login_auth`,
     );
     await emitCheckpoint({ attempts });
     return { ok: true, attempts, stopReason: 'verified' };
@@ -363,6 +388,7 @@ export const runPortalCaptchaVerifiedLoop = async (
       breaker,
       remainingMs,
       abortSignal: input.abortSignal,
+      acceptLoginAuthSuccess,
       unsolvableTries,
       onHeartbeat: input.onHeartbeat,
       onAttemptCheckpoint: emitCheckpoint,
@@ -387,12 +413,12 @@ export const runPortalCaptchaVerifiedLoop = async (
       continue;
     }
 
-    // chain_ended (no_challenge | chain_limit): existing Verified wait (REQ-008–010).
+    // chain_ended (no_challenge | chain_limit): episode success wait (REQ-008).
     logger.log(
       `${logPrefix} phase=captcha_verified_loop attempt=${attempt} chain_ended reason=${chainResult.endReason}`,
     );
 
-    // Dedicated wait for #btnVerified within remaining outer budget (not settle-only).
+    // Dedicated wait for #btnVerified (and login auth when flag set) within remaining budget.
     const remainingAfterChain = remainingMs();
     if (remainingAfterChain <= 0) {
       logger.error(
@@ -412,18 +438,19 @@ export const runPortalCaptchaVerifiedLoop = async (
       PORTAL_CAPTCHA_VERIFIED_AFTER_APPLY_WAIT_MS,
     );
     logger.log(
-      `${logPrefix} phase=captcha_verified_loop attempt=${attempt} waiting_for_verified waitMs=${waitMs}`,
+      `${logPrefix} phase=captcha_verified_loop attempt=${attempt} waiting_for_episode_success waitMs=${waitMs} acceptLoginAuthSuccess=${acceptLoginAuthSuccess}`,
     );
 
-    const verified = await waitForPortalCaptchaVerified(
+    const episode = await waitForPortalCaptchaEpisodeSuccess(
       page,
       waitMs,
       PORTAL_CAPTCHA_VERIFIED_AFTER_APPLY_POLL_MS,
+      { acceptLoginAuthSuccess },
     );
 
-    if (verified) {
+    if (episode.ok) {
       logger.log(
-        `${logPrefix} phase=captcha_verified_loop success attempts=${attempts} reason=verified`,
+        `${logPrefix} phase=captcha_verified_loop success attempts=${attempts} reason=verified via=${episode.via ?? 'btnVerified'}`,
       );
       await emitCheckpoint({ attempts });
       return { ok: true, attempts, stopReason: 'verified' };

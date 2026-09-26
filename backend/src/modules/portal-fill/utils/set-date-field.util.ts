@@ -6,6 +6,7 @@ import {
 } from '../constants';
 import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
 import { commitDateViaCalendarUi } from './commit-date-via-calendar-ui.util';
+import { ensureDatepickerDaySelected } from './ensure-datepicker-day-selected.util';
 
 /**
  * Set a portal Kendo/DOM date field from a strict `YYYY-MM-DD` value.
@@ -14,6 +15,8 @@ import { commitDateViaCalendarUi } from './commit-date-via-calendar-ui.util';
  * (OnSubmit mirror); Server* syncs from verified widget YMD only (DEC-014/015).
  * API: value(Date) → retry value(ymdString) + optional close (DEC-016).
  * Calendar UI fallback only when API verify fails (DEC-017).
+ * After any successful commit, require dateview `k-state-selected` (solid
+ * selection) when calendar chrome is present — not focus-only outline.
  */
 export const setDateField = async (
   page: PortalPage,
@@ -21,6 +24,28 @@ export const setDateField = async (
   isoDate: string,
 ): Promise<WidgetOpResult> => {
   const selector = PORTAL_REGISTER_USER_SELECTORS.fields[name];
+  const ymdMatch = /^(\d{4}-\d{2}-\d{2})/.exec(String(isoDate).trim());
+  const intendedYmd = ymdMatch ? ymdMatch[1] : String(isoDate).trim();
+
+  const finishWithSelectionEnsure = async (
+    committed: WidgetOpResult,
+  ): Promise<WidgetOpResult> => {
+    if (!committed.ok) return committed;
+    const ensured = await ensureDatepickerDaySelected(
+      page,
+      name,
+      intendedYmd,
+    );
+    if (ensured.skipped) return committed;
+    if (!ensured.ok) return ensured;
+    // Keep original via (api / calendar-ui) for harness + diagnostics.
+    return {
+      ...committed,
+      value: ensured.value ?? committed.value,
+      visible: ensured.visible ?? committed.visible,
+    };
+  };
+
   const apiResult = await page.evaluate(
     ({
       selector,
@@ -336,11 +361,11 @@ export const setDateField = async (
 
       if (el.getAttribute('data-role') === 'datepicker') {
         // Fixture stand-in without Kendo API: commit via DOM + display marker.
-        el.removeAttribute('readonly');
+        // el.removeAttribute('readonly');
         el.value = ymd;
-        el.setAttribute('readonly', 'readonly');
+        // el.setAttribute('readonly', 'readonly');
         el.dispatchEvent(new Event('change', { bubbles: true }));
-        el.blur();
+        // el.blur();
         const disp = document.querySelector(
           `[data-datepicker-display="${name}"]`,
         );
@@ -365,14 +390,25 @@ export const setDateField = async (
   );
 
   if (apiResult.ok) {
-    return apiResult;
+    const afterApi = await finishWithSelectionEnsure(apiResult);
+    if (afterApi.ok) return afterApi;
+    // API value ok but calendar selection missing → full calendar UI then re-ensure.
+    const calendarResult = await commitDateViaCalendarUi(
+      page,
+      name,
+      intendedYmd,
+    );
+    return finishWithSelectionEnsure(calendarResult);
   }
 
   // DEC-017: calendar UI only after API verify failure against a resolvable Kendo path.
   if (apiResult.via === 'kendoDatePicker-api-unverified') {
-    const ymdMatch = /^(\d{4}-\d{2}-\d{2})/.exec(String(isoDate).trim());
-    const intendedYmd = ymdMatch ? ymdMatch[1] : String(isoDate).trim();
-    return commitDateViaCalendarUi(page, name, intendedYmd);
+    const calendarResult = await commitDateViaCalendarUi(
+      page,
+      name,
+      intendedYmd,
+    );
+    return finishWithSelectionEnsure(calendarResult);
   }
 
   return apiResult;

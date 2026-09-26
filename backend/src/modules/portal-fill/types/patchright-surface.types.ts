@@ -10,6 +10,13 @@ export type PortalLocator = {
   first(): PortalLocator;
   fill(value: string): Promise<void>;
   inputValue(): Promise<string>;
+  click(options?: { timeout?: number }): Promise<void>;
+  pressSequentially(
+    text: string,
+    options?: { delay?: number },
+  ): Promise<void>;
+  isVisible(): Promise<boolean>;
+  isDisabled(): Promise<boolean>;
 };
 
 /** Frame (or page) surface used for CAPTCHA extract/apply inside an iframe. */
@@ -44,6 +51,14 @@ export type PortalPage = {
   waitForSelector(
     selector: string,
     options?: { state?: string; timeout?: number },
+  ): Promise<unknown>;
+  /**
+   * Load-state wait (Patchright page API). Used after navigating Verify clicks
+   * before the next `evaluate` (portal-login-prep-nav-race DEC-007 / NFR-004).
+   */
+  waitForLoadState?(
+    state?: string,
+    options?: { timeout?: number },
   ): Promise<unknown>;
   waitForFunction(
     pageFunction: () => boolean,
@@ -80,6 +95,7 @@ export type PortalChromium = {
   launch(options?: {
     headless?: boolean;
     channel?: string;
+    timeout?: number;
   }): Promise<PortalBrowser>;
 };
 

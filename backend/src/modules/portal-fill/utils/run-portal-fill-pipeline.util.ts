@@ -5,6 +5,8 @@ import {
   PORTAL_CAPMONSTER_POLL_INTERVAL_MS,
   PORTAL_CAPMONSTER_TIMEOUT_MS,
 } from '../../capmonster/constants/capmonster.constants';
+import { BROWSER_MAIL_SESSION_MISSING_ERROR } from '../../browser-mail/constants';
+import { isBrowserMailSessionClosedError } from '../../browser-mail/utils';
 import { MAILTM_WAIT_FOR_EMAIL_MS } from '../../mailtm/constants/mailtm.constants';
 import { MAILTM_CIRCUIT_OPEN_REASON } from '../../mailtm/constants/mailtm-circuit.constants';
 import { createMailTmCircuitBreaker } from '../../mailtm/utils/create-mailtm-circuit-breaker.util';
@@ -19,7 +21,9 @@ import {
   PORTAL_CAPTCHA_VERIFIED_LOOP_MAX_MS,
   PORTAL_KENDO_WIDGET_READY_TIMEOUT_MS,
   PORTAL_NAV_TIMEOUT_MS,
+  PORTAL_OTP_INPUT_RETRY_MAX,
   PORTAL_OTP_RESEND_MAX_ATTEMPTS,
+  PORTAL_REGISTER_SUBMIT_SETTLE_MS,
   PORTAL_REGISTER_USER_SELECTORS,
   PORTAL_SKIP_CAPTCHA_GUARD,
   TEXT_FIELDS,
@@ -41,6 +45,7 @@ import { dismissPortalOtpOkModal } from './dismiss-portal-otp-ok-modal.util';
 import { fillPortalEmail } from './fill-portal-email.util';
 import { fillPortalEmailOtp } from './fill-portal-email-otp.util';
 import { formatPortalLogContext } from '../../portal-core/utils/format-portal-log-context.util';
+import { isPortalEmailOtpControlUsable } from './is-portal-email-otp-control-usable.util';
 import { logAllFieldErrors } from './log-all-field-errors.util';
 import { logFieldFailure } from './log-field-failure.util';
 import { logHardFailure } from './log-hard-failure.util';
@@ -822,66 +827,75 @@ export const runPortalFillPipeline = async (
     }
     logger.log(`${logPrefix} phase=otp_email_fill success`);
 
-    logger.log(`${logPrefix} phase=otp_generate start`);
-    const generate = await clickPortalGenerateOtp(options.page);
-    if (!generate.ok) {
-      const error = generate.error;
-      logger.error(`${logPrefix} phase=otp_generate failure ${error}`);
-      logHardFailure(error);
-      return {
-        ok: false,
-        error,
-        fields,
-        countryCodeObserved: afterCountry ?? countryCodeObserved,
-        screenshotPath,
-        ...baseResult(),
-      };
-    }
-    logger.log(
-      `${logPrefix} phase=otp_generate success via=${generate.via}`,
-    );
-
-    logger.log(`${logPrefix} phase=otp_ok_modal start`);
-    const okModal = await dismissPortalOtpOkModal(options.page);
-    if (!okModal.ok) {
-      const error = okModal.error;
-      logger.error(`${logPrefix} phase=otp_ok_modal failure ${error}`);
-      logHardFailure(error);
-      return {
-        ok: false,
-        error,
-        fields,
-        countryCodeObserved: afterCountry ?? countryCodeObserved,
-        screenshotPath,
-        ...baseResult(),
-      };
-    }
-    logger.log(
-      `${logPrefix} phase=otp_ok_modal success via=${okModal.via}`,
-    );
-
-    // Wait → extract → optional single Resend (DEC-007 / DEC-008).
+    // Wait → extract → optional single Resend (DEC-001 / DEC-002 / DEC-007 / DEC-008).
+    // Arm wait Promise before Generate/Resend; Ok only after successful extract.
     let extractedOtp: string | undefined;
     let extractedSource: string | undefined;
 
     while (extractedOtp === undefined) {
       logger.log(
-        `${logPrefix} phase=otp_wait_email start resendAttempts=${emailOtpResendAttempts}`,
+        `${logPrefix} phase=otp_wait_email arm start resendAttempts=${emailOtpResendAttempts}`,
       );
+
+      const waitPromise = mailProvider.waitLatestMessage(
+        {
+          contextKey: emailContextKey,
+          token: mailTmToken,
+          timeoutMs: MAILTM_WAIT_FOR_EMAIL_MS,
+          unreadOnly: true,
+        },
+        { circuit: mailTmCircuit },
+      );
+
+      if (emailOtpResendAttempts === 0) {
+        logger.log(`${logPrefix} phase=otp_generate start`);
+        const generate = await clickPortalGenerateOtp(options.page);
+        if (!generate.ok) {
+          const error = generate.error;
+          logger.error(`${logPrefix} phase=otp_generate failure ${error}`);
+          await waitPromise.catch(() => undefined);
+          logHardFailure(error);
+          return {
+            ok: false,
+            error,
+            fields,
+            countryCodeObserved: afterCountry ?? countryCodeObserved,
+            screenshotPath,
+            ...baseResult(),
+          };
+        }
+        logger.log(
+          `${logPrefix} phase=otp_generate success via=${generate.via}`,
+        );
+      } else {
+        logger.log(
+          `${logPrefix} phase=otp_resend start attempt=${emailOtpResendAttempts} max=${PORTAL_OTP_RESEND_MAX_ATTEMPTS}`,
+        );
+        const resend = await clickPortalResendOtp(options.page);
+        if (!resend.ok) {
+          logger.error(`${logPrefix} phase=otp_resend failure ${resend.error}`);
+          await waitPromise.catch(() => undefined);
+          logHardFailure(resend.error);
+          return {
+            ok: false,
+            error: resend.error,
+            fields,
+            countryCodeObserved: afterCountry ?? countryCodeObserved,
+            screenshotPath,
+            ...baseResult(),
+          };
+        }
+        logger.log(
+          `${logPrefix} phase=otp_resend success via=${resend.via}`,
+        );
+      }
+
       let emailBody: string | undefined;
       let shouldResend = false;
       let failureError: string | undefined;
 
       try {
-        const latest = await mailProvider.waitLatestMessage(
-          {
-            contextKey: emailContextKey,
-            token: mailTmToken,
-            timeoutMs: MAILTM_WAIT_FOR_EMAIL_MS,
-            unreadOnly: true,
-          },
-          { circuit: mailTmCircuit },
-        );
+        const latest = await waitPromise;
         recordMailTmCircuitSuccess(mailTmCircuit);
         emailBody = latest.body;
         emailOtpMessageId = latest.messageId;
@@ -915,10 +929,16 @@ export const runPortalFillPipeline = async (
         }
         const permanentFailure =
           isMailTmClientError(err) && err.failureClass === 'permanent';
+        // DEC-004: session missing / closed mid-wait → hard-fail; Resend cannot restore.
+        const sessionMissing =
+          failureError === BROWSER_MAIL_SESSION_MISSING_ERROR;
+        const sessionClosed = isBrowserMailSessionClosedError(failureError);
         shouldResend =
           emailOtpResendAttempts < PORTAL_OTP_RESEND_MAX_ATTEMPTS &&
           !circuitOpen &&
-          !permanentFailure;
+          !permanentFailure &&
+          !sessionMissing &&
+          !sessionClosed;
       }
 
       if (emailBody !== undefined && !shouldResend) {
@@ -953,45 +973,6 @@ export const runPortalFillPipeline = async (
         };
       }
 
-      logger.log(
-        `${logPrefix} phase=otp_resend start attempt=${emailOtpResendAttempts + 1} max=${PORTAL_OTP_RESEND_MAX_ATTEMPTS}`,
-      );
-      const resend = await clickPortalResendOtp(options.page);
-      if (!resend.ok) {
-        logger.error(`${logPrefix} phase=otp_resend failure ${resend.error}`);
-        logHardFailure(resend.error);
-        return {
-          ok: false,
-          error: resend.error,
-          fields,
-          countryCodeObserved: afterCountry ?? countryCodeObserved,
-          screenshotPath,
-          ...baseResult(),
-        };
-      }
-      logger.log(
-        `${logPrefix} phase=otp_resend success via=${resend.via}`,
-      );
-
-      logger.log(`${logPrefix} phase=otp_ok_modal start after_resend`);
-      const resendOkModal = await dismissPortalOtpOkModal(options.page);
-      if (!resendOkModal.ok) {
-        logger.error(
-          `${logPrefix} phase=otp_ok_modal failure after_resend ${resendOkModal.error}`,
-        );
-        logHardFailure(resendOkModal.error);
-        return {
-          ok: false,
-          error: resendOkModal.error,
-          fields,
-          countryCodeObserved: afterCountry ?? countryCodeObserved,
-          screenshotPath,
-          ...baseResult(),
-        };
-      }
-      logger.log(
-        `${logPrefix} phase=otp_ok_modal success after_resend via=${resendOkModal.via}`,
-      );
       emailOtpResendAttempts += 1;
     }
 
@@ -1009,14 +990,134 @@ export const runPortalFillPipeline = async (
       };
     }
 
-    logger.log(`${logPrefix} phase=otp_fill start`);
-    const otpFill = await fillPortalEmailOtp(options.page, extractedOtp);
-    if (!otpFill.ok) {
-      const error = otpFill.reason ?? 'EmailOtp fill failed';
+    // DEC-002: Ok after OTP grab (soft-skip when modal absent and EmailOtp usable).
+    logger.log(`${logPrefix} phase=otp_ok_modal start`);
+    const okModal = await dismissPortalOtpOkModal(options.page);
+    if (!okModal.ok) {
+      const otpUsable = await isPortalEmailOtpControlUsable(options.page);
+      if (!otpUsable) {
+        const error = okModal.error;
+        logger.error(`${logPrefix} phase=otp_ok_modal failure ${error}`);
+        logHardFailure(error);
+        return {
+          ok: false,
+          error,
+          fields,
+          countryCodeObserved: afterCountry ?? countryCodeObserved,
+          screenshotPath,
+          ...baseResult(),
+        };
+      }
+      logger.log(
+        `${logPrefix} phase=otp_ok_modal skipped reason=modal_absent_email_otp_usable`,
+      );
+    } else {
+      logger.log(
+        `${logPrefix} phase=otp_ok_modal success via=${okModal.via}`,
+      );
+    }
+
+    // DEC-006 / DEC-007: keyboard OTP entry + bounded input retries (cached OTP).
+    let otpInputError: string | undefined;
+    for (
+      let attempt = 0;
+      attempt <= PORTAL_OTP_INPUT_RETRY_MAX;
+      attempt += 1
+    ) {
+      logger.log(
+        `${logPrefix} phase=otp_fill start attempt=${attempt + 1} max=${PORTAL_OTP_INPUT_RETRY_MAX + 1}`,
+      );
+      const otpFill = await fillPortalEmailOtp(options.page, extractedOtp);
+      if (!otpFill.ok) {
+        otpInputError = otpFill.reason ?? 'EmailOtp fill failed';
+        logger.error(
+          `${logPrefix} phase=otp_fill failure attempt=${attempt + 1} ${otpInputError}`,
+        );
+        continue;
+      }
+
+      emailOtpTouched = true;
+      {
+        const idx = fields.findIndex((f) => f.field === 'EmailOtp');
+        if (idx >= 0) {
+          fields[idx] = {
+            field: 'EmailOtp',
+            status: 'filled',
+            reason: `filled via temporary mailbox OTP (${extractedSource ?? 'unknown'})`,
+            // NFR-001 / AC-010: never store raw OTP in field notes/reports.
+            value: undefined,
+          };
+          await checkpointField(fields[idx]);
+        }
+      }
+      logger.log(
+        `${logPrefix} phase=otp_fill success attempt=${attempt + 1} (value masked in reports)`,
+      );
+
+      if (!submitRegisterForm) {
+        emailOtpOk = true;
+        break;
+      }
+
+      logger.log(
+        `${logPrefix} phase=register_submit start attempt=${attempt + 1}`,
+      );
+      const submitClick = await clickPortalRegisterSubmit(options.page);
+      if (!submitClick.ok) {
+        const afterMiss = await verifyPortalRegisterSuccess(options.page, {
+          waitMs: 5_000,
+          settleMs: 0,
+        });
+        if (afterMiss.ok) {
+          emailOtpOk = true;
+          registerSubmitted = true;
+          registerSuccessVerified = true;
+          logger.log(
+            `${logPrefix} phase=register_submit success via=pre_nav_verify (${submitClick.error})`,
+          );
+          break;
+        }
+        otpInputError =
+          submitClick.error ?? 'RegisterUser #btnSubmit click failed';
+        logger.error(
+          `${logPrefix} phase=register_submit failure attempt=${attempt + 1} ${otpInputError}`,
+        );
+        continue;
+      }
+
+      registerSubmitted = true;
+      logger.log(
+        `${logPrefix} phase=register_submit clicked via=${submitClick.via}`,
+      );
+
+      const verified = await verifyPortalRegisterSuccess(options.page, {
+        settleMs: PORTAL_REGISTER_SUBMIT_SETTLE_MS,
+      });
+      if (!verified.ok) {
+        otpInputError =
+          verified.reason ?? 'RegisterUser success page not confirmed';
+        logger.error(
+          `${logPrefix} phase=register_verify failure attempt=${attempt + 1} ${otpInputError}`,
+        );
+        continue;
+      }
+
+      emailOtpOk = true;
+      registerSuccessVerified = true;
+      logger.log(
+        `${logPrefix} phase=register_verify success via=${verified.via}`,
+      );
+      break;
+    }
+
+    if (!emailOtpOk) {
+      const error =
+        otpInputError ??
+        'Email OTP input/submit retries exhausted';
       logger.error(`${logPrefix} phase=otp_fill failure ${error}`);
       logHardFailure(error);
       const idx = fields.findIndex((f) => f.field === 'EmailOtp');
-      if (idx >= 0) {
+      if (idx >= 0 && fields[idx]?.status !== 'filled') {
         fields[idx] = {
           field: 'EmailOtp',
           status: 'failed',
@@ -1024,6 +1125,9 @@ export const runPortalFillPipeline = async (
         };
         logFieldFailure(fields[idx], 'email-otp-fill');
         await checkpointField(fields[idx]);
+      }
+      if (submitRegisterForm && registerSubmitted && !registerSuccessVerified) {
+        registerSubmitAmbiguous = true;
       }
       return {
         ok: false,
@@ -1034,24 +1138,6 @@ export const runPortalFillPipeline = async (
         ...baseResult(),
       };
     }
-
-    emailOtpTouched = true;
-    emailOtpOk = true;
-    {
-      const idx = fields.findIndex((f) => f.field === 'EmailOtp');
-      if (idx >= 0) {
-        fields[idx] = {
-          field: 'EmailOtp',
-          status: 'filled',
-          reason: `filled via temporary mailbox OTP (${extractedSource ?? 'unknown'})`,
-          value: extractedOtp,
-        };
-        await checkpointField(fields[idx]);
-      }
-    }
-    logger.log(
-      `${logPrefix} phase=otp_fill success (value masked in reports)`,
-    );
 
     // Legacy path: OTP fill succeeds without `#btnSubmit` (staff sync autofill).
     // Workflow path opts in via `submitRegisterForm` (REQ-009 / DEC-019).
@@ -1068,6 +1154,17 @@ export const runPortalFillPipeline = async (
   }
 
   if (submitRegisterForm) {
+    if (registerSuccessVerified) {
+      logger.log(`${logPrefix} phase=pipeline overall success`);
+      return {
+        ok: true,
+        fields,
+        countryCodeObserved: afterCountry ?? countryCodeObserved,
+        screenshotPath,
+        ...baseResult(),
+      };
+    }
+
     if (otpPathArmed && !emailOtpOk) {
       const error =
         'Email OTP required before RegisterUser submit (OTP path armed)';
@@ -1088,6 +1185,7 @@ export const runPortalFillPipeline = async (
     // VERIFY_THEN_REPEAT retry: already on success page → COMPLETED without re-click.
     const alreadyOk = await verifyPortalRegisterSuccess(options.page, {
       waitMs: 2_000,
+      settleMs: 0,
     });
     if (alreadyOk.ok) {
       registerSuccessVerified = true;
@@ -1108,6 +1206,7 @@ export const runPortalFillPipeline = async (
     if (!submitClick.ok) {
       const afterMiss = await verifyPortalRegisterSuccess(options.page, {
         waitMs: 5_000,
+        settleMs: 0,
       });
       if (afterMiss.ok) {
         registerSuccessVerified = true;
@@ -1143,7 +1242,9 @@ export const runPortalFillPipeline = async (
       `${logPrefix} phase=register_submit clicked via=${submitClick.via}`,
     );
 
-    const verified = await verifyPortalRegisterSuccess(options.page);
+    const verified = await verifyPortalRegisterSuccess(options.page, {
+      settleMs: PORTAL_REGISTER_SUBMIT_SETTLE_MS,
+    });
     if (!verified.ok) {
       registerSubmitAmbiguous = true;
       const error =

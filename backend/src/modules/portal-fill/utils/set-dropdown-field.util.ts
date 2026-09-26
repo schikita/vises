@@ -4,14 +4,24 @@ import {
   PORTAL_REGISTER_USER_SELECTORS,
 } from '../constants';
 import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
+import { commitDropdownViaListboxUi } from './commit-dropdown-via-listbox-ui.util';
 
+/**
+ * Set a portal Kendo/DOM dropdown by exact option text.
+ * Prefers listbox UI clicks (open → filter → click `li.k-item`) so Kendo
+ * binds the option GUID. Falls back to widget API / stand-in / native select
+ * when chrome/listbox UI cannot commit (harness or missing popup).
+ */
 export const setDropdownField = async (
   page: PortalPage,
   name: PortalFieldName,
   text: string,
 ): Promise<WidgetOpResult> => {
+  const uiResult = await commitDropdownViaListboxUi(page, name, text);
+  if (uiResult.ok) return uiResult;
+
   const selector = PORTAL_REGISTER_USER_SELECTORS.fields[name];
-  return page.evaluate(
+  const apiResult = await page.evaluate(
     ({
       selector,
       name,
@@ -34,6 +44,7 @@ export const setDropdownField = async (
         text?: string;
         Id?: string;
         Value?: string;
+        value?: string;
       };
 
       type KendoDropdownWidget = {
@@ -113,7 +124,7 @@ export const setDropdownField = async (
           const rows = widget.dataSource.data() ?? [];
           return rows
             .map((row) => ({
-              value: String(row.Id ?? row.Value ?? ''),
+              value: String(row.Id ?? row.Value ?? row.value ?? ''),
               text: String(row.Name ?? row.text ?? ''),
             }))
             .filter((o) => o.text.trim().length > 0);
@@ -139,6 +150,10 @@ export const setDropdownField = async (
         if (afterText !== text) return false;
         if (isUnselectedText(afterText)) return false;
         if (!afterVal.trim()) return false;
+        // When dataSource provides a distinct Id/GUID, require that binding.
+        if (resolved.value && resolved.value !== resolved.text) {
+          return afterVal === resolved.value;
+        }
         if (afterVal === resolved.value) return true;
         if (afterVal === resolved.text || afterVal === text) return true;
         return false;
@@ -148,33 +163,43 @@ export const setDropdownField = async (
         widget: KendoDropdownWidget,
         via: 'kendoDropDownList' | 'kendoComboBox',
       ): WidgetOpResult => {
+        if (
+          typeof widget.open === 'function' &&
+          readOptionsFromWidget(widget).length === 0
+        ) {
+          try {
+            widget.open();
+          } catch {
+            /* ignore */
+          }
+        }
+
         let options = readOptionsFromWidget(widget);
         if (options.length === 0 && el instanceof HTMLSelectElement) {
           options = readOptionsFromSelect(el);
         }
 
-        let resolved = resolveOptionByExactText(options, text);
-        if (!resolved && options.length === 0) {
-          resolved = { value: text, text };
-        }
+        const resolved = resolveOptionByExactText(options, text);
         if (!resolved) {
           return {
             ok: false,
             reason: `Kendo ${via} exact match failed for "${text}"`,
           };
         }
+        if (!resolved.value.trim()) {
+          return {
+            ok: false,
+            reason: `Kendo ${via} option "${text}" has empty Id/GUID`,
+          };
+        }
 
         try {
           widget.value(resolved.value);
         } catch {
-          try {
-            widget.value(resolved.text);
-          } catch {
-            return {
-              ok: false,
-              reason: `Kendo ${via} value set failed for "${text}"`,
-            };
-          }
+          return {
+            ok: false,
+            reason: `Kendo ${via} value set failed for "${text}"`,
+          };
         }
 
         notifyWidgetChange(widget, el);
@@ -329,96 +354,6 @@ export const setDropdownField = async (
         };
       }
 
-      // DEC-011: chrome/listbox commit only when API probes missed and chrome present.
-      const role = String(el.getAttribute('data-role') ?? '').toLowerCase();
-      const chromeHost =
-        el.closest('.k-widget.k-dropdown') ??
-        el.closest('.k-dropdown') ??
-        el.closest('.k-widget.k-combobox') ??
-        el.closest('.k-combobox');
-      const chromeEligible =
-        el instanceof HTMLInputElement &&
-        (role === 'dropdownlist' || role === 'combobox') &&
-        chromeHost !== null;
-
-      if (chromeEligible && chromeHost) {
-        const listboxId =
-          chromeHost.getAttribute('aria-owns')?.trim() ||
-          `${name}_listbox`;
-        let listbox = document.getElementById(listboxId);
-        if (!listbox) {
-          const selectBtn = chromeHost.querySelector(
-            '.k-select, [aria-label="select"]',
-          );
-          if (selectBtn instanceof HTMLElement) {
-            selectBtn.click();
-          } else if (chromeHost instanceof HTMLElement) {
-            chromeHost.click();
-          }
-          listbox = document.getElementById(listboxId);
-        }
-
-        const optionNodes = listbox
-          ? Array.from(
-              listbox.querySelectorAll(
-                '[role="option"], li.k-item, .k-list-item',
-              ),
-            )
-          : [];
-        const match = optionNodes.find(
-          (node) => String(node.textContent ?? '').trim() === text,
-        );
-
-        if (!match) {
-          return {
-            ok: false,
-            reason: `no Kendo/stand-in/select handler for ${name}; chrome listbox options unavailable for "${text}"`,
-          };
-        }
-
-        const boundFromAttr = String(
-          match.getAttribute('data-value') ??
-            match.getAttribute('data-offset-index') ??
-            '',
-        ).trim();
-        const resolved = {
-          value: boundFromAttr || text,
-          text,
-        };
-
-        if (match instanceof HTMLElement) {
-          match.click();
-        }
-
-        // Bound commit required (DEC-011); .k-input sync alone is not success.
-        el.value = resolved.value;
-        const kInput = chromeHost.querySelector('.k-input');
-        if (kInput) {
-          kInput.textContent = text;
-        }
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-        el.blur();
-
-        const afterText = String(
-          kInput?.textContent ?? el.value ?? '',
-        ).trim();
-        const afterVal = String(el.value ?? '').trim();
-        if (!isCommittedSelection(afterText, afterVal, resolved)) {
-          return {
-            ok: false,
-            reason: `chrome dropdown commit failed for "${text}" (text=${afterText || '(empty)'} value=${afterVal || '(empty)'})`,
-          };
-        }
-
-        return {
-          ok: true,
-          via: 'chrome-listbox',
-          value: afterVal,
-          text: afterText,
-          visible: afterText,
-        };
-      }
-
       // DEC-003: refuse bare display-only input paint.
       if (el instanceof HTMLInputElement) {
         const painted = String(
@@ -447,4 +382,12 @@ export const setDropdownField = async (
       unselectedLabels: [...PORTAL_DROPDOWN_UNSELECTED_LABELS],
     },
   );
+
+  if (apiResult.ok) return apiResult;
+
+  // Prefer the more specific listbox UI failure when both paths failed.
+  if (uiResult.reason && !String(uiResult.reason).includes('chrome not found')) {
+    return uiResult;
+  }
+  return apiResult;
 };

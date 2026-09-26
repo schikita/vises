@@ -17,6 +17,7 @@ export type BrowserMailPage = {
   locator(selector: string): BrowserMailLocator;
   setDefaultTimeout(timeout: number): void;
   setDefaultNavigationTimeout(timeout: number): void;
+  isClosed(): boolean;
   goto(
     url: string,
     options?: { waitUntil?: string; timeout?: number },
@@ -40,12 +41,14 @@ export type BrowserMailBrowserContext = {
 export type BrowserMailBrowser = {
   newContext(): Promise<BrowserMailBrowserContext>;
   close(): Promise<void>;
+  isConnected(): boolean;
 };
 
 export type BrowserMailChromium = {
   launch(options?: {
     headless?: boolean;
     channel?: string;
+    timeout?: number;
   }): Promise<BrowserMailBrowser>;
 };
 

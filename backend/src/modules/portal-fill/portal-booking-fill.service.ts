@@ -5,6 +5,7 @@
  */
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
+  PORTAL_BROWSER_LAUNCH_TIMEOUT_MS,
   PORTAL_KEEP_OPEN_MS,
   PORTAL_NAV_TIMEOUT_MS,
 } from '../portal-core/constants/portal-config.defaults.constants';
@@ -74,6 +75,7 @@ export class PortalBookingFillService {
         browser = await chromium.launch({
           headless: !options.headed,
           channel: 'chrome',
+          timeout: PORTAL_BROWSER_LAUNCH_TIMEOUT_MS,
         });
         this.logger.log(`${logPrefix} phase=browser_launch success`);
       } catch (err) {

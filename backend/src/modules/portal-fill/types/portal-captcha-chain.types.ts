@@ -7,8 +7,24 @@ import type { PortalCaptchaVerifiedLoopStopReason } from './portal-captcha-verif
  * Post-pass captcha chain orchestrator I/O (capmonster-chained-captcha DEC-001/009).
  */
 
-/** Log / end tokens when the chain sequence finishes without episode stop. */
-export type PortalCaptchaChainEndReason = 'no_challenge' | 'chain_limit';
+/**
+ * Log / end tokens when the chain sequence finishes without episode stop.
+ * `password_change_landing` = forced Change Password visible (login-auth only).
+ */
+export type PortalCaptchaChainEndReason =
+  | 'no_challenge'
+  | 'chain_limit'
+  | 'password_change_landing';
+
+/**
+ * Outcome of the post-pass wait poll (login-auth Change Password interrupt).
+ * Used only when `acceptLoginAuthSuccess` gates the polling wait helper.
+ */
+export type WaitPortalCaptchaChainAfterPassMsResult =
+  | 'elapsed'
+  | 'aborted'
+  | 'budget_exhausted'
+  | 'password_change_landing';
 
 export type RunPortalCaptchaChainAfterPassInput = {
   captchaServiceApiKey: string;
@@ -30,6 +46,11 @@ export type RunPortalCaptchaChainAfterPassInput = {
   breaker: CaptchaCircuitBreaker;
   remainingMs: () => number;
   abortSignal?: AbortSignal;
+  /**
+   * When true (login / nested login), poll for forced Change Password during
+   * post-pass wait and end the chain early if visible (010 DEC-001/002).
+   */
+  acceptLoginAuthSuccess?: boolean;
   /** In-episode CapMonster unsolvable try counter (mutated via return values). */
   unsolvableTries: number;
   onHeartbeat?: () => Promise<void>;

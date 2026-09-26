@@ -1,11 +1,12 @@
 /**
  * Probe-only same-kind BLS 3×3 challenge presence (capmonster-chained-captcha DEC-004).
+ * Dual-surface: iframe GenerateCaptcha **or** inline main-frame (REQ-009).
  * Does **not** adaptive-click `#btnVerify` on miss — absent ends the chain.
  */
 import { PORTAL_CAPTCHA_CHALLENGE_READY_PROBE_MS } from '../constants';
 import type { PortalPage } from '../types';
 import { isPortalCaptchaChallengeAbsentError } from './is-portal-captcha-challenge-absent-error.util';
-import { resolveCaptchaFrame } from './portal-captcha-frame.util';
+import { resolvePortalCaptchaChallengeContext } from './resolve-portal-captcha-challenge-context.util';
 
 export const isPortalCaptchaSameKindChallengePresent = async (
   page: PortalPage,
@@ -20,7 +21,9 @@ export const isPortalCaptchaSameKindChallengePresent = async (
   }
 
   try {
-    await resolveCaptchaFrame(page, { waitTimeoutMs: probeMs });
+    await resolvePortalCaptchaChallengeContext(page, {
+      waitTimeoutMs: probeMs,
+    });
     return true;
   } catch (err) {
     if (isPortalCaptchaChallengeAbsentError(err)) {

@@ -11,6 +11,7 @@ export { assertMyForm } from './assert-my-form.util';
 export { buildConsentModalActionArg } from './build-consent-modal-action-arg.util';
 export { buildEmailOtpNotes } from './build-email-otp-notes.util';
 export { buildPortalAutofillCaptchaRestore } from './build-portal-autofill-captcha-restore.util';
+export { buildPortalCaptchaSurfaceSelectors } from './build-portal-captcha-surface-selectors.util';
 export { clickPortalApplicantEdit } from './click-portal-applicant-edit.util';
 export { clickPortalApplicantEditSubmit } from './click-portal-applicant-edit-submit.util';
 export { clickPortalBookNewAppointment } from './click-portal-book-new-appointment.util';
@@ -44,10 +45,13 @@ export { isBlsApplicantPortalStatusReadyToBook } from './is-bls-applicant-portal
 export { isPortalApplicantEditFormVisible } from './is-portal-applicant-edit-form-visible.util';
 export { isPortalBookingSelectionUiVisible } from './is-portal-booking-selection-ui-visible.util';
 export { isPortalCaptchaChallengeAbsentError } from './is-portal-captcha-challenge-absent-error.util';
+export { isPortalCaptchaInlineChallengeVisible } from './is-portal-captcha-inline-challenge-visible.util';
 export { isPortalCaptchaSameKindChallengePresent } from './is-portal-captcha-same-kind-challenge-present.util';
 export { isPortalCaptchaVerified } from './is-portal-captcha-verified.util';
 export { isPortalEmailOtpArmed } from './is-portal-email-otp-armed.util';
+export { isPortalEmailOtpControlUsable } from './is-portal-email-otp-control-usable.util';
 export { isPortalLoginFormVisible } from './is-portal-login-form-visible.util';
+export { isPortalNavigationContextDestroyedError } from './is-portal-navigation-context-destroyed-error.util';
 export { isPortalPasswordChangeFormVisible } from './is-portal-password-change-form-visible.util';
 export { logAllFieldErrors } from './log-all-field-errors.util';
 export { logFieldFailure } from './log-field-failure.util';
@@ -58,6 +62,7 @@ export { mergePortalAutofillFieldProgress } from './merge-portal-autofill-field-
 export { normalizeBlsApplicantPortalStatus } from './normalize-bls-applicant-portal-status.util';
 export { otpOkModalActionInPage } from './otp-ok-modal-action-in-page.util';
 export { resolveCaptchaFrame } from './portal-captcha-frame.util';
+export { resolvePortalCaptchaChallengeContext } from './resolve-portal-captcha-challenge-context.util';
 export { computePortalCapmonsterUnsolvableBackoffMs } from './compute-portal-capmonster-unsolvable-backoff-ms.util';
 export { solvePortalBlsCaptcha } from './portal-captcha-solve.util';
 export { portalCaptchaVerifiedLoopSleep } from './portal-captcha-verified-loop-sleep.util';
@@ -76,7 +81,10 @@ export { runPortalPasswordChangePipeline } from './run-portal-password-change-pi
 export { runPortalStatusValidatePipeline } from './run-portal-status-validate-pipeline.util';
 export { scrapePortalApplicantStatusRows } from './scrape-portal-applicant-status-rows.util';
 export { serializeCaptchaCircuitForCheckpoint } from './serialize-captcha-circuit-for-checkpoint.util';
+export { settlePortalPageAfterLoginVerify } from './settle-portal-page-after-login-verify.util';
 export { commitDateViaCalendarUi } from './commit-date-via-calendar-ui.util';
+export { commitDropdownViaListboxUi } from './commit-dropdown-via-listbox-ui.util';
+export { ensureDatepickerDaySelected } from './ensure-datepicker-day-selected.util';
 export { setDateField } from './set-date-field.util';
 export { setDropdownField } from './set-dropdown-field.util';
 export { setTextField } from './set-text-field.util';
@@ -89,6 +97,7 @@ export { waitForConsentModalAcceptReady } from './wait-for-consent-modal-accept-
 export { waitForConsentModalHidden } from './wait-for-consent-modal-hidden.util';
 export { waitForConsentModalShown } from './wait-for-consent-modal-shown.util';
 export { waitForPortalBookingSelectionUi } from './wait-for-portal-booking-selection-ui.util';
+export { waitForPortalCaptchaEpisodeSuccess } from './wait-for-portal-captcha-episode-success.util';
 export { waitForPortalCaptchaVerified } from './wait-for-portal-captcha-verified.util';
 export { waitForPortalLoginPasswordControl } from './wait-for-portal-login-password-control.util';
 export { waitForPortalManageApplicantsPage } from './wait-for-portal-manage-applicants-page.util';

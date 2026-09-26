@@ -121,9 +121,11 @@ Portal OTP uses one Nest-bound `TemporaryEmailProvider` selected at boot by **`B
 **Operator constraints for `tempmail_plus`:**
 
 1. **Host Chrome / Patchright** — Adapter launches `chromium` with `channel: 'chrome'` and lazy-imports `patchright` on first email op (Nest boot does not eager-load Patchright for email). Install Chrome for Patchright on the **same host** that runs the API process (`npx patchright install chrome`). Default Docker API image typically has **no** browser binaries — first mailbox create fails with a clear launch error (RISK-006 / NFR-003).
-2. **Single-process in-memory session store** — Inbox browser/context/page is held in a process-local `Map` keyed by `workflowId`. Multi-replica or process restart → later wait/read fails closed (`email_browser_session_missing`). Do not assume shared Redis/session across instances.
-3. **Direct egress** — tempmail.plus traffic does **not** use Proxy6. Portal browser steps may still lease Proxy6 for the visa portal; Nest CapMonster / Mail.tm / Proxy6 HTTP remain non-proxied as before.
-4. **Vault** — Browser accounts use empty token/password handles; REGISTER does not write `MAILTM_*` vault rows. Terminal cleanup still schedules 72h due-at and calls `disposeSession` (closes Patchright); due tick soft-skips Mail.tm `deleteAccount` when no `MAILTM_*` secrets. `PORTAL_PASSWORD*` purposes are unchanged.
+2. **Headed mail browser** — Chromium always launches with `headless: false` so operators can watch tempmail.plus (portal-registration-otp-flow DEC-002 / REQ-001). A display (or equivalent) is required; Docker/API containers without a display will fail launch — use host CLI/workflow (RISK-001 / NFR-004). There is no env gate for headedness.
+3. **Live verify env** — Headed OTP proof requires `VISES_PORTAL_EMAIL_PROVIDER=tempmail_plus` (DEC-001). Default remains `mailtm` (HTTP; no mail Chromium window).
+4. **Single-process in-memory session store** — Inbox browser/context/page is held in a process-local `Map` keyed by `workflowId`. Multi-replica or process restart → later wait/read fails closed (`email_browser_session_missing`). Do not assume shared Redis/session across instances.
+5. **Direct egress** — tempmail.plus traffic does **not** use Proxy6. Portal browser steps may still lease Proxy6 for the visa portal; Nest CapMonster / Mail.tm / Proxy6 HTTP remain non-proxied as before.
+6. **Vault** — Browser accounts use empty token/password handles; REGISTER does not write `MAILTM_*` vault rows. Terminal cleanup still schedules 72h due-at and calls `disposeSession` (closes Patchright); due tick soft-skips Mail.tm `deleteAccount` when no `MAILTM_*` secrets. `PORTAL_PASSWORD*` purposes are unchanged.
 
 ### Operator: master key
 
@@ -240,6 +242,25 @@ Metadata + enrichment (no secrets): `id`, `applicationId`, `applicantId`, `creat
 8. Release lease in `finally`.  
 9. **Stop** — no password / User Id / OTP-after-verify / application-status scrape.
 
+### Login-prep Verify → evaluate race hardening
+
+`#btnVerify` is clicked via Patchright `page.evaluate` and returns as soon as the click is dispatched. When that click navigates (LOGIN_AUTH password path after `email_step`), any immediate follow-up `page.evaluate` can throw `Execution context was destroyed, most likely because of a navigation`.
+
+**Hardened in v1 (password path only):**
+
+- Best-effort settle (`waitForLoadState('domcontentloaded')`) after a successful email-step Verify **before** the first post-click password-discovery evaluate.
+- Password-control polling treats navigation context-destroyed errors as transient poll misses until the wait budget elapses (structured `{ ok: false }`, not an uncaught throw).
+- Residual classified escapes on that segment return structured pipeline `ok: false` (service `hard_failure`), not wiped-flag `unexpected`.
+
+Do not reintroduce “click Verify → immediate evaluate” without settle and/or the same poll hardening.
+
+**Deferred residual risk (REQ-008 / DEC-004 — not hardened in this feature):**
+
+- Staff path (`submitPassword: false`): Verify → captcha Verified-loop evaluates can still race navigation.
+- Password submit: `#btnVerify` (`password_submit`) → `verifyPortalLoginAuthenticated` / `isPortalLoginFormVisible` evaluates can still race navigation.
+
+Intentional `browser.close()` in the fill service `finally` remains — closing the browser after a true attempt end / hard failure is expected cleanup, not a crash.
+
 Nest CapMonster / Mail.tm / Proxy6 HTTP / CRM remain **non-proxied** (portal browser lease only). tempmail.plus (when enabled) is also direct egress — see § Temporary email providers.
 
 ## Internal autofill pipeline (no public HTTP beyond the routes above)
@@ -257,30 +278,50 @@ Nest CapMonster / Mail.tm / Proxy6 HTTP / CRM remain **non-proxied** (portal bro
 
 ## Captcha / CapMonster (Verified gate)
 
-Success is **portal Verified**, not CapMonster API `ready` alone.
+Success is **portal episode success**, not CapMonster API `ready` alone.
 
-| Predicate | Detail |
-|-----------|--------|
-| Selector | `PORTAL_REGISTER_USER_SELECTORS.verifiedControl` → `#btnVerified` (parent RegisterUser page) |
+### Dual surface (iframe vs inline login)
+
+Shared ensure / solve / same-kind helpers resolve a BLS 3×3 challenge on **either**:
+
+| Surface | Typical page | Challenge host | Confirm after cell clicks |
+|---------|--------------|----------------|---------------------------|
+| **iframe** | RegisterUser (GenerateCaptcha) | `iframe.k-content-frame` → `/Global/CaptchaPublic/GenerateCaptcha` | `#submit` (prefer portal `onSubmit()` in that document) |
+| **inline** | Login password + captcha | Main document `#captcha-main-div` / `.main-div-container` (no GenerateCaptcha iframe required) | `#btnVerify` with portal `onSubmit()` when available (not `#submit`) |
+
+Probe order (NFR): cheap **inline** visibility first, then a **short** iframe attach slice (`PORTAL_CAPTCHA_SURFACE_QUICK_PROBE_MS`, default 1500 ms). If **both** are ready, prefer **iframe** (register integrity). Never burn the full Verified-loop wall-clock waiting only for an iframe while an inline challenge is already visible.
+
+**Adaptive `#btnVerify` (open challenge):** allowed only when **neither** surface is ready. If an inline challenge is already visible, ensure treats it present and **does not** adaptive-click `#btnVerify` (that control submits `#captchaForm` and would submit-before-select on the login password page).
+
+### Episode success predicates
+
+| Caller | Predicate |
+|--------|-----------|
+| Register / fill pipeline (default) | Visible `#btnVerified` whose text includes `PORTAL_CAPTCHA_VERIFIED_TEXT` (`Verified`). Hidden / `display: none` does **not** count. |
+| Login-prep (`acceptLoginAuthSuccess: true`) | `#btnVerified` **or** login form gone / authenticated landing within the after-apply wait budget. Logs `via=btnVerified\|login_auth`. |
+
+| Predicate detail | Detail |
+|------------------|--------|
+| Selector (register) | `PORTAL_REGISTER_USER_SELECTORS.verifiedControl` → `#btnVerified` (parent RegisterUser page) |
 | Text | Visible control whose text includes `PORTAL_CAPTCHA_VERIFIED_TEXT` (`Verified`, case-sensitive) |
 | Non-success | Element present but `display: none` / not visible (sample fixture) |
 
 ### CapMonster-enabled path
 
-1. Pipeline clicks `#btnVerify` **once** (unchanged entry).  
-2. `runPortalCaptchaVerifiedLoop` owns outer budget + circuit-breaker + Verified checks **and** post-pass same-kind chaining (below). CapMonster `solveBls3x3` remains **one** create+poll per call ([capmonster](capmonster.md)).  
-3. Each outer attempt: adaptive `#btnVerify` only when challenge/iframe is absent (ensure-ready DEC) → re-extract BLS challenge → CB gate → **new** `solveBls3x3` → apply with **real confirm/submit** (DEC-007; not dry-run) → burn that outer attempt once → **chain sequence** (below) → only then Verified wait/check.  
-4. `capMonsterOk = true` **only** when Verified succeeds after the chain ends; CapMonster `ready` alone is never success. Otherwise hard-fail with a clear notes string (no key / image payloads).
+1. Pipeline clicks `#btnVerify` **once** when that is the entry open control (register / email step as before).  
+2. `runPortalCaptchaVerifiedLoop` owns outer budget + circuit-breaker + episode success checks **and** post-pass same-kind chaining (below). CapMonster `solveBls3x3` remains **one** create+poll per call ([capmonster](capmonster.md)).  
+3. Each outer attempt: dual-surface ensure (adaptive `#btnVerify` only when challenge absent on **both** surfaces) → re-extract BLS challenge from the resolved surface → CB gate → **new** `solveBls3x3` → apply with **real confirm** (`#submit` or `#btnVerify` by surface; DEC-007; not dry-run) → burn that outer attempt once → **chain sequence** (below) → only then episode success wait.  
+4. Captcha phase `ok = true` **only** when the episode success predicate holds after the chain ends; CapMonster `ready` alone is never success. Otherwise hard-fail with a clear notes string (no key / image payloads).
 
 ### Post-pass same-kind chain (portal-fill)
 
-After a **successful** first solve-apply in an outer attempt, the Verified loop does **not** treat `#btnVerified` as episode success yet. It runs an in-process chain (`runPortalCaptchaChainAfterPass`):
+After a **successful** first solve-apply in an outer attempt, the Verified loop does **not** treat episode success as met yet. It runs an in-process chain (`runPortalCaptchaChainAfterPass`):
 
-1. Wait **`PORTAL_CAPTCHA_CHAIN_WAIT_AFTER_PASS_MS` (5000 ms)** — always the full wait after each successful pass (including when Verified is already visible). Abort-interruptible and capped by remaining outer wall-clock (same cooperation as unsolvable backoff).  
-2. **Probe-only** same-kind BLS 3×3 presence (GenerateCaptcha iframe / challenge). **No** adaptive `#btnVerify` on probe miss — absent ends the chain.  
+1. Wait **`PORTAL_CAPTCHA_CHAIN_WAIT_AFTER_PASS_MS` (5000 ms)** — always the full wait after each successful pass (including when `#btnVerified` is already visible). Abort-interruptible and capped by remaining outer wall-clock (same cooperation as unsolvable backoff).  
+2. **Probe-only** same-kind BLS 3×3 presence via **dual-surface** resolve (iframe GenerateCaptcha **or** inline main-frame). **No** adaptive `#btnVerify` on probe miss — absent ends the chain.  
 3. If a challenge is present and successful applies in this chain are already **4** (1 first pass + **`PORTAL_CAPTCHA_CHAIN_MAX_FOLLOW_UPS` (3)** follow-ups): stop further solves, log `phase=captcha_chain stopReason=chain_limit`, end chain. Do **not** invent a new public episode `stopReason` or permanent CapMonster class for limit alone.  
 4. Else: CB gate → follow-up `solvePortalBlsCaptcha` (another CapMonster create+poll + apply). On success, increment chain apply count and repeat from step 1.  
-5. When the chain ends (no challenge, or `chain_limit`), continue with existing `waitForPortalCaptchaVerified`. Episode `ok` still requires the Verified predicate.
+5. When the chain ends (no challenge, or `chain_limit`), continue with episode success wait (`#btnVerified`, or login auth/form-gone when login-prep sets `acceptLoginAuthSuccess`).
 
 **Attempt accounting:** one outer burnable attempt covers the first successful pass **and** all successful follow-ups in that chain. Successful follow-ups do **not** increment outer `attempts`. Follow-up failures use the existing taxonomy (unsolvable = free re-submit without counting a successful pass; CapMonster transient/permanent/CB and portal ensure/solve failures = burn / fail-fast as today, then leave the chain).
 
@@ -289,6 +330,10 @@ After a **successful** first solve-apply in an outer attempt, the Verified loop 
 **Abort / budget:** abort during a chain wait → `stopReason=aborted` (not chain-limit success). Remaining wall-clock ≤ 0 → `budget_exhausted`. Follow-up CapMonster errors drive the same CB / unsolvable / permanent paths as non-chain solves.
 
 All CapMonster-enabled portal pipelines that call `runPortalCaptchaVerifiedLoop` inherit this chain (register autofill, login-prep, etc.) — no per-pipeline duplicate loops.
+
+### Login-prep password submit after captcha
+
+On the login password + captcha page, captcha confirm may already post the login form (`onSubmit` / `#btnVerify`). Pipeline `password_submit` is **conditional**: click `#btnVerify` only if the login form is still actionable; if the form is already gone, treat submit as implicit success. On click miss / navigation context destroyed, soft-check authenticated landing — do not treat that as an unexplained hard failure when auth is observable.
 
 ### CapMonster-disabled path
 
@@ -309,7 +354,7 @@ Unchanged: no Verify click for solve, no CapMonster HTTP, no Verified wait loop,
 
 Stop when **outer attempts**, **outer wall-clock**, or the **unsolvable try ceiling** is exhausted. Chain depth alone never marks success. An in-flight CapMonster poll may overrun by at most the timeout already granted for that solve. Wall-clock may still end an unsolvable-only sequence before 10 tries (progressive waits sum to **225s** before try 10 and can hit the 300s outer budget sooner); reaching 10 unsolvables stops free re-submit even if wall-clock remains. Progressive unsolvable waits and chain waits are capped by remaining wall-clock and are **abort-interruptible** when a fill `AbortSignal` is supplied (abort ≠ unsolvable exhaustion / ≠ chain-limit success).
 
-Other named timings: `PORTAL_CAPTCHA_VERIFIED_SETTLE_MS`, `PORTAL_CAPMONSTER_TRANSIENT_BACKOFF_MS` (fixed **2s** for non-unsolvable CapMonster transient only — unsolvable uses progressive backoff above), `PORTAL_CAPTCHA_CHALLENGE_READY_PROBE_MS` (also used as the short same-kind presence probe after chain wait).
+Other named timings: `PORTAL_CAPTCHA_VERIFIED_SETTLE_MS`, `PORTAL_CAPMONSTER_TRANSIENT_BACKOFF_MS` (fixed **2s** for non-unsolvable CapMonster transient only — unsolvable uses progressive backoff above), `PORTAL_CAPTCHA_CHALLENGE_READY_PROBE_MS` (also used as the short same-kind presence probe after chain wait), `PORTAL_CAPTCHA_SURFACE_QUICK_PROBE_MS` (dual-surface iframe slice / interleave cap so inline login is not starved).
 
 ### Circuit-breaker (ownership in portal-fill)
 
@@ -326,11 +371,11 @@ Other named timings: `PORTAL_CAPTCHA_VERIFIED_SETTLE_MS`, `PORTAL_CAPMONSTER_TRA
 
 ### Confirm path (DEC-007)
 
-Apply still runs real confirm (`onSubmit` / `#submit`). Stale dry-run comments were removed; CapMonster-enabled autofill must not reintroduce dry-run confirm.
+Apply still runs real confirm for the resolved surface (`onSubmit` / `#submit` on iframe; `onSubmit` / `#btnVerify` on inline login). Stale dry-run comments were removed; CapMonster-enabled autofill must not reintroduce dry-run confirm.
 
 ### Logging / notes
 
-Phase, attempt index, CB transitions, failure class, and chain tokens (`phase=captcha_chain`, round/apply index, stop reasons such as `no_challenge` / `chain_limit`) may appear in logs/notes. Never log `clientKey`, raw image base64, full CapMonster request bodies, mail.tm passwords/tokens, or proxy passwords.
+Phase, attempt index, CB transitions, failure class, surface (`iframe` / `inline`), adaptive skip vs click (`inline_present skip_adaptive_verify` / `challenge_absent`), episode `via=btnVerified|login_auth`, and chain tokens (`phase=captcha_chain`, round/apply index, stop reasons such as `no_challenge` / `chain_limit`) may appear in logs/notes. Never log `clientKey`, raw image base64, full CapMonster request bodies, mail.tm passwords/tokens, or proxy passwords.
 
 ## Multi-site adapters (DEC-009 / REQ-015 / REQ-016)
 

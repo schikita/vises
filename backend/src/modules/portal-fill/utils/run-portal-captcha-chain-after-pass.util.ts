@@ -25,10 +25,12 @@ import { assertCaptchaCircuitAllowsCall } from './assert-captcha-circuit-allows-
 import { computePortalCapmonsterUnsolvableBackoffMs } from './compute-portal-capmonster-unsolvable-backoff-ms.util';
 import { isPortalCaptchaSameKindChallengePresent } from './is-portal-captcha-same-kind-challenge-present.util';
 import { isPortalFillAbortRequested } from './is-portal-fill-abort-requested.util';
+import { isPortalPasswordChangeFormVisibleAfterNav } from './is-portal-password-change-form-visible-after-nav.util';
 import { solvePortalBlsCaptcha } from './portal-captcha-solve.util';
 import { portalCaptchaVerifiedLoopSleep } from './portal-captcha-verified-loop-sleep.util';
 import { recordCaptchaCircuitFailure } from './record-captcha-circuit-failure.util';
 import { recordCaptchaCircuitSuccess } from './record-captcha-circuit-success.util';
+import { waitPortalCaptchaChainAfterPassMs } from './wait-portal-captcha-chain-after-pass-ms.util';
 import { waitPortalCaptchaVerifiedLoopMs } from './wait-portal-captcha-verified-loop-ms.util';
 
 const logger = new Logger('PortalCaptchaChain');
@@ -43,6 +45,7 @@ export const runPortalCaptchaChainAfterPass = async (
   let successfulApplies = input.successfulApplies;
   let unsolvableTries = input.unsolvableTries;
   const { attempts, logPrefix, attempt, breaker } = input;
+  const acceptLoginAuthSuccess = input.acceptLoginAuthSuccess === true;
 
   // Round index for logs: 0 = after first pass, before first follow-up probe.
   let chainRound = 0;
@@ -64,30 +67,108 @@ export const runPortalCaptchaChainAfterPass = async (
     }
 
     // DEC-007 / DEC-008: always full chain wait (capped by remaining), abort-aware.
+    // 010 DEC-002: when login-auth, poll for Change Password instead of blind sleep.
     const waitMs = Math.min(
       PORTAL_CAPTCHA_CHAIN_WAIT_AFTER_PASS_MS,
       remainingBeforeWait,
     );
     logger.log(
-      `${logPrefix} phase=captcha_chain round=${chainRound} applies=${successfulApplies} waiting_after_pass waitMs=${waitMs}`,
+      `${logPrefix} phase=captcha_chain round=${chainRound} applies=${successfulApplies} waiting_after_pass waitMs=${waitMs} acceptLoginAuthSuccess=${acceptLoginAuthSuccess}`,
     );
-    await waitPortalCaptchaVerifiedLoopMs(waitMs, input.abortSignal);
 
-    if (isPortalFillAbortRequested(input.abortSignal)) {
+    if (acceptLoginAuthSuccess) {
+      const waitOutcome = await waitPortalCaptchaChainAfterPassMs(page, waitMs, {
+        remainingMs: input.remainingMs,
+        abortSignal: input.abortSignal,
+      });
+
+      if (waitOutcome === 'password_change_landing') {
+        logger.log(
+          `${logPrefix} phase=captcha_chain stopReason=password_change_landing round=${chainRound} applies=${successfulApplies}`,
+        );
+        return {
+          kind: 'chain_ended',
+          endReason: 'password_change_landing',
+          unsolvableTries,
+        };
+      }
+
+      if (waitOutcome === 'aborted') {
+        logger.log(
+          `${logPrefix} phase=captcha_chain stopReason=aborted round=${chainRound} applies=${successfulApplies} attempts=${attempts}`,
+        );
+        await input.onAttemptCheckpoint({ attempts });
+        return {
+          kind: 'episode_stop',
+          stopReason: 'aborted',
+          attempts,
+          unsolvableTries,
+          error: PORTAL_FILL_ABORTED_ERROR,
+        };
+      }
+
+      if (waitOutcome === 'budget_exhausted') {
+        logger.error(
+          `${logPrefix} phase=captcha_chain stopReason=budget_exhausted round=${chainRound} applies=${successfulApplies} attempts=${attempts}`,
+        );
+        await input.onAttemptCheckpoint({ attempts });
+        return {
+          kind: 'episode_stop',
+          stopReason: 'budget_exhausted',
+          attempts,
+          unsolvableTries,
+          error: PORTAL_CAPTCHA_VERIFIED_BUDGET_EXHAUSTED_REASON,
+        };
+      }
+    } else {
+      await waitPortalCaptchaVerifiedLoopMs(waitMs, input.abortSignal);
+
+      if (isPortalFillAbortRequested(input.abortSignal)) {
+        logger.log(
+          `${logPrefix} phase=captcha_chain stopReason=aborted round=${chainRound} applies=${successfulApplies} attempts=${attempts}`,
+        );
+        await input.onAttemptCheckpoint({ attempts });
+        return {
+          kind: 'episode_stop',
+          stopReason: 'aborted',
+          attempts,
+          unsolvableTries,
+          error: PORTAL_FILL_ABORTED_ERROR,
+        };
+      }
+
+      if (input.remainingMs() <= 0) {
+        logger.error(
+          `${logPrefix} phase=captcha_chain stopReason=budget_exhausted round=${chainRound} applies=${successfulApplies} attempts=${attempts}`,
+        );
+        await input.onAttemptCheckpoint({ attempts });
+        return {
+          kind: 'episode_stop',
+          stopReason: 'budget_exhausted',
+          attempts,
+          unsolvableTries,
+          error: PORTAL_CAPTCHA_VERIFIED_BUDGET_EXHAUSTED_REASON,
+        };
+      }
+    }
+
+    // Pre-probe: Change Password already visible → skip same-kind probe (010 DEC-002).
+    if (
+      acceptLoginAuthSuccess &&
+      (await isPortalPasswordChangeFormVisibleAfterNav(page))
+    ) {
       logger.log(
-        `${logPrefix} phase=captcha_chain stopReason=aborted round=${chainRound} applies=${successfulApplies} attempts=${attempts}`,
+        `${logPrefix} phase=captcha_chain stopReason=password_change_landing round=${chainRound} applies=${successfulApplies} stage=pre_probe`,
       );
-      await input.onAttemptCheckpoint({ attempts });
       return {
-        kind: 'episode_stop',
-        stopReason: 'aborted',
-        attempts,
+        kind: 'chain_ended',
+        endReason: 'password_change_landing',
         unsolvableTries,
-        error: PORTAL_FILL_ABORTED_ERROR,
       };
     }
 
-    if (input.remainingMs() <= 0) {
+    const remainingBeforeProbe = input.remainingMs();
+    if (remainingBeforeProbe <= 0) {
       logger.error(
         `${logPrefix} phase=captcha_chain stopReason=budget_exhausted round=${chainRound} applies=${successfulApplies} attempts=${attempts}`,
       );
@@ -101,7 +182,6 @@ export const runPortalCaptchaChainAfterPass = async (
       };
     }
 
-    const remainingBeforeProbe = input.remainingMs();
     const present = await isPortalCaptchaSameKindChallengePresent(page, {
       waitTimeoutMs: remainingBeforeProbe,
     });

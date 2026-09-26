@@ -53,11 +53,17 @@ export type {
   ApplyBlsAnswerInPageResult,
 } from './portal-captcha.types';
 
+export type {
+  PortalCaptchaSurfaceKind,
+  PortalCaptchaChallengeContext,
+} from './portal-captcha-surface.types';
+
 export type { PortalRegisterUserSelectors } from './portal-register-user-selectors.types';
 export type { PortalLoginSelectors } from './portal-login-selectors.types';
 export type { DiscoverLoginEmailControlResult } from './discover-login-email-control.types';
 export type { DiscoverLoginPasswordControlResult } from './discover-login-password-control.types';
 export type { PortalLoginAuthVerifyResult } from './portal-login-auth.types';
+export type { SettlePortalPageAfterLoginVerifyResult } from './settle-portal-page-after-login-verify.types';
 
 export type {
   CaptchaCircuitState,
@@ -72,9 +78,15 @@ export type {
 } from './portal-captcha-verified-loop.types';
 
 export type {
+  PortalCaptchaEpisodeSuccessVia,
+  WaitForPortalCaptchaEpisodeSuccessResult,
+} from './portal-captcha-episode-success.types';
+
+export type {
   PortalCaptchaChainEndReason,
   RunPortalCaptchaChainAfterPassInput,
   RunPortalCaptchaChainAfterPassResult,
+  WaitPortalCaptchaChainAfterPassMsResult,
 } from './portal-captcha-chain.types';
 
 export type { PortalCaptchaVerifiedLoopCheckpointSnapshot } from './portal-captcha-verified-loop-checkpoint.types';

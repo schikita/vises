@@ -38,6 +38,12 @@ export type RunPortalCaptchaVerifiedLoopInput = {
    * (capmonster-unsolvable-ten-retry DEC-012 / REQ-014).
    */
   abortSignal?: AbortSignal;
+  /**
+   * When true (login-prep), episode success accepts `#btnVerified` **or**
+   * login form gone / auth progress (REQ-008 / DEC-004). Default false keeps
+   * register `#btnVerified`-only behavior (REQ-003).
+   */
+  acceptLoginAuthSuccess?: boolean;
 };
 
 export type PortalCaptchaVerifiedLoopStopReason =

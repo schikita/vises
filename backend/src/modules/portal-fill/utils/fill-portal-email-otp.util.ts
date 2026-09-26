@@ -1,8 +1,12 @@
-import { PORTAL_REGISTER_USER_SELECTORS } from '../constants';
+import {
+  PORTAL_OTP_KEYBOARD_DELAY_MS,
+  PORTAL_REGISTER_USER_SELECTORS,
+} from '../constants';
 import type { PortalPage, WidgetOpResult } from '../types';
 
 /**
- * Fill `#EmailOtp` with the extracted OTP code (REQ-008). Does not log the OTP.
+ * Enter OTP into `#EmailOtp` via keyboard/`pressSequentially` (REQ-004 / DEC-006).
+ * Does not log the OTP. Paste-only `fill` is not the sole entry method.
  */
 export const fillPortalEmailOtp = async (
   page: PortalPage,
@@ -14,11 +18,13 @@ export const fillPortalEmailOtp = async (
     return { ok: false, reason: `${selector} not found` };
   }
   const loc = page.locator(selector).first();
-  await loc.fill(otp);
+  await loc.click({ timeout: 5_000 });
+  await loc.fill('');
+  await loc.pressSequentially(otp, { delay: PORTAL_OTP_KEYBOARD_DELAY_MS });
   const read = await loc.inputValue();
   return {
     ok: read === otp,
-    via: 'fill',
+    via: 'keyboard',
     value: read === otp ? undefined : read,
     reason: read === otp ? undefined : 'EmailOtp read-back mismatch',
   };

@@ -1,0 +1,29 @@
+# Remote HTTP test overrides (no TLS). Container nginx is the public edge —
+# no host nginx required. Use with base + prod env files:
+#   docker compose \
+#     -f docker-compose.yml \
+#     -f docker-compose.prod.yml \
+#     -f docker-compose.remote-test.yml \
+#     up -d --build
+#
+# Requires:
+#   backend/.env.prod  (strong secrets; DEMO_AUTH_ENABLED=false for less exposure)
+#   web/.env.prod
+#
+# Public: host :80 → web container nginx (web/docker/nginx.conf) → SPA + /vises/api/
+# Private: API only on loopback (debug). Postgres not published (prod overlay).
+# App URL: http://YOUR_HOST/vises/
+# Firewall: allow SSH + 80 only.
+#
+# ports: !override replaces base publish lists (Compose does not replace ports by default).
+
+services:
+  api:
+    ports: !override
+      - "127.0.0.1:8100:8100"
+
+  web:
+    ports: !override
+      - "80:80"
+    volumes:
+      - ./web/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro

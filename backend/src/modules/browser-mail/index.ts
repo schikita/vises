@@ -33,7 +33,9 @@ export type {
 
 export {
   BROWSER_MAIL_BASE_URL,
+  BROWSER_MAIL_SESSION_CLOSED_ERROR,
   BROWSER_MAIL_SESSION_MISSING_ERROR,
+  BROWSER_MAIL_UI_PACE_MS,
   PORTAL_EMAIL_PROVIDER,
   type PortalEmailProviderValue,
 } from './constants';

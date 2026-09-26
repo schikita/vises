@@ -372,7 +372,8 @@ const main = async () => {
     const refuseReason = String(refuse.reason ?? '');
     const refuseOk =
       refuseReason.includes('refusing display-only input paint') ||
-      refuseReason.includes('chrome listbox options unavailable');
+      refuseReason.includes('chrome listbox options unavailable') ||
+      refuseReason.includes('listbox ui:');
     if (!refuseOk) {
       throw new Error(
         `DEC-003/011 fail-closed reason unexpected: ${refuseReason || '(empty)'}`,
@@ -564,6 +565,8 @@ const main = async () => {
         civil.__visesFromCalendar = true;
         widget.value(civil);
         widget.trigger('change');
+        td.classList.add('k-state-selected', 'k-state-focused');
+        td.setAttribute('aria-selected', 'true');
         dateview.style.display = 'none';
       });
       td.appendChild(a);

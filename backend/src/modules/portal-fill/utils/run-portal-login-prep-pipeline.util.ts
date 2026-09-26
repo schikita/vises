@@ -12,7 +12,9 @@ import { clickPortalLoginVerifyControl } from './click-portal-login-verify-contr
 import { fillPortalLoginEmail } from './fill-portal-login-email.util';
 import { fillPortalLoginPassword } from './fill-portal-login-password.util';
 import { isPortalLoginFormVisible } from './is-portal-login-form-visible.util';
+import { isPortalNavigationContextDestroyedError } from './is-portal-navigation-context-destroyed-error.util';
 import { runPortalCaptchaVerifiedLoop } from './run-portal-captcha-verified-loop.util';
+import { settlePortalPageAfterLoginVerify } from './settle-portal-page-after-login-verify.util';
 import { verifyPortalLoginAuthenticated } from './verify-portal-login-authenticated.util';
 import { waitForPortalLoginPasswordControl } from './wait-for-portal-login-password-control.util';
 
@@ -131,6 +133,7 @@ export const runPortalLoginPrepPipeline = async (
         captchaProvider,
         budgetDeadlineAt,
         abortSignal: options.abortSignal,
+        acceptLoginAuthSuccess: true,
       });
 
       if (!loopResult.ok) {
@@ -217,9 +220,11 @@ export const runPortalLoginPrepPipeline = async (
   }
 
   // Advance past email step (login.html → password / captcha page).
+  let emailStepVerifyClicked = false;
   try {
     await clickPortalLoginVerifyControl(options.page);
     verifyClicked = true;
+    emailStepVerifyClicked = true;
     notes.push('#btnVerify clicked (email_step_workflow)');
     logger.log(`${logPrefix} phase=login_verify success label=email_step`);
   } catch (err) {
@@ -237,59 +242,100 @@ export const runPortalLoginPrepPipeline = async (
     notes.push('email verify click skipped; password controls already present');
   }
 
-  const passwordReady = await waitForPortalLoginPasswordControl(options.page);
-  if (!passwordReady.ok) {
-    // Email-step captcha may be blocking navigation — solve if armed.
-    if (captchaEnabled && options.captchaProvider) {
-      captchaAttempted = true;
-      const budgetDeadlineAt = new Date(
-        Date.now() + PORTAL_CAPTCHA_VERIFIED_LOOP_MAX_MS,
+  // Settle only when email_step Verify ran this attempt (DEC-001 / TASK-005).
+  if (emailStepVerifyClicked) {
+    const settle = await settlePortalPageAfterLoginVerify(options.page);
+    notes.push(
+      `post-verify settle settled=${settle.settled} via=${settle.via}`,
+    );
+    logger.log(
+      `${logPrefix} phase=login_post_verify_settle settled=${settle.settled} via=${settle.via}`,
+    );
+  }
+
+  // Password wait + email_gate soft path; REQ-007 residual catch (DEC-005).
+  try {
+    const passwordReady = await waitForPortalLoginPasswordControl(options.page);
+    if (!passwordReady.ok) {
+      logger.warn(
+        `${logPrefix} phase=login_password_wait failure reason=${passwordReady.reason ?? 'unknown'}`,
       );
-      logger.log(
-        `${logPrefix} phase=captcha_verified_loop start label=email_gate`,
+      notes.push(
+        `Password wait (pre-gate): ${passwordReady.reason ?? 'not ready'}`,
       );
-      const loopResult = await runPortalCaptchaVerifiedLoop(options.page, {
-        captchaServiceApiKey: captchaServiceApiKey,
-        timeoutMs: PORTAL_CAPMONSTER_TIMEOUT_MS,
-        pollIntervalMs: PORTAL_CAPMONSTER_POLL_INTERVAL_MS,
-        captchaProvider: options.captchaProvider,
-        budgetDeadlineAt,
-        abortSignal: options.abortSignal,
-      });
-      if (loopResult.ok) {
-        captchaOk = true;
-        notes.push(
-          `captcha service verified email gate (attempts=${loopResult.attempts})`,
+      // Email-step captcha may be blocking navigation — solve if armed.
+      if (captchaEnabled && options.captchaProvider) {
+        captchaAttempted = true;
+        const budgetDeadlineAt = new Date(
+          Date.now() + PORTAL_CAPTCHA_VERIFIED_LOOP_MAX_MS,
         );
-      } else {
-        const captchaError = `captcha service email gate failed (${loopResult.stopReason}): ${
-          loopResult.error ?? 'unknown'
-        }`;
-        notes.push(captchaError);
-        // Exhaustion / abort hard-fail the captcha phase (DEC-008 / DEC-012).
-        if (loopResult.errorCode || loopResult.stopReason === 'aborted') {
-          logger.error(
-            `${logPrefix} phase=captcha_verified_loop failure ${captchaError}`,
+        logger.log(
+          `${logPrefix} phase=captcha_verified_loop start label=email_gate`,
+        );
+        const loopResult = await runPortalCaptchaVerifiedLoop(options.page, {
+          captchaServiceApiKey: captchaServiceApiKey,
+          timeoutMs: PORTAL_CAPMONSTER_TIMEOUT_MS,
+          pollIntervalMs: PORTAL_CAPMONSTER_POLL_INTERVAL_MS,
+          captchaProvider: options.captchaProvider,
+          budgetDeadlineAt,
+          abortSignal: options.abortSignal,
+          acceptLoginAuthSuccess: true,
+        });
+        if (loopResult.ok) {
+          captchaOk = true;
+          notes.push(
+            `captcha service verified email gate (attempts=${loopResult.attempts})`,
           );
-          return {
-            ok: false,
-            error: captchaError,
-            ...(loopResult.errorCode
-              ? { errorCode: loopResult.errorCode }
-              : {}),
-            ...baseFields(),
-          };
+        } else {
+          const captchaError = `captcha service email gate failed (${loopResult.stopReason}): ${
+            loopResult.error ?? 'unknown'
+          }`;
+          notes.push(captchaError);
+          // Exhaustion / abort hard-fail the captcha phase (DEC-008 / DEC-012).
+          if (loopResult.errorCode || loopResult.stopReason === 'aborted') {
+            logger.error(
+              `${logPrefix} phase=captcha_verified_loop failure ${captchaError}`,
+            );
+            return {
+              ok: false,
+              error: captchaError,
+              ...(loopResult.errorCode
+                ? { errorCode: loopResult.errorCode }
+                : {}),
+              ...baseFields(),
+            };
+          }
         }
       }
-    }
 
-    const retryPassword = await waitForPortalLoginPasswordControl(options.page);
-    if (!retryPassword.ok) {
-      const error = retryPassword.reason ?? 'password control not ready';
-      logger.error(`${logPrefix} phase=login_password_wait failure ${error}`);
-      notes.push(`Password wait failed: ${error}`);
+      const retryPassword = await waitForPortalLoginPasswordControl(options.page);
+      if (!retryPassword.ok) {
+        const error = retryPassword.reason ?? 'password control not ready';
+        logger.error(`${logPrefix} phase=login_password_wait failure ${error}`);
+        notes.push(`Password wait failed: ${error}`);
+        return { ok: false, error, ...baseFields() };
+      }
+      logger.log(
+        `${logPrefix} phase=login_password_wait success after_email_gate`,
+      );
+      notes.push('Password control ready after email_gate');
+    } else {
+      logger.log(`${logPrefix} phase=login_password_wait success`);
+      notes.push('Password control ready after email_step');
+    }
+  } catch (err) {
+    if (isPortalNavigationContextDestroyedError(err)) {
+      const error =
+        err instanceof Error
+          ? err.message
+          : 'navigation context destroyed during password wait';
+      logger.error(
+        `${logPrefix} phase=login_password_wait hard_failure ${error}`,
+      );
+      notes.push(`Password wait residual navigation race: ${error}`);
       return { ok: false, error, ...baseFields() };
     }
+    throw err;
   }
 
   const passwordFill = await fillPortalLoginPassword(
@@ -328,6 +374,7 @@ export const runPortalLoginPrepPipeline = async (
       captchaProvider,
       budgetDeadlineAt,
       abortSignal: options.abortSignal,
+      acceptLoginAuthSuccess: true,
     });
     if (loopResult.ok) {
       captchaOk = true;
@@ -380,6 +427,9 @@ export const runPortalLoginPrepPipeline = async (
     }
   }
 
+  // Conditional password_submit (REQ-013 / DEC-007): captcha confirm may already
+  // have posted `#captchaForm` via `#btnVerify`/`onSubmit` — click only if form
+  // remains actionable; form-gone ⇒ implicit submit success.
   if (await isPortalLoginFormVisible(options.page)) {
     try {
       await clickPortalLoginVerifyControl(options.page);
@@ -394,7 +444,15 @@ export const runPortalLoginPrepPipeline = async (
       if (afterMiss.ok) {
         loginAuthenticatedVerified = true;
         passwordSubmitted = true;
-        notes.push('authenticated despite submit click miss');
+        const navDestroyed = isPortalNavigationContextDestroyedError(err);
+        notes.push(
+          navDestroyed
+            ? 'authenticated despite password_submit navigation context destroyed'
+            : 'authenticated despite submit click miss',
+        );
+        logger.log(
+          `${logPrefix} phase=login_password_submit soft_success via=${afterMiss.via}${navDestroyed ? ' nav_context_destroyed=true' : ''}`,
+        );
         return { ok: true, ...baseFields() };
       }
       passwordSubmitAmbiguous = true;
@@ -407,6 +465,9 @@ export const runPortalLoginPrepPipeline = async (
     passwordSubmitted = true;
     loginAuthenticatedVerified = true;
     notes.push('login form cleared after captcha (submit implicit)');
+    logger.log(
+      `${logPrefix} phase=login_password_submit skipped reason=form_gone_implicit`,
+    );
     return { ok: true, ...baseFields() };
   }
 

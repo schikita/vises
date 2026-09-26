@@ -70,12 +70,30 @@ export const PORTAL_CAPMONSTER_UNSOLVABLE_TRIES_EXHAUSTED_MESSAGE =
   `CapMonster ERROR_CAPTCHA_UNSOLVABLE: ${PORTAL_CAPMONSTER_UNSOLVABLE_MAX_TRIES} solve tries exhausted`;
 
 /**
- * Probe wait for iframe/challenge before adaptive `#btnVerify` (DEC-002).
- * Keeps a missing-challenge probe from consuming the full outer budget.
- * Also reused as the post-chain-wait same-kind presence probe budget
- * (capmonster-chained-captcha DEC-004).
+ * Probe wait for challenge before adaptive `#btnVerify`
+ * (capmonster-verified-circuit DEC-002). Keeps a missing-challenge probe
+ * from consuming the full outer budget. Also reused as the post-chain-wait
+ * same-kind presence probe budget (capmonster-chained-captcha DEC-004).
+ * Dual-surface resolve uses shorter `PORTAL_CAPTCHA_SURFACE_QUICK_PROBE_MS`
+ * slices so inline login is not starved by iframe-only waits
+ * (portal-login-inline-captcha DEC-002 / NFR-004).
  */
 export const PORTAL_CAPTCHA_CHALLENGE_READY_PROBE_MS = 15_000;
+
+/**
+ * Cap for a single iframe attach/content slice inside dual-surface resolve
+ * (portal-login-inline-captcha DEC-002). Inline visibility is checked first
+ * and interleaved; never burn the full Verified-loop budget on iframe alone
+ * when an inline challenge is already visible.
+ */
+export const PORTAL_CAPTCHA_SURFACE_QUICK_PROBE_MS = 1_500;
+
+/**
+ * Throw / classifier needle when neither iframe GenerateCaptcha nor inline
+ * main-document challenge is ready (portal-login-inline-captcha DEC-008).
+ */
+export const PORTAL_CAPTCHA_DUAL_SURFACE_ABSENT_ERROR =
+  'CAPTCHA challenge not ready on either surface';
 
 /**
  * Post-pass chain delay before probing for another same-kind BLS 3×3

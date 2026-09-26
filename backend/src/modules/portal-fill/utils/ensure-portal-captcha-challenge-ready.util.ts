@@ -3,13 +3,15 @@ import { PORTAL_CAPTCHA_CHALLENGE_READY_PROBE_MS } from '../constants';
 import type { PortalPage } from '../types';
 import { clickPortalCaptchaVerifyControl } from './click-portal-captcha-verify-control.util';
 import { isPortalCaptchaChallengeAbsentError } from './is-portal-captcha-challenge-absent-error.util';
-import { resolveCaptchaFrame } from './portal-captcha-frame.util';
+import { resolvePortalCaptchaChallengeContext } from './resolve-portal-captcha-challenge-context.util';
 
 const logger = new Logger('PortalCaptchaVerifiedLoop');
 
 /**
- * Ensure GenerateCaptcha iframe/challenge is ready (DEC-002).
- * Probe without Verify; on absent → click `#btnVerify` once → retry resolve.
+ * Ensure captcha challenge ready on either surface (DEC-001 / DEC-002).
+ * Dual-surface probe first; adaptive `#btnVerify` only when neither surface
+ * is ready (REQ-006 / DEC-003). Never adaptive-click when inline is already
+ * visible (would submit `#captchaForm` before cell selection).
  */
 export const ensurePortalCaptchaChallengeReady = async (
   page: PortalPage,
@@ -21,7 +23,18 @@ export const ensurePortalCaptchaChallengeReady = async (
   );
 
   try {
-    await resolveCaptchaFrame(page, { waitTimeoutMs: probeMs });
+    const ctx = await resolvePortalCaptchaChallengeContext(page, {
+      waitTimeoutMs: probeMs,
+    });
+    if (ctx.kind === 'inline') {
+      logger.log(
+        `${options.logPrefix} phase=captcha_ensure ready surface=inline reason=inline_present skip_adaptive_verify`,
+      );
+    } else {
+      logger.log(
+        `${options.logPrefix} phase=captcha_ensure ready surface=iframe`,
+      );
+    }
     return;
   } catch (err) {
     if (!isPortalCaptchaChallengeAbsentError(err)) {
@@ -38,5 +51,10 @@ export const ensurePortalCaptchaChallengeReady = async (
   );
 
   const retryMs = Math.max(probeMs, options.waitTimeoutMs);
-  await resolveCaptchaFrame(page, { waitTimeoutMs: retryMs });
+  const after = await resolvePortalCaptchaChallengeContext(page, {
+    waitTimeoutMs: retryMs,
+  });
+  logger.log(
+    `${options.logPrefix} phase=captcha_ensure ready surface=${after.kind} after_adaptive_verify`,
+  );
 };

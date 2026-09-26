@@ -1,7 +1,10 @@
 /**
- * Orchestrate BLS CAPTCHA: iframe → extract → captcha service → apply (REQ-003–006).
+ * Orchestrate BLS CAPTCHA: dual-surface resolve → extract → captcha service → apply
+ * (REQ-003–006 / portal-login-inline-captcha DEC-001 / DEC-005).
  * Images are captured immediately before createTask.
- * Confirm/submit runs for real (DEC-007); does not click `#btnVerify` (pipeline / Verified loop).
+ * Confirm/submit runs for real with surface-appropriate control
+ * (iframe `#submit` / inline `#btnVerify`); does not click pipeline-owned
+ * entry Verify when that is distinct from confirm.
  */
 import { Logger } from '@nestjs/common';
 import type {
@@ -12,14 +15,13 @@ import type {
 import { applyBlsAnswer } from './apply-bls-answer.util';
 import { extractBlsChallenge } from './extract-bls-challenge.util';
 import { formatPortalLogContext } from '../../portal-core/utils/format-portal-log-context.util';
-import { resolveCaptchaFrame } from './portal-captcha-frame.util';
+import { resolvePortalCaptchaChallengeContext } from './resolve-portal-captcha-challenge-context.util';
 
 const logger = new Logger('PortalCaptchaSolve');
 
 /**
  * One extract → captcha-service create+poll → apply/confirm attempt.
- * Does not click `#btnVerify` and does not wait for `#btnVerified`
- * (owned by `runPortalCaptchaVerifiedLoop`).
+ * Does not wait for `#btnVerified` (owned by `runPortalCaptchaVerifiedLoop`).
  */
 export const solvePortalBlsCaptcha = async (
   page: PortalPage,
@@ -30,14 +32,21 @@ export const solvePortalBlsCaptcha = async (
     ? formatPortalLogContext(input.logContext)
     : '[captcha]';
 
-  logger.log(`${logPrefix} phase=captcha_frame start`);
-  const frame = await resolveCaptchaFrame(page, { waitTimeoutMs });
-  logger.log(`${logPrefix} phase=captcha_frame success`);
-
-  logger.log(`${logPrefix} phase=captcha_extract start`);
-  const challenge = await extractBlsChallenge(frame, { waitTimeoutMs });
+  logger.log(`${logPrefix} phase=captcha_surface start`);
+  const challengeCtx = await resolvePortalCaptchaChallengeContext(page, {
+    waitTimeoutMs,
+  });
   logger.log(
-    `${logPrefix} phase=captcha_extract success cells=${challenge.imagesBase64.length} taskArgumentLen=${challenge.taskArgument.length}`,
+    `${logPrefix} phase=captcha_surface success surface=${challengeCtx.kind}`,
+  );
+
+  logger.log(`${logPrefix} phase=captcha_extract start surface=${challengeCtx.kind}`);
+  const challenge = await extractBlsChallenge(challengeCtx.context, {
+    waitTimeoutMs,
+    selectors: challengeCtx.selectors,
+  });
+  logger.log(
+    `${logPrefix} phase=captcha_extract success surface=${challengeCtx.kind} cells=${challenge.imagesBase64.length} taskArgumentLen=${challenge.taskArgument.length}`,
   );
 
   logger.log(`${logPrefix} phase=captcha_solve_api start`);
@@ -53,10 +62,14 @@ export const solvePortalBlsCaptcha = async (
     `${logPrefix} phase=captcha_solve_api success taskId=${taskId} trueCells=${trueCount}`,
   );
 
-  logger.log(`${logPrefix} phase=captcha_apply start`);
-  const applied = await applyBlsAnswer(frame, answer);
   logger.log(
-    `${logPrefix} phase=captcha_apply success clicked=${applied.clickedIndices.length} confirmClicked=${applied.confirmClicked}`,
+    `${logPrefix} phase=captcha_apply start surface=${challengeCtx.kind} confirm=${challengeCtx.selectors.confirmControl}`,
+  );
+  const applied = await applyBlsAnswer(challengeCtx.context, answer, {
+    selectors: challengeCtx.selectors,
+  });
+  logger.log(
+    `${logPrefix} phase=captcha_apply success surface=${challengeCtx.kind} clicked=${applied.clickedIndices.length} confirmClicked=${applied.confirmClicked}`,
   );
 
   return {
@@ -66,4 +79,3 @@ export const solvePortalBlsCaptcha = async (
     confirmClicked: applied.confirmClicked,
   };
 };
-

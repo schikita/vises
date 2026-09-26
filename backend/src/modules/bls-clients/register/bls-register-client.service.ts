@@ -380,6 +380,40 @@ export class BlsRegisterClientService implements BlsRegisterClient {
           this.logger.log(
             `bls_register_client phase=portal_password_email_wait success workflowId=${workflowId} source=${extracted.source}`,
           );
+          // DEC-009: mail no longer expected after portal-password success — dispose.
+          // Vault Mail.tm secrets first when present, then free the browser/HTTP account.
+          const passwordPlain = temporaryMailboxPassword?.trim() ?? '';
+          const tokenPlain = temporaryMailboxCleanup.token?.trim() ?? '';
+          if (passwordPlain && tokenPlain) {
+            try {
+              await this.secretVault.persistSecret({
+                workflowId,
+                applicationId,
+                purpose: BLS_SECRET_PURPOSE.MAILTM_PASSWORD,
+                plain: passwordPlain,
+              });
+              await this.secretVault.persistSecret({
+                workflowId,
+                applicationId,
+                purpose: BLS_SECRET_PURPOSE.MAILTM_TOKEN,
+                plain: tokenPlain,
+              });
+            } catch (vaultErr) {
+              const vaultDetail =
+                vaultErr instanceof Error
+                  ? vaultErr.message
+                  : 'mailtm_vault_persist_failed';
+              this.logger.error(
+                `bls_register_client mailtm_vault failure ${vaultDetail}`,
+              );
+            }
+          }
+          await this.mailProvider
+            .deleteAccount(temporaryMailboxCleanup)
+            .catch(() => undefined);
+          temporaryMailboxCleanup = undefined;
+          temporaryMailboxPassword = undefined;
+          accountRetained = false;
         } catch (pwdErr) {
           const detail =
             pwdErr instanceof Error
