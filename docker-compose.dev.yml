@@ -1,31 +1,31 @@
 # Dev overrides. Use with the base file:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch
 # Requires:
-#   backend/.env.dev  (from .env.dev.example)
-#   web/.env.dev      (from .env.dev.example)
+#   apps/api/.env.dev  (from .env.dev.example)
+#   apps/workflow-worker/.env.dev
+#   apps/web/.env.dev  (from .env.dev.example)
 #
-# Nginx runs inside the `web` container (image copies web/docker/nginx.conf).
-# Dev bind-mounts that file so nginx edits apply after:
-#   docker compose ... exec web nginx -s reload
-# App URL: http://localhost:8090/vises/  (host :8090 → container :80)
+# Nginx runs inside the `web` container (apps/web/docker/nginx.conf).
 #
-# Watch mode (develop.watch): on source changes, Compose rebuilds the service
-# image and recreates the container so api/web load the updated code fresh.
-# Without --watch, this file still applies env/ports/volumes only.
-#
-# Remote warning: prefer prod + docker-compose.remote-test.yml on a public host.
-# This overlay binds DB/API to loopback; web stays on :8090 (container nginx).
+# URLs:
+#   local:  http://localhost:8090/vises/
+#   remote: http://go-vises.top/vises/   (DNS A → server; host :80 published)
 
 services:
   db:
     env_file:
-      - backend/.env.dev
+      - apps/api/.env.dev
     ports: !override
       - "127.0.0.1:5432:5432"
 
+  rabbitmq:
+    ports: !override
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+
   api:
     env_file:
-      - backend/.env.dev
+      - apps/api/.env.dev
     ports: !override
       - "127.0.0.1:8100:8100"
     volumes:
@@ -34,31 +34,58 @@ services:
     develop:
       watch:
         - action: rebuild
-          path: ./backend
+          path: ./apps/api
           ignore:
             - node_modules/
             - dist/
-            - logs/
-            - uploads/
-            - vises_pg/
             - .env
             - .env.*
             - "*.md"
+        - action: rebuild
+          path: ./packages
+          ignore:
+            - "**/node_modules/**"
+            - "**/dist/**"
 
-  web:
+  workflow-worker:
     env_file:
-      - web/.env.dev
+      - apps/workflow-worker/.env.dev
+    ports: !override
+      - "127.0.0.1:8101:8101"
     volumes:
-      # Live-edit container nginx without rebuilding the SPA image.
-      - ./web/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./backend/uploads:/uploads
+      - ./backend/logs:/logs
     develop:
       watch:
         - action: rebuild
-          path: ./web
+          path: ./apps/workflow-worker
           ignore:
             - node_modules/
             - dist/
-            - deploy/
+            - .env
+            - .env.*
+            - "*.md"
+        - action: rebuild
+          path: ./packages
+          ignore:
+            - "**/node_modules/**"
+            - "**/dist/**"
+
+  web:
+    env_file:
+      - apps/web/.env.dev
+    ports: !override
+      - "80:80"
+      - "8090:80"
+    volumes:
+      - ./apps/web/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    develop:
+      watch:
+        - action: rebuild
+          path: ./apps/web
+          ignore:
+            - node_modules/
+            - dist/
             - docker/nginx.conf
             - .env
             - .env.*

@@ -107,7 +107,9 @@ Supporting only: `capcha.html`, `email.txt`. Do not invent corrected filenames.
 
 ## 4. Orchestration (Nest in-process DB runner)
 
-**DEC-002 (runner):** Primary execution is a **DB-backed runner inside the Nest API process** (CON-002). No Bull/Redis/cron package for Must.
+> **Superseded for process topology (2026-10-04):** Feature [`portal-worker-isolation`](../../specs/features/portal-worker-isolation/) **DEC-002 / DEC-013 / DEC-022** move browser execution to a separate `apps/workflow-worker` Nest process coordinated by **RabbitMQ** + simplified `{ correlationId, payload }` envelopes. The durable **DB claim / `nextRunAt` / SKIP LOCKED** model below remains valid; the **“runner inside the Nest API process” / “no queue Must”** wording does **not**. See `specs/features/portal-worker-isolation/03-design.md` and `06-implementation.md`.
+
+**DEC-002 (runner) — historical:** Primary execution is a **DB-backed runner inside the Nest API process** (CON-002). No Bull/Redis/cron package for Must.
 
 ### 4.1 Components
 
@@ -265,7 +267,7 @@ Vault rows hold ciphertext columns only; see `02-database-redesign.md`.
 | ID | Decision | Consequences |
 |----|----------|--------------|
 | **DEC-001** | Extend `portal-scrape` / Proxy6 / CapMonster / Mail.tm; no greenfield rewrite | Implementers touch existing modules; preserve DONE feature baselines with supersession notes where behavior changes (`#btnSubmit`, retain mail, login past prep) |
-| **DEC-002** | Nest in-process DB runner + `nextRunAt` | Short control HTTP; long work in worker; RISK-001 mitigated |
+| **DEC-002** | Nest in-process DB runner + `nextRunAt` | **Partially superseded:** DB/`nextRunAt` retained; process isolation + RabbitMQ Must via `portal-worker-isolation` DEC-002/013/022 |
 | **DEC-003** | Lock heartbeat 30s / stale 120s (autofill parity) | Reuse utils patterns; OQ-013 closed |
 | **DEC-004** | Retry classes SAFE / VERIFY_THEN / NOT_SAFE | Auto-retry policy unambiguous; staff gate for irreversible |
 | **DEC-005** | AES-GCM + wrapped DEK; `VISES_SECRETS_MASTER_KEY` | Replayable portal passwords; ops must backup master key (RISK-004) |

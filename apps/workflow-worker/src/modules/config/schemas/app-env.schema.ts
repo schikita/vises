@@ -1,0 +1,61 @@
+import { z } from 'zod';
+
+/** AES-256 master key length for VISES_SECRETS_MASTER_KEY (DEC-005). */
+const SECRETS_MASTER_KEY_BYTES = 32;
+
+/**
+ * Full backend env bag validated at Nest ConfigModule boot (ConfigModule.validate).
+ * Keys must be present (may be empty string where operators fill later).
+ */
+export const appEnvSchema = z.object({
+  NODE_ENV: z.string(),
+  POSTGRES_USER: z.string(),
+  POSTGRES_PASSWORD: z.string(),
+  POSTGRES_DB: z.string(),
+  DATABASE_URL: z.string(),
+  JWT_SECRET: z.string(),
+  DEMO_AUTH_ENABLED: z.string(),
+  UPLOAD_DIR: z.string(),
+  VISES_PORTAL_BASE_URL: z.string(),
+  VISES_PORTAL_REGISTER_PATH: z.string(),
+  /** Portal login path (DEC-009 / REQ-006); empty/whitespace fails at URL resolve. */
+  VISES_PORTAL_LOGIN_PATH: z.string(),
+  CAPMONSTER_API_KEY: z.string(),
+  /**
+   * Proxy6 API key (https://px6.link/api/{key}/…). Empty ⇒ portal proxy leasing
+   * disabled (direct browser egress). Non-empty trimmed ⇒ leasing enabled (REQ-022).
+   * No buy period/country defaults in env (CON-009). No list TTL env (DEC-007).
+   */
+  PROXY6_API_KEY: z.string(),
+  /**
+   * Max concurrent in-flight workflow attempts on this worker (DEC-004).
+   * Session budget = value × 2 (portal + mail under tempmail_plus, REQ-024).
+   * Empty/missing/invalid → accept (runtime default 1).
+   */
+  VISES_PORTAL_MAX_ATTEMPTS_PER_WORKER: z.string().optional(),
+  /** RabbitMQ URL — MessagingModule fail-closed when empty (NFR-008). */
+  RABBITMQ_URL: z.string(),
+  /**
+   * Envelope encryption master key (DEC-005 / REQ-014): base64 of exactly 32 bytes.
+   * Empty allowed at boot (crypto unused); encrypt/decrypt fail-closed with 503.
+   * Non-empty invalid length fails ConfigModule validation (never log the value).
+   */
+  VISES_SECRETS_MASTER_KEY: z.string().refine(
+    (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return true;
+      }
+      return Buffer.from(trimmed, 'base64').length === SECRETS_MASTER_KEY_BYTES;
+    },
+    {
+      message: `must be empty or base64-encoded ${SECRETS_MASTER_KEY_BYTES} bytes`,
+    },
+  ),
+  /**
+   * Root directory for Winston level folders (common/error/warn/info).
+   * Required non-empty; created at logger init or boot fails.
+   * Layout: `{LOG_DIR}/{channel}/{YYYY-MM}/{YYYY-MM-DD}.log`
+   */
+  LOG_DIR: z.string().trim().min(1),
+});

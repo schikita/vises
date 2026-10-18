@@ -1,11 +1,14 @@
-# Shared Compose skeleton (db + api + web).
+# Root compose: db + rabbitmq + api + workflow-worker + web.
 # Dev (with image rebuild on code changes):
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch
 # Prod:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
+# Target images: apps/api, apps/workflow-worker, apps/web (DEC-023).
+# Interim dual-folder `backend/` may still exist for host Nest; default compose
+# builds from monorepo apps/*.
 # Env is injected via dev/prod env_file (not baked into images).
-# Copy env examples first — see backend/.env.*.example and web/.env.*.example.
+# Copy env examples first — see apps/api/.env.*.example and apps/web/.env.*.example.
 
 services:
   db:
@@ -19,21 +22,48 @@ services:
       timeout: 5s
       retries: 10
 
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     ports:
       - "8100:8100"
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  workflow-worker:
+    build:
+      context: .
+      dockerfile: apps/workflow-worker/Dockerfile
+    ports:
+      - "8101:8101"
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
 
   web:
     build:
-      context: ./web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
     ports:
       - "8090:80"
     depends_on:

@@ -1,0 +1,54 @@
+{
+  "name": "@vises/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vises NestJS business API (CRM / staff HTTP)",
+  "scripts": {
+    "build": "nest build",
+    "lint": "node -e \"process.exit(0)\"",
+    "start": "nest start",
+    "start:dev": "node --env-file-if-exists=.env.dev.local ./node_modules/@nestjs/cli/bin/nest.js start --watch",
+    "start:prod": "node dist/main.js"
+  },
+  "dependencies": {
+    "@nestjs/axios": "^12.0.1",
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/config": "^12.0.0",
+    "@nestjs/core": "^11.1.6",
+    "@nestjs/platform-express": "^11.1.6",
+    "@nestjs/typeorm": "^12.0.1",
+    "@types/amqplib": "^0.10.8",
+    "@vises/config": "*",
+    "@vises/contracts": "*",
+    "@vises/database": "*",
+    "@vises/domain-bls": "*",
+    "amqplib": "^0.10.9",
+    "axios": "^1.20.0",
+    "bcryptjs": "^3.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "dotenv": "^17.4.2",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typeorm": "^1.1.1",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "zod": "^4.6.4"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.10",
+    "@nestjs/schematics": "^11.0.7",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.18.1",
+    "@types/pg": "^8.23.1",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

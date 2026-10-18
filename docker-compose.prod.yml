@@ -2,26 +2,32 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
 # Requires:
-#   backend/.env.prod  (from .env.prod.example)
-#   web/.env.prod      (from .env.prod.example)
-#
-# DB port is not published (dev-only). Uploads/logs use named volumes.
+#   apps/api/.env.prod
+#   apps/workflow-worker/.env.prod
+#   apps/web/.env.prod
 
 services:
   db:
     env_file:
-      - backend/.env.prod
+      - apps/api/.env.prod
 
   api:
     env_file:
-      - backend/.env.prod
+      - apps/api/.env.prod
+    volumes:
+      - vises_uploads:/uploads
+      - vises_logs:/logs
+
+  workflow-worker:
+    env_file:
+      - apps/workflow-worker/.env.prod
     volumes:
       - vises_uploads:/uploads
       - vises_logs:/logs
 
   web:
     env_file:
-      - web/.env.prod
+      - apps/web/.env.prod
 
 volumes:
   vises_uploads:
