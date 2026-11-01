@@ -1,13 +1,42 @@
 /**
- * @vises/contracts — shared envelope + workflow message contracts (DEC-022).
+ * @vises/contracts — shared envelope + workflow message contracts (DEC-022)
+ * and roles-and-applications staff/HTTP DTO types (T1 freeze).
  *
  * Future App3 (availability-searcher) publishes batched `workflow.schedule`
  * with `payload.scheduledAt` + optional `payload.batchId`. No App3 impl here.
  */
 export type {
+  AnalyticsClientsPerAgentDto,
+  AnalyticsDto,
+  AnalyticsGlobalDto,
+  AnalyticsPerAgentDto,
+  AnalyticsStatusBucketDto,
+  ApplicationDto,
+  ApplicationStatus,
+  ApplicationStatusChangeDto,
+  ApplicationStatusHistoryActorRole,
+  ApplicationStatusHistoryDto,
+  ApplicationStatusHistoryResponseDto,
+  ApplicationStatusTransition,
+  ApplicationStatusTransitionActor,
+  ApplicationStatusTransitionMatrix,
   AppsUpsertArmPayload,
   AppsUpsertArmResponse,
+  BalanceAdjustDto,
+  BalanceTopUpDto,
+  BalanceTransactionDto,
+  BalanceTransactionType,
+  ClientCreateDto,
+  ClientDetailDto,
+  ClientDto,
+  ClientListDto,
+  ClientMaskedPassportDto,
+  ClientPassportUpdateDto,
   MessageEnvelope,
+  RolesApplicationsErrorCode,
+  SettingsDto,
+  StaffRole,
+  UserMeDto,
   WorkflowAbortMessage,
   WorkflowAbortPayload,
   WorkflowAbortReason,
@@ -21,4 +50,11 @@ export type {
   WorkflowScheduleMessage,
   WorkflowSchedulePayload,
 } from './types';
-export { WORKFLOW_ROUTING_KEYS } from './constants';
+export {
+  APPLICATION_STATUSES,
+  APPLICATION_STATUS_TRANSITION_MATRIX,
+  BALANCE_TRANSACTION_TYPES,
+  ROLES_APPLICATIONS_ERROR_CODES,
+  STAFF_ROLES,
+  WORKFLOW_ROUTING_KEYS,
+} from './constants';

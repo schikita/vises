@@ -1,5 +1,6 @@
 /**
- * Extract applicant ids from application `applicants` jsonb (light list-time check).
+ * Extract applicant ids from a Client-derived applicant list view
+ * (light list-time check; not Application entity jsonb).
  */
 export const listApplicationApplicantIds = (
   applicants: unknown,

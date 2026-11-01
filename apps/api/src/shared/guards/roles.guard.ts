@@ -6,11 +6,12 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import type { StaffRole } from '@vises/contracts';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { User } from '../../modules/database/entities/user.entity';
+import type { RequestUser } from '../types';
 
 /**
- * FastAPI `require_roles` equivalent (REQ-005, REQ-006, SUB-003).
+ * Fail-closed StaffRole ACL (FR-1 / FR-12 / NFR-6).
  * Must run after `JwtAuthGuard` so `request.user` is set.
  */
 @Injectable()
@@ -18,7 +19,7 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const roles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+    const roles = this.reflector.getAllAndOverride<StaffRole[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -26,10 +27,15 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<{ user?: User }>();
+    const request = context
+      .switchToHttp()
+      .getRequest<{ user?: RequestUser }>();
     const user = request.user;
     if (!user || !roles.includes(user.role)) {
-      throw new HttpException('Insufficient permissions', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        { detail: 'forbidden_role' },
+        HttpStatus.FORBIDDEN,
+      );
     }
     return true;
   }

@@ -24,7 +24,7 @@ import { clampPortalAutofillRunListLimit } from './utils';
  */
 @Controller('apps')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'manager')
+@Roles('admin', 'superadmin', 'agent')
 export class PortalAutofillController {
   constructor(private readonly autofill: PortalAutofillService) {}
 

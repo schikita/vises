@@ -1,5 +1,7 @@
 # Phase 0 — Discovery (BLS workflow frontend)
 
+> **Historical snapshot (2026-09-22).** This discovery describes the BLS workflow staff SPA as inspected on that date. It is not the current `apps/web` map. The roles-and-applications frontend cycle (FE0–FE13) is **CLOSED** as of 2026-11-01. See [`docs/architecture.md`](../../architecture.md) §2 and [`specs/roles-and-applications-frontend/spec.md`](../../../specs/roles-and-applications-frontend/spec.md).
+
 | Field | Value |
 |-------|-------|
 | Feature id | `bls-workflow-frontend` |

@@ -7,6 +7,7 @@ import { extrasOut } from './extras-out.mapper';
 export const appOut = (app: Application): AppOut => ({
   id: app.id,
   code: app.code,
+  clientId: app.clientId,
   clientEmail: app.clientEmail,
   portalFormEmail: app.portalFormEmail ?? null,
   status: app.status,
@@ -17,7 +18,6 @@ export const appOut = (app: Application): AppOut => ({
   travelDate: app.travelDate,
   returnDate: app.returnDate,
   comment: app.comment || '',
-  applicants: app.applicants || [],
   documents: app.documents || [],
   paymentAmount: app.paymentAmount,
   paymentPaid: app.paymentPaid,

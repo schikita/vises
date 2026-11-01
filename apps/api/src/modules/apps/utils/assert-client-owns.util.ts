@@ -4,7 +4,7 @@ import type { User } from '../../database/entities/user.entity';
 
 export const assertClientOwns = (user: User, row: Application): void => {
   if (
-    user.role === 'client' &&
+    (user.role as string) === 'client' &&
     row.clientEmail !== user.email &&
     row.clientEmail !== user.login
   ) {

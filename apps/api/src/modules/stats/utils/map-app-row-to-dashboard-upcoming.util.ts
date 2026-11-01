@@ -5,21 +5,13 @@ import type { DashboardUpcomingVisit } from '../types/dashboard-upcoming-visit.t
 export const mapAppRowToDashboardUpcoming = (
   row: Application,
 ): DashboardUpcomingVisit => {
-  const primary = Array.isArray(row.applicants) ? row.applicants[0] : null;
-  const lastName =
-    primary &&
-    typeof primary === 'object' &&
-    primary !== null &&
-    'lastName' in primary &&
-    typeof (primary as { lastName: unknown }).lastName === 'string'
-      ? (primary as { lastName: string }).lastName
-      : '';
+  // T2: applicants jsonb removed; Client lastName arrives via T8/T10.
   return {
     id: row.id,
     code: row.code,
     visitDate: row.visitDate,
     visitTime: row.visitTime,
     status: row.status,
-    primaryLastName: lastName,
+    primaryLastName: '',
   };
 };

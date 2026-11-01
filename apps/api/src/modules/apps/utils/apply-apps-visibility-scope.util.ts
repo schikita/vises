@@ -7,7 +7,7 @@ export const applyAppsVisibilityScope = <T extends ObjectLiteral>(
   user: User,
   alias = 'a',
 ): SelectQueryBuilder<T> => {
-  if (user.role === 'client') {
+  if ((user.role as string) === 'client') {
     qb.andWhere(
       `(${alias}.client_email = :email OR ${alias}.client_email = :login)`,
       { email: user.email, login: user.login },

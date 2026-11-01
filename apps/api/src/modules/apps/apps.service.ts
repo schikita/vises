@@ -2,7 +2,10 @@ import { randomUUID } from 'crypto';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { WORKFLOW_ROUTING_KEYS } from '@vises/contracts';
+import {
+  WORKFLOW_ROUTING_KEYS,
+  type ApplicationStatus,
+} from '@vises/contracts';
 import { Repository } from 'typeorm';
 import type { AppEnv } from '../config';
 import { Application } from '../database/entities/application.entity';
@@ -231,9 +234,16 @@ export class AppsService implements IAppsService {
     let row = await this.apps.findOne({ where: { id: appId } });
     const now = utcNow();
     const isCreate = !row;
-    const isClient = user.role === 'client';
-    const isStaff = user.role === 'admin' || user.role === 'manager';
+    // T2/T4 interim: StaffRole on User; legacy client/manager checks via string widen.
+    const role = user.role as string;
+    const isClient = role === 'client';
+    const isStaff =
+      role === 'admin' ||
+      role === 'manager' ||
+      role === 'agent' ||
+      role === 'superadmin';
 
+    // Request-body applicants kept in-memory only (column dropped; Client owns PII in T8).
     let applicants = (body.applicants ?? []) as ApplicationApplicant[];
     let clientEmail = body.clientEmail || user.email || user.login;
     let issuedClientAccess: UpsertAppResult['issuedClientAccess'];
@@ -290,8 +300,9 @@ export class AppsService implements IAppsService {
 
     const payload: Partial<Application> = {
       code: body.code || generateAppCode(),
+      clientId: row?.clientId ?? uid('cli'),
       clientEmail,
-      status: privileged.status,
+      status: privileged.status as ApplicationStatus,
       destination: body.destination ?? '',
       visaType: body.visaType ?? '',
       submitCountry: body.submitCountry ?? '',
@@ -299,7 +310,6 @@ export class AppsService implements IAppsService {
       travelDate: body.travelDate ?? '',
       returnDate: body.returnDate ?? '',
       comment: body.comment ?? '',
-      applicants,
       documents,
       paymentAmount: privileged.paymentAmount,
       paymentPaid: privileged.paymentPaid,
@@ -482,7 +492,8 @@ export class AppsService implements IAppsService {
         rows.map((row) => ({
           id: row.id,
           submitCountry: row.submitCountry ?? '',
-          applicants: row.applicants,
+          // T2: applicants column removed; portal progress uses empty list until Client wiring (T12).
+          applicants: [],
         })),
       );
 

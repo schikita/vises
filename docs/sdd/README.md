@@ -1,5 +1,7 @@
 # SDD — Durable BLS portal workflow
 
+> **Scope pointer (2026-11-01).** This tree is the durable BLS workflow SDD (status in the table below). It is not the only product SDD. The roles-and-applications cycle (backend and frontend) is **CLOSED** as of 2026-11-01. Live boundaries: [`docs/architecture.md`](../architecture.md). Closed specs: [`specs/roles-and-applications/spec.md`](../../specs/roles-and-applications/spec.md) and [`specs/roles-and-applications-frontend/spec.md`](../../specs/roles-and-applications-frontend/spec.md). [`00-current-state.md`](./00-current-state.md) is a historical Phase-0 snapshot.
+
 | Field | Value |
 |-------|-------|
 | Feature theme | Durable, resumable BLS portal autofill workflow |

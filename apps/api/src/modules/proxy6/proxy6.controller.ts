@@ -40,7 +40,7 @@ import { mapProxy6ErrorToHttpException } from './utils/map-proxy6-error-to-http-
  */
 @Controller('proxy6')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@Roles('admin', 'superadmin')
 export class Proxy6Controller {
   constructor(
     private readonly api: Proxy6ApiService,

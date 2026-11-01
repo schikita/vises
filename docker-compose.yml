@@ -14,7 +14,7 @@ services:
   db:
     image: postgres:18.6-alpine
     volumes:
-      - ./backend/vises_pg:/var/lib/postgresql
+      - ./apps/api/vises_pg:/var/lib/postgresql
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vises"]
@@ -24,6 +24,8 @@ services:
 
   rabbitmq:
     image: rabbitmq:4.1-management-alpine
+    volumes:
+      - ./apps/api/vises_rabbitmq:/var/lib/rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"

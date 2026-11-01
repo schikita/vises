@@ -9,7 +9,7 @@ import { AppsService } from './apps.service';
 /** Staff payments list + full-set summary (DEC-005 / DEC-009). */
 @Controller('payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'manager')
+@Roles('admin', 'superadmin', 'agent')
 export class PaymentsController {
   constructor(private readonly apps: AppsService) {}
 

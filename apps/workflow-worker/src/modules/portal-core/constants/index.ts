@@ -16,6 +16,13 @@ export {
   APP_STATUS_SYSTEM_ACTOR,
 } from './app-status-needs-fixes.constants';
 
+export { PII_ENCRYPTED_FIELD_KEYS } from './pii-encrypted-fields.constants';
+
+export {
+  PII_MSG_KEY_UNAVAILABLE,
+  PII_MSG_DECRYPT_FAILED,
+} from './pii-decrypt.constants';
+
 export {
   PORTAL_BROWSER_SESSIONS_PER_ATTEMPT,
   PORTAL_MAX_ATTEMPTS_PER_WORKER_DEFAULT,

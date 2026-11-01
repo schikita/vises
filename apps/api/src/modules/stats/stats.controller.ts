@@ -17,7 +17,7 @@ export class StatsController {
    */
   @Get('dashboard')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'manager')
+  @Roles('admin', 'superadmin', 'agent')
   getDashboard(
     @Query('rangeDays') rangeDaysRaw?: string,
   ): Promise<OwnerDashboardStatsOut> {

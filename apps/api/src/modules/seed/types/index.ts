@@ -1,6 +1,14 @@
 export type { AppFactory } from './app-factory.types';
+export type { ClientFactory } from './client-factory.types';
 export type { UserFactory } from './user-factory.types';
+export type { BalanceFactory } from './balance-factory.types';
+export type { HistoryFactory } from './history-factory.types';
 export type { SeedRng } from './seed-rng.types';
 export type { SeedApplicant } from './seed-applicant.types';
-export type { SeedClientProfile } from './seed-client-profile.types';
+export type { SeedStatusTransition } from './seed-status-transition.types';
 export type { BuildSeedUsersResult } from './build-seed-users-result.types';
+export type { BuildFr11SeedDatasetResult } from './build-fr11-seed-dataset-result.types';
+export type { BuildFr11SeedDatasetInput } from './build-fr11-seed-dataset-input.types';
+export type { BuildAgentSeedLedgerInput } from './build-agent-seed-ledger-input.types';
+export type { BuildFr11AgentAppsInput } from './build-fr11-agent-apps-input.types';
+export type { BuildFr11AgentAppsResult } from './build-fr11-agent-apps-result.types';

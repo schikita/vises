@@ -7,6 +7,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from '../database/entities/application.entity';
+import { Client } from '../database/entities/client.entity';
+import { ClientPiiDecryptService } from './client-pii-decrypt.service';
 import type { IPortalApplicationData } from './interfaces/portal-application-data.interface';
 import type {
   ApplicantInput,
@@ -17,9 +19,9 @@ import type {
 import { findApplicant } from './utils/find-applicant.util';
 
 /**
- * Load Application via TypeORM (prior DEC-011).
+ * Load Application + linked Client via TypeORM (prior DEC-011).
+ * Passport PII comes from Client (FR-6), decrypted for fill mapping only.
  * DB not-found maps to HTTP 404 with detail message (portal-autofill-api DEC-009).
- * Offline JSON fixture path removed (DEC-003).
  */
 @Injectable()
 export class PortalDataService implements IPortalApplicationData {
@@ -27,6 +29,11 @@ export class PortalDataService implements IPortalApplicationData {
     @Optional()
     @InjectRepository(Application)
     private readonly apps?: Repository<Application>,
+    @Optional()
+    @InjectRepository(Client)
+    private readonly clients?: Repository<Client>,
+    @Optional()
+    private readonly clientPii?: ClientPiiDecryptService,
   ) {}
 
   async load(options: LoadApplicationOptions): Promise<LoadedApplicationData> {
@@ -52,9 +59,9 @@ export class PortalDataService implements IPortalApplicationData {
     applicationId: string,
     applicantId: string,
   ): Promise<LoadedApplicationData> {
-    if (!this.apps) {
+    if (!this.apps || !this.clients || !this.clientPii) {
       throw new Error(
-        'TypeORM Application repository unavailable; run against AppModule with DATABASE_URL',
+        'TypeORM Application/Client repositories or ClientPiiDecryptService unavailable; run against AppModule with DATABASE_URL',
       );
     }
     const row = await this.apps.findOne({ where: { id: applicationId } });
@@ -62,10 +69,10 @@ export class PortalDataService implements IPortalApplicationData {
       throw new HttpException('Application not found', HttpStatus.NOT_FOUND);
     }
 
-    const applicantsRaw = row.applicants;
-    const applicants: ApplicantInput[] = Array.isArray(applicantsRaw)
-      ? (applicantsRaw as ApplicantInput[])
-      : [];
+    const client = row.clientId
+      ? await this.clients.findOne({ where: { id: row.clientId } })
+      : null;
+    const applicants: ApplicantInput[] = this.clientPii.toApplicantList(client);
 
     const application: ApplicationInput = {
       id: row.id,

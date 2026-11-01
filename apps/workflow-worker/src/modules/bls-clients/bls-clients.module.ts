@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BlsSecretsModule } from '../bls-secrets';
 import { BrowserMailModule } from '../browser-mail';
 import { Application } from '../database/entities/application.entity';
+import { Client } from '../database/entities/client.entity';
 import { PortalCoreModule } from '../portal-core';
 import { PortalFillModule } from '../portal-fill';
 import { Proxy6Module } from '../proxy6';
@@ -49,7 +50,7 @@ const blsClientsProviders: Provider[] = [
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Application]),
+    TypeOrmModule.forFeature([Application, Client]),
     PortalFillModule,
     PortalCoreModule,
     BlsSecretsModule,

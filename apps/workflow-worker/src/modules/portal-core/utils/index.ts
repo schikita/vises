@@ -14,6 +14,11 @@ export { isPortalSubmitCountryBelarusAllowlisted } from './is-portal-submit-coun
 export { mapPortalClientPortalProgress } from './map-portal-client-portal-progress.util';
 export { resolvePortalSiteOutcomeForAdapter } from './resolve-portal-site-outcome-for-adapter.util';
 export { listApplicationApplicantIds } from './list-application-applicant-ids.util';
+export { listApplicationClientApplicantIds } from './list-application-client-applicant-ids.util';
+export {
+  mapClientToApplicantInput,
+  mapClientToApplicantList,
+} from './map-client-to-applicant-input.util';
 export { formatPortalLogContext } from './format-portal-log-context.util';
 export { summarizeFieldFillCounts } from './summarize-field-fill-counts.util';
 export { buildPortalAutofillLockOwner } from './build-portal-autofill-lock-owner.util';

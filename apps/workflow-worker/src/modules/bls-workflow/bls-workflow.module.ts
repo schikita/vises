@@ -4,6 +4,7 @@ import { BlsClientsModule } from '../bls-clients';
 import { BlsSecretsModule } from '../bls-secrets';
 import { BrowserMailModule } from '../browser-mail';
 import { Application } from '../database/entities/application.entity';
+import { Client } from '../database/entities/client.entity';
 import { BlsWorkflowAttempt } from '../database/entities/bls-workflow-attempt.entity';
 import { BlsWorkflowEvent } from '../database/entities/bls-workflow-event.entity';
 import { BlsWorkflowStep } from '../database/entities/bls-workflow-step.entity';
@@ -54,6 +55,7 @@ const blsWorkflowProviders: Provider[] = [
   imports: [
     TypeOrmModule.forFeature([
       Application,
+      Client,
       User,
       BlsWorkflow,
       BlsWorkflowStep,

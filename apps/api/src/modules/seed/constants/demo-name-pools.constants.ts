@@ -91,19 +91,6 @@ export const SEED_MARITAL_STATUSES = [
   'Вдовец / вдова',
 ] as const;
 
-export const SEED_MANAGER_DISPLAY_NAMES = [
-  'Елена',
-  'Игорь',
-  'София',
-] as const;
-
-/** ASCII login locals paired with `SEED_MANAGER_DISPLAY_NAMES`. */
-export const SEED_MANAGER_LOGIN_LOCALS = [
-  'elena',
-  'igor',
-  'sofia',
-] as const;
-
 export const SEED_DOC_TYPES = [
   'selfie',
   'passport',

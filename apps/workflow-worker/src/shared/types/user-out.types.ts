@@ -1,3 +1,5 @@
+import type { StaffRole } from '@vises/contracts';
+
 /**
  * API `user_out` shape (REQ-002).
  * Domain owner: `users` (re-exported from `users/types`).
@@ -10,7 +12,7 @@ export type UserOut = {
   name: string;
   login: string;
   email: string;
-  role: string;
+  role: StaffRole;
   active: boolean;
   inviteToken: string;
   createdAt: string;

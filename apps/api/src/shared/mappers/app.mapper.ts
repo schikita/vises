@@ -17,7 +17,8 @@ export const appOut = (app: Application): AppOut => ({
   travelDate: app.travelDate,
   returnDate: app.returnDate,
   comment: app.comment || '',
-  applicants: app.applicants || [],
+  /** T2: passport PII moved to Client; keep empty array for legacy AppOut shape until FE/API remap. */
+  applicants: [],
   documents: app.documents || [],
   paymentAmount: app.paymentAmount,
   paymentPaid: app.paymentPaid,

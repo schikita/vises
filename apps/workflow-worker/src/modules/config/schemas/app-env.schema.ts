@@ -3,6 +3,9 @@ import { z } from 'zod';
 /** AES-256 master key length for VISES_SECRETS_MASTER_KEY (DEC-005). */
 const SECRETS_MASTER_KEY_BYTES = 32;
 
+/** Hex length for VISES_PII_ENCRYPTION_KEY (32-byte AES-256). */
+const PII_ENCRYPTION_KEY_HEX_LENGTH = 64;
+
 /**
  * Full backend env bag validated at Nest ConfigModule boot (ConfigModule.validate).
  * Keys must be present (may be empty string where operators fill later).
@@ -58,4 +61,25 @@ export const appEnvSchema = z.object({
    * Layout: `{LOG_DIR}/{channel}/{YYYY-MM}/{YYYY-MM-DD}.log`
    */
   LOG_DIR: z.string().trim().min(1),
+  /**
+   * Passport PII AES-256-GCM key (FR-6 / AC-9): exactly 64 hex chars (32 bytes).
+   * Same name/format as API. Empty allowed at boot; decrypt fail-closed with 503.
+   * Non-empty invalid length/charset fails ConfigModule validation (never log the value).
+   * Risk R-1: not rotatable in v1 — changing the key without re-encrypt loses ciphertext.
+   */
+  VISES_PII_ENCRYPTION_KEY: z.string().refine(
+    (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return true;
+      }
+      return (
+        trimmed.length === PII_ENCRYPTION_KEY_HEX_LENGTH &&
+        /^[0-9a-fA-F]+$/.test(trimmed)
+      );
+    },
+    {
+      message: `must be empty or exactly ${PII_ENCRYPTION_KEY_HEX_LENGTH} hex characters`,
+    },
+  ),
 });

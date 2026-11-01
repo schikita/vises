@@ -14,12 +14,16 @@ export interface IUsersService {
   list(): Promise<UserOut[]>;
   listPaged(query: UsersListQuery): Promise<UsersPaginatedList>;
   listActiveManagerNames(): Promise<ManagerNamesOut>;
-  create(body: CreateUserDto): Promise<UserCredentialsOut>;
+  create(body: CreateUserDto, actor: User): Promise<UserCredentialsOut>;
   ensureClientForIdentity(
     identity: string,
     name: string,
   ): Promise<EnsureClientResult>;
-  patch(userId: string, body: PatchUserDto): Promise<UserOut>;
-  reissue(userId: string): Promise<UserCredentialsOut>;
+  patch(
+    userId: string,
+    body: PatchUserDto,
+    actor: User,
+  ): Promise<UserOut>;
+  reissue(userId: string, actor: User): Promise<UserCredentialsOut>;
   remove(userId: string, actor: User): Promise<{ ok: true }>;
 }

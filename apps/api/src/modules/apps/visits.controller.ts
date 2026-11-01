@@ -9,7 +9,7 @@ import { AppsService } from './apps.service';
 /** Staff visits list over `applications` (DEC-004 / REQ-008). */
 @Controller('visits')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'manager')
+@Roles('admin', 'superadmin', 'agent')
 export class VisitsController {
   constructor(private readonly apps: AppsService) {}
 

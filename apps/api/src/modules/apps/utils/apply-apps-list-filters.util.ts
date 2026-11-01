@@ -22,7 +22,7 @@ export const applyAppsListFilters = <T extends ObjectLiteral>(
         LOWER(${alias}.code) LIKE :q
         OR LOWER(${alias}.destination) LIKE :q
         OR LOWER(${alias}.submit_city) LIKE :q
-        OR LOWER(CAST(${alias}.applicants AS text)) LIKE :q
+        OR LOWER(${alias}.client_email) LIKE :q
       )`,
       { q },
     );

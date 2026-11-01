@@ -10,16 +10,16 @@
   "scripts": {
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "dev:api": "npm run start:dev -w @vises/api",
-    "dev:worker": "npm run start:dev -w @vises/workflow-worker",
-    "dev:web": "npm run dev -w @vises/web"
+    "dev:api": "pnpm run start:dev -w @vises/api",
+    "dev:worker": "pnpm run start:dev -w @vises/workflow-worker",
+    "dev:web": "pnpm run dev -w @vises/web"
   },
   "devDependencies": {
-    "turbo": "^2.5.4",
-    "typescript": "^5.9.2"
+    "turbo": "^2.11.10",
+    "typescript": "^7.0.2"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
-  "packageManager": "npm@12.0.2"
+  "packageManager": "pnpm@12.16.1"
 }

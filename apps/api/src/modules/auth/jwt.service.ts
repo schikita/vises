@@ -6,9 +6,9 @@ import { User } from '../database/entities/user.entity';
 import { JWT_TTL_HOURS } from './constants';
 import type { IAccessToken } from './interfaces';
 import type { JwtPayload } from './types';
-import { resolveJwtSecret } from './utils';
+import { isStaffRole, resolveJwtSecret } from './utils';
 
-/** HS256 JWT parity with Python `auth.py` (REQ-003, DEC-005). */
+/** HS256 JWT parity with Python `auth.py` (REQ-003, DEC-005); StaffRole claims (FR-12). */
 @Injectable()
 export class JwtTokenService implements IAccessToken {
   private readonly secret: string;
@@ -35,6 +35,9 @@ export class JwtTokenService implements IAccessToken {
         algorithms: ['HS256'],
       }) as jwt.JwtPayload;
       if (typeof payload.sub !== 'string' || typeof payload.role !== 'string') {
+        return null;
+      }
+      if (!isStaffRole(payload.role)) {
         return null;
       }
       return { sub: payload.sub, role: payload.role };

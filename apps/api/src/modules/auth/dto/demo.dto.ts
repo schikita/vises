@@ -1,7 +1,9 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsIn } from 'class-validator';
+import { STAFF_ROLES } from '@vises/contracts';
+import type { StaffRole } from '@vises/contracts';
 
+/** Demo login role — StaffRole only (FR-12 / §6.1). */
 export class DemoDto {
-  @IsString()
-  @MinLength(1)
-  role!: string;
+  @IsIn([...STAFF_ROLES])
+  role!: StaffRole;
 }

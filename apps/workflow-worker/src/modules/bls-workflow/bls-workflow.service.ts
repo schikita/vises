@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from '../database/entities/application.entity';
+import { Client } from '../database/entities/client.entity';
 import { uid } from '../../shared/utils';
 import {
   BLS_SECRET_PURPOSE,
@@ -67,7 +68,8 @@ import { isBlsWorkflowResumeEligible } from './utils/is-bls-workflow-resume-elig
 import { isBlsWorkflowStatusNonRunnable } from './utils/is-bls-workflow-status-non-runnable.util';
 import { isBlsWorkflowStatusTerminal } from './utils/is-bls-workflow-status-terminal.util';
 import { isBlsWorkflowStepSkippable } from './utils/is-bls-workflow-step-skippable.util';
-import { listApplicationApplicantIds } from '../portal-core/utils/list-application-applicant-ids.util';
+import { ClientPiiDecryptService } from '../portal-core/client-pii-decrypt.service';
+import { listApplicationClientApplicantIds } from '../portal-core/utils/list-application-client-applicant-ids.util';
 import { mapBlsWorkflowEventToOut } from './utils/map-bls-workflow-event-to-out.util';
 import { mapBlsWorkflowGraphToOut } from './utils/map-bls-workflow-graph-to-out.util';
 import { mapBlsWorkflowToControlOut } from './utils/map-bls-workflow-to-control-out.util';
@@ -92,6 +94,9 @@ export class BlsWorkflowService {
     private readonly workflows: BlsWorkflowRepository,
     @InjectRepository(Application)
     private readonly appRepo: Repository<Application>,
+    @InjectRepository(Client)
+    private readonly clientRepo: Repository<Client>,
+    private readonly clientPii: ClientPiiDecryptService,
     private readonly terminalCleanup: BlsWorkflowTerminalCleanupService,
     private readonly secretVault: BlsSecretVaultService,
     private readonly abortRegistry: BlsWorkflowAbortRegistry,
@@ -131,7 +136,7 @@ export class BlsWorkflowService {
       });
     }
 
-    const applicantIds = listApplicationApplicantIds(app.applicants);
+    const applicantIds = listApplicationClientApplicantIds(app.clientId);
     const draft = buildBlsWorkflowGraphDraft({ applicantIds });
     const now = new Date();
     const workflowId = uid('bls-wf');
@@ -1111,8 +1116,12 @@ export class BlsWorkflowService {
    * On fail: Should set «Нужны правки», then HTTP 400 with aggregated Russian detail.
    */
   private async enforceStartGateOrThrow(app: Application): Promise<void> {
+    const client = app.clientId
+      ? await this.clientRepo.findOne({ where: { id: app.clientId } })
+      : null;
+    const applicants = this.clientPii.toApplicantList(client);
     const gate = evaluateBlsWorkflowStartGate({
-      applicants: app.applicants,
+      applicants,
       clientEmail: app.clientEmail,
       returnDate: app.returnDate,
     });

@@ -35,7 +35,7 @@ import { BlsWorkflowService } from './bls-workflow.service';
  */
 @Controller('apps')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'manager')
+@Roles('admin', 'superadmin', 'agent')
 export class BlsWorkflowController {
   constructor(private readonly workflows: BlsWorkflowService) {}
 

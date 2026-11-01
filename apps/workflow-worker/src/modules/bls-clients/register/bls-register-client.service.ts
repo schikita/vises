@@ -2,6 +2,7 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from '../../database/entities/application.entity';
+import { Client } from '../../database/entities/client.entity';
 import { BLS_SECRET_PURPOSE, BlsSecretVaultService } from '../../bls-secrets';
 import {
   TEMPORARY_EMAIL_WAIT_FOR_EMAIL_MS,
@@ -17,8 +18,9 @@ import { collectBlsApplicationApplicantDateViolations } from '../../bls-workflow
 import { formatBlsApplicantDateViolationsDetail } from '../../bls-workflow/utils/format-bls-applicant-date-violations-detail.util';
 import { applyApplicationNeedsFixesStatus } from '../../portal-core/utils/apply-application-needs-fixes-status.util';
 import {
+  ClientPiiDecryptService,
   evidenceFileExists,
-  listApplicationApplicantIds,
+  listApplicationClientApplicantIds,
   PORTAL_AUTOFILL_CAPTURE_STATUS,
   PORTAL_AUTOFILL_LOCK_HEARTBEAT_MS,
   PORTAL_AUTOFILL_RUN_STATUS,
@@ -80,6 +82,9 @@ export class BlsRegisterClientService implements BlsRegisterClient {
     private readonly proxyProvider: ProxyProvider,
     @InjectRepository(Application)
     private readonly appsRepo: Repository<Application>,
+    @InjectRepository(Client)
+    private readonly clientsRepo: Repository<Client>,
+    private readonly clientPii: ClientPiiDecryptService,
   ) {}
 
   async execute(context: BlsClientTaskContext): Promise<BlsClientResult> {
@@ -118,7 +123,7 @@ export class BlsRegisterClientService implements BlsRegisterClient {
         );
       }
 
-      const applicantIds = listApplicationApplicantIds(app.applicants);
+      const applicantIds = listApplicationClientApplicantIds(app.clientId);
       const applicantId =
         context.applicantId?.trim() || applicantIds[0] || '';
       if (!applicantId) {
@@ -131,8 +136,12 @@ export class BlsRegisterClientService implements BlsRegisterClient {
       // Mid-run date-only defense (REQ-005 / DEC-003): workflow already exists.
       // Distinct from create/start/retry/resume start-gate 400 and from OTP
       // pipeline failures (OTP must not set «Нужны правки» solely for OTP fail).
+      const client = app.clientId
+        ? await this.clientsRepo.findOne({ where: { id: app.clientId } })
+        : null;
+      const applicants = this.clientPii.toApplicantList(client);
       const dateViolations = collectBlsApplicationApplicantDateViolations({
-        applicants: app.applicants,
+        applicants,
         returnDate: app.returnDate,
       });
       if (dateViolations.length > 0) {

@@ -26,19 +26,19 @@ export class SettingsController {
     return this.settings.get();
   }
 
-  /** Admin only (REQ-014). */
+  /** Admin / superadmin (FR-3 / AC-4). */
   @Patch()
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'superadmin')
   patch(@Body() body: PatchSettingsDto): Promise<SettingsOut> {
     return this.settings.patch(body);
   }
 
-  /** Admin only — clear domains then re-seed (REQ-014 / REQ-015). */
+  /** Admin / superadmin — clear domains then re-seed (REQ-014 / REQ-015). */
   @Post('reset-demo')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'superadmin')
   resetDemo(): Promise<{ ok: true }> {
     return this.settings.resetDemo();
   }

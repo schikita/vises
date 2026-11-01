@@ -1,15 +1,25 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
-import type { ApplicationApplicant } from '../types';
+import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import type { ApplicationStatus } from '@vises/contracts';
 
+/**
+ * Application is 1:1 with Client via unique `clientId` (FR-5 / AC-6).
+ * Passport PII lives on Client — `applicants` jsonb removed (FR-6 / AC-9).
+ * Mutable `status` stays in sync with ApplicationStatusHistory (FR-7 / AC-12).
+ */
 @Entity({ name: 'applications' })
 export class Application {
   @PrimaryColumn({ type: 'varchar', length: 40 })
   id!: string;
 
+  /** Unique 1:1 link to `clients.id` (AC-6). */
+  @Index({ unique: true })
+  @Column({ name: 'client_id', type: 'varchar', length: 40 })
+  clientId!: string;
+
   @Column({ type: 'varchar', length: 40 })
   code!: string;
 
-  @Column({ name: 'client_email', type: 'varchar', length: 200 })
+  @Column({ name: 'client_email', type: 'varchar', length: 200, default: '' })
   clientEmail!: string;
 
   /** Disposable / portal RegisterUser email; null when never set (legacy rows). */
@@ -21,8 +31,8 @@ export class Application {
   })
   portalFormEmail!: string | null;
 
-  @Column({ type: 'varchar', length: 20, default: 'new' })
-  status!: string;
+  @Column({ type: 'varchar', length: 20, default: 'drafting' })
+  status!: ApplicationStatus;
 
   @Column({ type: 'varchar', length: 80, default: '' })
   destination!: string;
@@ -44,10 +54,6 @@ export class Application {
 
   @Column({ type: 'text', default: '' })
   comment!: string;
-
-  /** Applicant payloads (jsonb); includes passportType / passportIssueCountry. */
-  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
-  applicants!: ApplicationApplicant[];
 
   @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
   documents!: unknown[];

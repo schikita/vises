@@ -2,13 +2,14 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from '../../database/entities/application.entity';
+import { Client } from '../../database/entities/client.entity';
 import { BLS_SECRET_PURPOSE, BlsSecretVaultService } from '../../bls-secrets';
 import { BLS_WORKFLOW_ERROR_CLASS } from '../../bls-workflow/constants/bls-workflow.constants';
 import {
+  ClientPiiDecryptService,
   findApplicant,
-  listApplicationApplicantIds,
+  listApplicationClientApplicantIds,
   PortalConfigService,
-  type ApplicantInput,
   type ApplicationInput,
 } from '../../portal-core';
 import {
@@ -52,6 +53,9 @@ export class BlsStatusClientService implements BlsStatusClient {
     private readonly proxyProvider: ProxyProvider,
     @InjectRepository(Application)
     private readonly appsRepo: Repository<Application>,
+    @InjectRepository(Client)
+    private readonly clientsRepo: Repository<Client>,
+    private readonly clientPii: ClientPiiDecryptService,
   ) {}
 
   async execute(context: BlsClientTaskContext): Promise<BlsClientResult> {
@@ -86,7 +90,7 @@ export class BlsStatusClientService implements BlsStatusClient {
         );
       }
 
-      const applicantIds = listApplicationApplicantIds(app.applicants);
+      const applicantIds = listApplicationClientApplicantIds(app.clientId);
       const applicantId =
         context.applicantId?.trim() || applicantIds[0] || '';
       if (!applicantId) {
@@ -96,11 +100,13 @@ export class BlsStatusClientService implements BlsStatusClient {
         );
       }
 
+      const client = app.clientId
+        ? await this.clientsRepo.findOne({ where: { id: app.clientId } })
+        : null;
+      const applicants = this.clientPii.toApplicantList(client);
       const applicationInput: ApplicationInput = {
         id: app.id,
-        applicants: Array.isArray(app.applicants)
-          ? (app.applicants as ApplicantInput[])
-          : [],
+        applicants,
       };
       const applicant = findApplicant(applicationInput, applicantId);
       if (!applicant) {
