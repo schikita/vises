@@ -11,3 +11,6 @@ export { normalizePage } from './normalize-page.util';
 export { normalizePageSize } from './normalize-page-size.util';
 export { buildPaginatedList } from './build-paginated-list.util';
 export { isPaginationRequested } from './is-pagination-requested.util';
+export { parseAes256KeyHex } from './parse-aes-256-key-hex.util';
+export { aes256GcmEncryptColon } from './aes-256-gcm-encrypt-colon.util';
+export { aes256GcmDecryptColon } from './aes-256-gcm-decrypt-colon.util';

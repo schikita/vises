@@ -19,7 +19,6 @@ export const applyVisitsListFilters = <T extends ObjectLiteral>(
       `(
         LOWER(${alias}.code) LIKE :q
         OR LOWER(${alias}.client_email) LIKE :q
-        OR LOWER(CAST(${alias}.applicants AS text)) LIKE :q
         OR LOWER(COALESCE(${userAlias}.name, '')) LIKE :q
         OR LOWER(COALESCE(${userAlias}.email, '')) LIKE :q
         OR LOWER(COALESCE(${userAlias}.login, '')) LIKE :q

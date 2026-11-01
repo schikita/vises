@@ -75,7 +75,8 @@ export class PortalAutofillService {
       take: limit,
     });
 
-    const applicationApplicantIds = listApplicationApplicantIds(app.applicants);
+    // T2 stub: applicants jsonb removed; empty until Client wiring (T12).
+    const applicationApplicantIds = listApplicationApplicantIds([]);
     const eligibilityApplicantId = resolvePortalAutofillEligibilityApplicantId({
       queryApplicantId: applicantId,
       runs: rows.map((r) => ({
@@ -182,7 +183,7 @@ export class PortalAutofillService {
       {
         id: app.id,
         submitCountry: app.submitCountry ?? '',
-        applicants: app.applicants,
+        applicants: [],
       },
     ]);
     return map.get(app.id)!;

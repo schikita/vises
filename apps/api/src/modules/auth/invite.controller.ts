@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import type { UserOut } from '../users/types';
+import type { UserOut } from '../../shared/types';
 
 @Controller('invite')
 export class InviteController {

@@ -62,10 +62,8 @@ export class PortalDataService implements IPortalApplicationData {
       throw new HttpException('Application not found', HttpStatus.NOT_FOUND);
     }
 
-    const applicantsRaw = row.applicants;
-    const applicants: ApplicantInput[] = Array.isArray(applicantsRaw)
-      ? (applicantsRaw as ApplicantInput[])
-      : [];
+    // T2 stub: Application.applicants dropped; Client-sourced applicants arrive in T12.
+    const applicants: ApplicantInput[] = [];
 
     const application: ApplicationInput = {
       id: row.id,

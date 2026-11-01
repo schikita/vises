@@ -11,18 +11,6 @@
   "useTabs": true,
   "jsxSingleQuote": true,
   "endOfLine": "auto",
-  "plugins": ["@trivago/prettier-plugin-sort-imports"],
-  "importOrder": [
-    "<THIRD_PARTY_MODULES>",
-    "^app/(.*)$",
-    "^screens/(.*)$",
-    "^widgets/(.*)$",
-    "^features/(.*)$",
-    "^entities/(.*)$",
-    "^shared/(.*)$",
-    "^../(.*)$",
-    "^./(.*)$"
-  ],
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true
 }

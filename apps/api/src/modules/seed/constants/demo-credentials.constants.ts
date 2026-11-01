@@ -1,7 +1,7 @@
 /**
- * Demo plaintext passwords for seed-if-empty / reset-demo (REQ-010).
- * Do not republish in public product docs.
+ * Demo plaintext passwords for seed-if-empty / reset-demo (FR-11 / AC-19).
+ * Documented in `*.example` env files only — never treat as production secrets.
  */
+export const SEED_SUPERADMIN_PASSWORD = 'VisesAdmin1';
 export const SEED_ADMIN_PASSWORD = 'VisesAdmin1';
-export const SEED_MANAGER_PASSWORD = 'VisesOffice1';
-export const SEED_CLIENT_PASSWORD = 'VisesClient1';
+export const SEED_AGENT_PASSWORD = 'VisesOffice1';

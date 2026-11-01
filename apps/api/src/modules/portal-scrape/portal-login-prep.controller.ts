@@ -21,7 +21,7 @@ import type { PortalLoginPrepReport } from './types';
  */
 @Controller('apps')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'manager')
+@Roles('admin', 'superadmin', 'agent')
 export class PortalLoginPrepController {
   constructor(private readonly loginPrep: PortalLoginPrepService) {}
 

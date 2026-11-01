@@ -3,6 +3,7 @@ export { PortalCoreModule } from './portal-core.module';
 export { BrowserSessionBudgetService } from './browser-session-budget.service';
 export { PortalConfigService } from './portal-config.service';
 export { PortalDataService } from './portal-data.service';
+export { ClientPiiDecryptService } from './client-pii-decrypt.service';
 export { PortalFieldMapperService } from './portal-field-mapper.service';
 export { BelarusPortalSiteAdapter } from './belarus-portal-site.adapter';
 export { PortalSiteAdapterRegistry } from './portal-site-adapter.registry';
@@ -109,6 +110,9 @@ export {
   mapPortalClientPortalProgress,
   resolvePortalSiteOutcomeForAdapter,
   listApplicationApplicantIds,
+  listApplicationClientApplicantIds,
+  mapClientToApplicantInput,
+  mapClientToApplicantList,
   formatPortalLogContext,
   summarizeFieldFillCounts,
   buildPortalAutofillLockOwner,

@@ -1,4 +1,4 @@
-import type { UserOut } from '../../users/types';
+import type { UserOut } from '../../../shared/types';
 
 export type AuthSession = {
   token: string;

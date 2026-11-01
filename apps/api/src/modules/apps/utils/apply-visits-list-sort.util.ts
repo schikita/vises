@@ -19,11 +19,8 @@ export const applyVisitsListSort = <T extends ObjectLiteral>(
 
   switch (sort) {
     case 'applicant':
-      qb.addSelect(
-        `LOWER(COALESCE(NULLIF(TRIM(CONCAT(COALESCE(${alias}.applicants->0->>'firstName', ''), ' ', COALESCE(${alias}.applicants->0->>'lastName', ''))), ''), ${alias}.code))`,
-        'visits_sort_applicant',
-      );
-      return qb.orderBy('visits_sort_applicant', dir);
+      // T2: applicants jsonb removed; sort by code until Client join lands (T8).
+      return qb.orderBy(`LOWER(${alias}.code)`, dir);
     case 'city':
       return qb.orderBy(`LOWER(${alias}.submit_city)`, dir);
     case 'date':

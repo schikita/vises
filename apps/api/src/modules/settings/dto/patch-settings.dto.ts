@@ -1,20 +1,28 @@
 import {
   IsArray,
   IsBoolean,
-  IsInt,
   IsOptional,
   IsString,
+  Matches,
 } from 'class-validator';
+import {
+  PRICE_PER_CLIENT_PATTERN,
+  PRICE_PER_CLIENT_PATTERN_MESSAGE,
+} from '../constants';
 
-/** Settings patch — all fields optional. */
+/** Settings patch — all fields optional. `price_per_client` mirrors SettingsDto (FR-3). */
 export class PatchSettingsDto {
   @IsOptional()
   @IsString()
   company?: string;
 
+  /** Whole-number decimal string; persisted to `Setting.defaultPrice` / `default_price`. */
   @IsOptional()
-  @IsInt()
-  defaultPrice?: number;
+  @IsString()
+  @Matches(PRICE_PER_CLIENT_PATTERN, {
+    message: PRICE_PER_CLIENT_PATTERN_MESSAGE,
+  })
+  price_per_client?: string;
 
   @IsOptional()
   @IsArray()

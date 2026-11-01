@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
+import type { StaffRole } from '@vises/contracts';
 
 @Entity({ name: 'users' })
 export class User {
@@ -20,8 +21,22 @@ export class User {
   @Column({ name: 'invite_password', type: 'varchar', length: 200, default: '' })
   invitePassword!: string;
 
+  /** Staff roles only: `superadmin` | `admin` | `agent` (FR-1). */
   @Column({ type: 'varchar', length: 20 })
-  role!: string;
+  role!: StaffRole;
+
+  /**
+   * Agent monetary balance (decimal string). Null/0 for non-agents (FR-4).
+   * Partial unique for at most one superadmin is enforced in SchemaBootstrap.
+   */
+  @Column({
+    type: 'numeric',
+    precision: 14,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  balance!: string | null;
 
   @Column({ type: 'boolean', default: true })
   active!: boolean;

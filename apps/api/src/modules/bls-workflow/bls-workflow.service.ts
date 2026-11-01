@@ -133,7 +133,8 @@ export class BlsWorkflowService {
       });
     }
 
-    const applicantIds = listApplicationApplicantIds(app.applicants);
+    // T2 stub: applicants jsonb removed; empty until Client wiring (T12).
+    const applicantIds = listApplicationApplicantIds([]);
     const draft = buildBlsWorkflowGraphDraft({ applicantIds });
     const now = new Date();
     const workflowId = uid('bls-wf');
@@ -1206,7 +1207,7 @@ export class BlsWorkflowService {
    */
   private async enforceStartGateOrThrow(app: Application): Promise<void> {
     const gate = evaluateBlsWorkflowStartGate({
-      applicants: app.applicants,
+      applicants: [],
       clientEmail: app.clientEmail,
       returnDate: app.returnDate,
     });

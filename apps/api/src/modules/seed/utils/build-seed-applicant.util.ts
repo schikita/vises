@@ -16,9 +16,10 @@ import { formatSeedPhone } from './format-seed-phone.util';
 import { pickSeedDateString } from './pick-seed-date-string.util';
 import { pickSeedItem } from './pick-seed-item.util';
 
-/** Build one random applicant payload for a seeded application. */
+/** Build one plaintext applicant payload for a seeded Client. */
 export const buildSeedApplicant = (
   id: string,
+  email: string,
   rng: SeedRng,
 ): SeedApplicant => {
   const gender = rng() < 0.5 ? 'female' : 'male';
@@ -43,15 +44,18 @@ export const buildSeedApplicant = (
     placeOfBirth,
     countryOfBirth: 'Беларусь',
     nationality: 'Беларусь',
+    nationalityAtBirth: 'Беларусь',
     gender,
     maritalStatus: pickSeedItem(SEED_MARITAL_STATUSES, rng),
     passportType: APPLICATION_APPLICANT_DEFAULT_PASSPORT_TYPE,
-    // CON-003 / DEC-010 — exact portal BirthCountry label.
     passportIssueCountry: APPLICATION_APPLICANT_DEFAULT_PASSPORT_ISSUE_COUNTRY,
     passportNumber: formatSeedPassportNumber(rng),
     passportIssued,
     passportExpires: `${issuedYear + 10}${passportIssued.slice(4)}`,
     passportIssuedBy: `РУЭП ${placeOfBirth}`,
+    nationalId: null,
+    otherNames: null,
     phone: formatSeedPhone(rng),
+    email,
   };
 };

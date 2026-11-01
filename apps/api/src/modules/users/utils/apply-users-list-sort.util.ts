@@ -26,21 +26,21 @@ export const applyUsersListSort = <T extends ObjectLiteral>(
       );
       return qb.orderBy('users_sort_user', dir);
     case 'role': {
+      const superadminLabel = USER_ROLE_SORT_LABEL.superadmin;
       const adminLabel = USER_ROLE_SORT_LABEL.admin;
-      const managerLabel = USER_ROLE_SORT_LABEL.manager;
-      const clientLabel = USER_ROLE_SORT_LABEL.client;
+      const agentLabel = USER_ROLE_SORT_LABEL.agent;
       qb.addSelect(
         `LOWER(CASE ${alias}.role
+          WHEN 'superadmin' THEN :superadminLabel
           WHEN 'admin' THEN :adminLabel
-          WHEN 'manager' THEN :managerLabel
-          WHEN 'client' THEN :clientLabel
+          WHEN 'agent' THEN :agentLabel
           ELSE ${alias}.role
         END)`,
         'users_sort_role',
       );
+      qb.setParameter('superadminLabel', superadminLabel);
       qb.setParameter('adminLabel', adminLabel);
-      qb.setParameter('managerLabel', managerLabel);
-      qb.setParameter('clientLabel', clientLabel);
+      qb.setParameter('agentLabel', agentLabel);
       return qb.orderBy('users_sort_role', dir);
     }
     case 'status':

@@ -5,7 +5,7 @@ import { Application } from '../../database/entities/application.entity';
 import { BLS_SECRET_PURPOSE, BlsSecretVaultService } from '../../bls-secrets';
 import { BLS_WORKFLOW_ERROR_CLASS } from '../../bls-workflow/constants/bls-workflow.constants';
 import {
-  listApplicationApplicantIds,
+  listApplicationClientApplicantIds,
   PortalConfigService,
 } from '../../portal-core';
 import { PortalBookingFillService } from '../../portal-fill';
@@ -124,7 +124,7 @@ export class BlsBookingClientService implements BlsBookingClient {
         return buildBlsClientAbortResult();
       }
 
-      const applicantIds = listApplicationApplicantIds(app.applicants);
+      const applicantIds = listApplicationClientApplicantIds(app.clientId);
       const headed = this.configService.resolveHeaded();
       const fill = await this.fillService.fillBookingSafeStop({
         loginUrl,

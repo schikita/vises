@@ -1,5 +1,7 @@
 # SDD — BLS workflow frontend
 
+> **Scope pointer (2026-11-01).** This folder is the durable BLS workflow frontend SDD. It is not the current `apps/web` architecture. The roles-and-applications frontend cycle (FE0–FE13) is **CLOSED** as of 2026-11-01. Live SPA boundaries: [`docs/architecture.md`](../../architecture.md) §2. Closed spec: [`specs/roles-and-applications-frontend/spec.md`](../../../specs/roles-and-applications-frontend/spec.md).
+
 | Field | Value |
 |-------|-------|
 | Feature id | `bls-workflow-frontend` |

@@ -68,7 +68,7 @@ export class AppsController {
 
   @Delete(':appId')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'manager')
+  @Roles('admin', 'superadmin', 'agent')
   remove(@Param('appId') appId: string): Promise<{ ok: true }> {
     return this.apps.remove(appId);
   }

@@ -1,15 +1,19 @@
+import type { ApplicationStatus } from '@vises/contracts';
+
 /**
  * API `app_out` + extras shape (REQ-002).
  * Domain owner: `apps` (re-exported from `apps/types`).
  * Physical home in `shared/types` while `appOut` mapper lives in `shared` (NFR-005 / DEC-011).
+ * Passport PII lives on Client — no `applicants` jsonb (FR-6 / T12).
  */
 export type AppOut = {
   id: string;
   code: string;
+  clientId: string;
   clientEmail: string;
   /** Portal RegisterUser / login email; null when unset (REQ-001 / DEC-001). */
   portalFormEmail: string | null;
-  status: string;
+  status: ApplicationStatus;
   destination: string;
   visaType: string;
   submitCountry: string;
@@ -17,7 +21,6 @@ export type AppOut = {
   travelDate: string;
   returnDate: string;
   comment: string;
-  applicants: unknown[];
   documents: unknown[];
   paymentAmount: number;
   paymentPaid: boolean;

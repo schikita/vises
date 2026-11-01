@@ -1,10 +1,8 @@
-import type { ApplicationApplicant } from '../../database/types';
-
 /**
- * Applicant payload shape written into seeded applications.
- * Required subset of `ApplicationApplicant` (jsonb on `applications`).
+ * Plaintext passport + contact payload used while building FR-11 Client rows.
+ * Passport subset is encrypted via PiiModule before persistence.
  */
-export type SeedApplicant = ApplicationApplicant & {
+export type SeedApplicant = {
   id: string;
   firstName: string;
   lastName: string;
@@ -13,14 +11,17 @@ export type SeedApplicant = ApplicationApplicant & {
   placeOfBirth: string;
   countryOfBirth: string;
   nationality: string;
+  nationalityAtBirth: string;
   gender: 'female' | 'male';
   maritalStatus: string;
   passportType: string;
-  /** Passport Issue Country (portal `#BirthCountry`); CON-003 English label. */
   passportIssueCountry: string;
   passportNumber: string;
   passportIssued: string;
   passportExpires: string;
   passportIssuedBy: string;
+  nationalId: string | null;
+  otherNames: string | null;
   phone: string;
+  email: string;
 };

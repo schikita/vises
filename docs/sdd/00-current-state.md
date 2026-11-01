@@ -1,5 +1,7 @@
 # Phase 0 — Current state (durable BLS workflow)
 
+> **Historical snapshot (2026-09-22).** This file is a Phase-0 durable BLS discovery record. It still uses the old `backend/` and `web/` paths and is not the live product map. The roles-and-applications SDD cycle (backend T0–T15 and frontend FE0–FE13) is **CLOSED** as of 2026-11-01. Current module and SPA boundaries: [`docs/architecture.md`](../architecture.md). Closed requirement records: [`specs/roles-and-applications/spec.md`](../../specs/roles-and-applications/spec.md) and [`specs/roles-and-applications-frontend/spec.md`](../../specs/roles-and-applications-frontend/spec.md).
+
 | Field | Value |
 |-------|-------|
 | Feature theme | Durable resumable BLS portal autofill workflow |

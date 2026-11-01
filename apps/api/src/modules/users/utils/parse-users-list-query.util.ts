@@ -5,6 +5,7 @@ import type {
   UsersListSortDir,
   UsersListSortKey,
 } from '../types/users-list-query.types';
+import { normalizeUsersListRoleFilter } from './normalize-users-list-role-filter.util';
 
 /** Parse raw query strings into a clamped users list query. */
 export const parseUsersListQuery = (raw: {
@@ -27,7 +28,7 @@ export const parseUsersListQuery = (raw: {
     page: normalizePage(raw.page),
     pageSize: normalizePageSize(raw.pageSize),
     q: (raw.q ?? '').trim(),
-    role: (raw.role ?? '').trim(),
+    role: normalizeUsersListRoleFilter(raw.role ?? ''),
     sort,
     sortDir,
   };

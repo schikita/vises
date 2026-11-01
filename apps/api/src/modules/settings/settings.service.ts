@@ -4,14 +4,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Setting } from '../database/entities/setting.entity';
 import { settingsOut } from '../../shared/mappers';
-import type { AppEnv } from '../config';
-import { isProdNodeEnv } from '../config';
+import type { AppEnv } from '../config/types';
+import { isProdNodeEnv } from '../config/utils';
 import { SeedService } from '../seed/seed.service';
 import { LOCKED_SUBMIT_CITIES, SETTINGS_SINGLETON_ID } from './constants';
 import { PatchSettingsDto } from './dto/patch-settings.dto';
 import type { ISettingsService } from './interfaces';
 import type { SettingsOut } from './types';
-import { isLockedSubmitCities } from './utils';
+import { isLockedSubmitCities, parsePricePerClientToDefaultPrice } from './utils';
 
 @Injectable()
 export class SettingsService implements ISettingsService {
@@ -32,8 +32,10 @@ export class SettingsService implements ISettingsService {
     if (body.company !== undefined) {
       row.company = body.company;
     }
-    if (body.defaultPrice !== undefined) {
-      row.defaultPrice = body.defaultPrice;
+    if (body.price_per_client !== undefined) {
+      row.defaultPrice = parsePricePerClientToDefaultPrice(
+        body.price_per_client,
+      );
     }
     // DEC-011: coerce cities to Minsk-only regardless of client payload.
     row.cities = [...LOCKED_SUBMIT_CITIES];

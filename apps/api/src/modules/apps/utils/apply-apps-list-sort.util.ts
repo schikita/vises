@@ -22,11 +22,8 @@ export const applyAppsListSort = <T extends ObjectLiteral>(
 
   switch (sort) {
     case 'name':
-      qb.addSelect(
-        `LOWER(COALESCE(NULLIF(TRIM(CONCAT(COALESCE(${alias}.applicants->0->>'firstName', ''), ' ', COALESCE(${alias}.applicants->0->>'lastName', ''))), ''), ${alias}.code))`,
-        'apps_sort_name',
-      );
-      return qb.orderBy('apps_sort_name', dir);
+      // T2: applicants jsonb removed; sort by code until Client join lands (T8/T9).
+      return qb.orderBy(`LOWER(${alias}.code)`, dir);
     case 'category':
       qb.addSelect(
         `LOWER(COALESCE(NULLIF(${alias}.extras->>'category', ''), ${alias}.visa_type, ''))`,

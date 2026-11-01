@@ -10,11 +10,7 @@ import {
   hashPassword,
   uid,
 } from '../../shared/utils';
-import {
-  ADMIN_ROLE,
-  DEFAULT_USER_ROLE,
-  USER_ROLES,
-} from '../auth/constants';
+import { DEFAULT_USER_ROLE } from '../auth/constants';
 import type { IUsersService } from './interfaces';
 import type {
   EnsureClientResult,
@@ -28,7 +24,10 @@ import type {
 import {
   applyUsersListFilters,
   applyUsersListSort,
+  assertCanAssignStaffRole,
+  assertCanMutateUser,
   isValidEmailFormat,
+  mapToStaffRole,
   normalizeClientIdentity,
   resolveLatestAppIdForUserIdentity,
 } from './utils';
@@ -95,8 +94,9 @@ export class UsersService implements IUsersService {
   }
 
   async listActiveManagerNames(): Promise<ManagerNamesOut> {
+    // FR-12: former managers are `agent` under StaffRole.
     const rows = await this.users.find({
-      where: { role: 'manager', active: true },
+      where: { role: 'agent', active: true },
       order: { name: 'ASC' },
     });
     return {
@@ -104,7 +104,10 @@ export class UsersService implements IUsersService {
     };
   }
 
-  async create(body: CreateUserDto): Promise<UserCredentialsOut> {
+  async create(
+    body: CreateUserDto,
+    actor: User,
+  ): Promise<UserCredentialsOut> {
     const name = (body.name ?? '').trim();
     if (!name) {
       throw new HttpException('Name is required', HttpStatus.BAD_REQUEST);
@@ -121,13 +124,22 @@ export class UsersService implements IUsersService {
       throw new HttpException('Login already exists', HttpStatus.BAD_REQUEST);
     }
 
+    const role =
+      body.role !== undefined && String(body.role).trim() !== ''
+        ? mapToStaffRole(body.role)
+        : DEFAULT_USER_ROLE;
+    const superadminCount = await this.users.count({
+      where: { role: 'superadmin' },
+    });
+    assertCanAssignStaffRole({
+      actorRole: actor.role,
+      targetRole: role,
+      superadminCount,
+    });
+
     const password = generateInvitePassword();
     const token = uid('inv');
     const now = new Date();
-    const role =
-      body.role && (USER_ROLES as readonly string[]).includes(body.role)
-        ? body.role
-        : DEFAULT_USER_ROLE;
 
     const row = this.users.create({
       id: uid('u'),
@@ -137,6 +149,7 @@ export class UsersService implements IUsersService {
       passwordHash: hashPassword(password),
       invitePassword: password,
       role,
+      balance: '0',
       active: true,
       inviteToken: token,
       createdAt: now,
@@ -179,9 +192,10 @@ export class UsersService implements IUsersService {
       (await this.users.findOne({ where: { email: normalized } }));
 
     if (existing) {
-      if (existing.role !== 'client') {
+      // T2/T8 interim: only reuse agent-shaped rows; reject admin/superadmin.
+      if (existing.role === 'admin' || existing.role === 'superadmin') {
         throw new HttpException(
-          'Cannot assign an application to an admin or agent user',
+          'Cannot assign an application to an admin or superadmin user',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -204,7 +218,8 @@ export class UsersService implements IUsersService {
       email: normalized,
       passwordHash: hashPassword(password),
       invitePassword: password,
-      role: DEFAULT_USER_ROLE,
+      role: mapToStaffRole(DEFAULT_USER_ROLE),
+      balance: '0',
       active: true,
       inviteToken: token,
       createdAt: now,
@@ -221,16 +236,25 @@ export class UsersService implements IUsersService {
     };
   }
 
-  async patch(userId: string, body: PatchUserDto): Promise<UserOut> {
+  async patch(
+    userId: string,
+    body: PatchUserDto,
+    actor: User,
+  ): Promise<UserOut> {
     const row = await this.users.findOne({ where: { id: userId } });
     if (!row) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    if (body.active === false && row.role === ADMIN_ROLE) {
+    assertCanMutateUser({
+      actorRole: actor.role,
+      targetRole: row.role,
+    });
+
+    if (body.active === false && row.role === 'admin') {
       const others = await this.users.count({
         where: {
-          role: ADMIN_ROLE,
+          role: 'admin',
           active: true,
           id: Not(userId),
         },
@@ -261,7 +285,28 @@ export class UsersService implements IUsersService {
       row.email = body.email;
     }
     if (body.role !== undefined) {
-      row.role = body.role;
+      const nextRole = mapToStaffRole(body.role);
+      const superadminCount = await this.users.count({
+        where: { role: 'superadmin' },
+      });
+      assertCanAssignStaffRole({
+        actorRole: actor.role,
+        targetRole: nextRole,
+        superadminCount,
+        currentRole: row.role,
+      });
+      if (row.role === 'superadmin' && nextRole !== 'superadmin') {
+        const otherSuperadmins = await this.users.count({
+          where: { role: 'superadmin', id: Not(userId) },
+        });
+        if (otherSuperadmins === 0) {
+          throw new HttpException(
+            'Cannot demote the last superadmin',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+      row.role = nextRole;
     }
     if (body.active !== undefined) {
       row.active = body.active;
@@ -272,11 +317,18 @@ export class UsersService implements IUsersService {
     return userOut(row);
   }
 
-  async reissue(userId: string): Promise<UserCredentialsOut> {
+  async reissue(
+    userId: string,
+    actor: User,
+  ): Promise<UserCredentialsOut> {
     const row = await this.users.findOne({ where: { id: userId } });
     if (!row) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
+    assertCanMutateUser({
+      actorRole: actor.role,
+      targetRole: row.role,
+    });
     if (!row.active) {
       throw new HttpException('Enable access first', HttpStatus.BAD_REQUEST);
     }
@@ -303,13 +355,37 @@ export class UsersService implements IUsersService {
     if (row.id === actor.id) {
       throw new HttpException('Cannot delete yourself', HttpStatus.BAD_REQUEST);
     }
-    if (row.role === ADMIN_ROLE) {
+
+    assertCanMutateUser({
+      actorRole: actor.role,
+      targetRole: row.role,
+    });
+
+    if (row.role === 'admin') {
       const others = await this.users.count({
-        where: { role: ADMIN_ROLE, id: Not(userId) },
+        where: {
+          role: 'admin',
+          id: Not(userId),
+        },
       });
       if (others === 0) {
         throw new HttpException(
           'Cannot delete the last admin',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    if (row.role === 'superadmin') {
+      const others = await this.users.count({
+        where: {
+          role: 'superadmin',
+          id: Not(userId),
+        },
+      });
+      if (others === 0) {
+        throw new HttpException(
+          'Cannot delete the last superadmin',
           HttpStatus.BAD_REQUEST,
         );
       }

@@ -1,12 +1,26 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../database/entities/user.entity';
+import { ApplicationStatusHistory } from '../database/entities/application-status-history.entity';
 import { Application } from '../database/entities/application.entity';
+import { BalanceTransaction } from '../database/entities/balance-transaction.entity';
+import { Client } from '../database/entities/client.entity';
 import { Setting } from '../database/entities/setting.entity';
+import { User } from '../database/entities/user.entity';
+import { PiiModule } from '../pii';
 import { SeedService } from './seed.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Application, Setting])],
+  imports: [
+    PiiModule,
+    TypeOrmModule.forFeature([
+      User,
+      Application,
+      Client,
+      Setting,
+      ApplicationStatusHistory,
+      BalanceTransaction,
+    ]),
+  ],
   providers: [SeedService],
   exports: [SeedService],
 })

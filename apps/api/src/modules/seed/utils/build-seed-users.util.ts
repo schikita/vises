@@ -1,176 +1,127 @@
+import type { StaffRole } from '@vises/contracts';
 import { hashPassword } from '../../../shared/utils';
 import {
-  SEED_ADMIN_INVITE_TOKEN,
+  SEED_ADMIN_1_INVITE_TOKEN,
+  SEED_ADMIN_1_LOGIN,
+  SEED_ADMIN_1_NAME,
+  SEED_ADMIN_1_USER_ID,
+  SEED_ADMIN_2_INVITE_TOKEN,
+  SEED_ADMIN_2_LOGIN,
+  SEED_ADMIN_2_NAME,
+  SEED_ADMIN_2_USER_ID,
   SEED_ADMIN_PASSWORD,
-  SEED_ADMIN_USER_ID,
-  SEED_CLIENT_INVITE_TOKEN,
-  SEED_CLIENT_PASSWORD,
-  SEED_CLIENT_USER_ID,
-  SEED_EXTRA_CLIENT_COUNT,
-  SEED_EXTRA_MANAGER_COUNT,
-  SEED_FIRST_NAMES_FEMALE,
-  SEED_FIRST_NAMES_MALE,
-  SEED_LAST_NAMES_FEMALE,
-  SEED_LAST_NAMES_MALE,
-  SEED_MANAGER_DISPLAY_NAMES,
-  SEED_MANAGER_INVITE_TOKEN,
-  SEED_MANAGER_LOGIN_LOCALS,
-  SEED_MANAGER_PASSWORD,
-  SEED_MANAGER_USER_ID,
-  SEED_RNG_SEED,
+  SEED_AGENT_A_FINAL_BALANCE,
+  SEED_AGENT_A_INVITE_TOKEN,
+  SEED_AGENT_A_LOGIN,
+  SEED_AGENT_A_NAME,
+  SEED_AGENT_A_USER_ID,
+  SEED_AGENT_B_FINAL_BALANCE,
+  SEED_AGENT_B_INVITE_TOKEN,
+  SEED_AGENT_B_LOGIN,
+  SEED_AGENT_B_NAME,
+  SEED_AGENT_B_USER_ID,
+  SEED_AGENT_PASSWORD,
+  SEED_SUPERADMIN_INVITE_TOKEN,
+  SEED_SUPERADMIN_LOGIN,
+  SEED_SUPERADMIN_NAME,
+  SEED_SUPERADMIN_PASSWORD,
+  SEED_SUPERADMIN_USER_ID,
 } from '../constants';
-import type {
-  BuildSeedUsersResult,
-  SeedClientProfile,
-  UserFactory,
-} from '../types';
-import { createSeedRng } from './create-seed-rng.util';
-import { formatSeedDisplayName } from './format-seed-display-name.util';
-import { pickSeedItem } from './pick-seed-item.util';
+import type { BuildSeedUsersResult, UserFactory } from '../types';
 
-/** Fixed demo accounts + random managers/clients (active mix). */
+/**
+ * FR-11 staff users: 1 superadmin, 2 admins, 2 agents (Agent A / Agent B).
+ * Agent balances match ledger end-state after seed top_up + client debits.
+ */
 export const buildSeedUsers = (
   users: UserFactory,
   now: Date,
 ): BuildSeedUsersResult => {
-  const rng = createSeedRng(SEED_RNG_SEED);
+  const superadminHash = hashPassword(SEED_SUPERADMIN_PASSWORD);
   const adminHash = hashPassword(SEED_ADMIN_PASSWORD);
-  const managerHash = hashPassword(SEED_MANAGER_PASSWORD);
-  const clientHash = hashPassword(SEED_CLIENT_PASSWORD);
+  const agentHash = hashPassword(SEED_AGENT_PASSWORD);
 
-  const fixed = [
+  const superadminRole: StaffRole = 'superadmin';
+  const adminRole: StaffRole = 'admin';
+  const agentRole: StaffRole = 'agent';
+
+  const seeded = [
     users.create({
-      id: SEED_ADMIN_USER_ID,
-      name: 'Администратор Vises',
-      login: 'admin',
-      email: 'admin@vises.app',
+      id: SEED_SUPERADMIN_USER_ID,
+      name: SEED_SUPERADMIN_NAME,
+      login: SEED_SUPERADMIN_LOGIN,
+      email: SEED_SUPERADMIN_LOGIN,
+      passwordHash: superadminHash,
+      invitePassword: SEED_SUPERADMIN_PASSWORD,
+      role: superadminRole,
+      balance: '0.00',
+      active: true,
+      inviteToken: SEED_SUPERADMIN_INVITE_TOKEN,
+      createdAt: now,
+      updatedAt: now,
+    }),
+    users.create({
+      id: SEED_ADMIN_1_USER_ID,
+      name: SEED_ADMIN_1_NAME,
+      login: SEED_ADMIN_1_LOGIN,
+      email: SEED_ADMIN_1_LOGIN,
       passwordHash: adminHash,
       invitePassword: SEED_ADMIN_PASSWORD,
-      role: 'admin',
+      role: adminRole,
+      balance: '0.00',
       active: true,
-      inviteToken: SEED_ADMIN_INVITE_TOKEN,
+      inviteToken: SEED_ADMIN_1_INVITE_TOKEN,
       createdAt: now,
       updatedAt: now,
     }),
     users.create({
-      id: SEED_MANAGER_USER_ID,
-      name: 'Мария',
-      login: 'maria@vises.app',
-      email: 'maria@vises.app',
-      passwordHash: managerHash,
-      invitePassword: SEED_MANAGER_PASSWORD,
-      role: 'manager',
+      id: SEED_ADMIN_2_USER_ID,
+      name: SEED_ADMIN_2_NAME,
+      login: SEED_ADMIN_2_LOGIN,
+      email: SEED_ADMIN_2_LOGIN,
+      passwordHash: adminHash,
+      invitePassword: SEED_ADMIN_PASSWORD,
+      role: adminRole,
+      balance: '0.00',
       active: true,
-      inviteToken: SEED_MANAGER_INVITE_TOKEN,
+      inviteToken: SEED_ADMIN_2_INVITE_TOKEN,
       createdAt: now,
       updatedAt: now,
     }),
     users.create({
-      id: SEED_CLIENT_USER_ID,
-      name: 'Анна Волкова',
-      login: 'anna@example.com',
-      email: 'anna@example.com',
-      passwordHash: clientHash,
-      invitePassword: SEED_CLIENT_PASSWORD,
-      role: 'client',
+      id: SEED_AGENT_A_USER_ID,
+      name: SEED_AGENT_A_NAME,
+      login: SEED_AGENT_A_LOGIN,
+      email: SEED_AGENT_A_LOGIN,
+      passwordHash: agentHash,
+      invitePassword: SEED_AGENT_PASSWORD,
+      role: agentRole,
+      balance: SEED_AGENT_A_FINAL_BALANCE,
       active: true,
-      inviteToken: SEED_CLIENT_INVITE_TOKEN,
+      inviteToken: SEED_AGENT_A_INVITE_TOKEN,
       createdAt: now,
       updatedAt: now,
     }),
-  ];
-
-  const managerNames = ['Мария', ...SEED_MANAGER_DISPLAY_NAMES];
-  const extraManagers = [];
-  for (let i = 0; i < SEED_EXTRA_MANAGER_COUNT; i += 1) {
-    const name = SEED_MANAGER_DISPLAY_NAMES[i] ?? `Менеджер ${i + 1}`;
-    const loginLocal = SEED_MANAGER_LOGIN_LOCALS[i] ?? `manager${i + 1}`;
-    const login = `${loginLocal}@vises.app`;
-    extraManagers.push(
-      users.create({
-        id: `u-mgr-${i + 1}`,
-        name,
-        login,
-        email: login,
-        passwordHash: managerHash,
-        invitePassword: SEED_MANAGER_PASSWORD,
-        role: 'manager',
-        active: rng() >= 0.25,
-        inviteToken: `seed-manager-${i + 1}`,
-        createdAt: now,
-        updatedAt: now,
-      }),
-    );
-  }
-
-  const pavelClient: SeedClientProfile = {
-    id: 'u-pavel',
-    name: 'Павел Иванов',
-    email: 'pavel@example.com',
-    active: true,
-  };
-
-  const clients: SeedClientProfile[] = [
-    {
-      id: SEED_CLIENT_USER_ID,
-      name: 'Анна Волкова',
-      email: 'anna@example.com',
-      active: true,
-    },
-    pavelClient,
-  ];
-
-  const extraClients = [
     users.create({
-      id: pavelClient.id,
-      name: pavelClient.name,
-      login: pavelClient.email,
-      email: pavelClient.email,
-      passwordHash: clientHash,
-      invitePassword: SEED_CLIENT_PASSWORD,
-      role: 'client',
+      id: SEED_AGENT_B_USER_ID,
+      name: SEED_AGENT_B_NAME,
+      login: SEED_AGENT_B_LOGIN,
+      email: SEED_AGENT_B_LOGIN,
+      passwordHash: agentHash,
+      invitePassword: SEED_AGENT_PASSWORD,
+      role: agentRole,
+      balance: SEED_AGENT_B_FINAL_BALANCE,
       active: true,
-      inviteToken: 'seed-client-pavel',
+      inviteToken: SEED_AGENT_B_INVITE_TOKEN,
       createdAt: now,
       updatedAt: now,
     }),
   ];
-
-  for (let i = 0; i < SEED_EXTRA_CLIENT_COUNT; i += 1) {
-    const gender = rng() < 0.5 ? 'female' : 'male';
-    const firstName = pickSeedItem(
-      gender === 'female' ? SEED_FIRST_NAMES_FEMALE : SEED_FIRST_NAMES_MALE,
-      rng,
-    );
-    const lastName = pickSeedItem(
-      gender === 'female' ? SEED_LAST_NAMES_FEMALE : SEED_LAST_NAMES_MALE,
-      rng,
-    );
-    const name = formatSeedDisplayName(firstName, lastName);
-    const email = `client.${i + 1}@example.com`;
-    const active = rng() >= 0.2;
-    const id = `u-client-${i + 1}`;
-    clients.push({ id, name, email, active });
-    extraClients.push(
-      users.create({
-        id,
-        name,
-        login: email,
-        email,
-        passwordHash: clientHash,
-        invitePassword: SEED_CLIENT_PASSWORD,
-        role: 'client',
-        active,
-        inviteToken: `seed-client-${i + 1}`,
-        createdAt: now,
-        updatedAt: now,
-      }),
-    );
-  }
 
   return {
-    users: [...fixed, ...extraManagers, ...extraClients],
-    clients,
-    managerNames,
+    users: seeded,
+    superadminId: SEED_SUPERADMIN_USER_ID,
+    agentAId: SEED_AGENT_A_USER_ID,
+    agentBId: SEED_AGENT_B_USER_ID,
   };
 };

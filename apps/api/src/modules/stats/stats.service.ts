@@ -10,7 +10,6 @@ import type {
   DashboardRecentUser,
   DashboardUpcomingVisit,
   OwnerDashboardStatsOut,
-  StatsApplicantsTotalRow,
   StatsCityCountRow,
   StatsPaymentTotalsRow,
   StatsRawCountRow,
@@ -152,8 +151,9 @@ export class StatsService implements IStatsService {
     for (const row of rows) {
       const role = String(row.role ?? '');
       const count = Number(row.count) || 0;
-      if (role === 'admin') out.admin = count;
-      else if (role === 'manager') out.manager = count;
+      if (role === 'admin' || role === 'superadmin') out.admin += count;
+      // T2 interim: StaffRole `agent` maps to legacy dashboard "manager" bucket.
+      else if (role === 'manager' || role === 'agent') out.manager += count;
       else if (role === 'client') out.client = count;
     }
     return out;
@@ -182,14 +182,9 @@ export class StatsService implements IStatsService {
   }
 
   private async queryApplicantsTotal(): Promise<number> {
-    const row = await this.apps
-      .createQueryBuilder('a')
-      .select(
-        'COALESCE(SUM(jsonb_array_length(a.applicants)), 0)',
-        'applicantsTotal',
-      )
-      .getRawOne<StatsApplicantsTotalRow>();
-    return Number(row?.applicantsTotal ?? 0) || 0;
+    // T2: applicants jsonb removed; count applications as interim stand-in (T10 analytics).
+    const total = await this.apps.count();
+    return total;
   }
 
   private async queryCityCounts(): Promise<DashboardCityCount[]> {

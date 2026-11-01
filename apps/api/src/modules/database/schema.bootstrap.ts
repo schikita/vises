@@ -1,17 +1,18 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { backfillApplicationApplicantPassportFields } from './utils';
 
 /**
- * After TypeORM synchronize:
+ * Boot-time schema ensures (synchronize permanently false):
+ * indexes/constraints and legacy DDL TypeORM cannot express.
  * - DEC-003: ensure legacy `applications.extras` column.
  * - proxy6-migration DEC-002 / CON-008: drop retired settings proxy columns
- *   (synchronize may not drop columns; legacy names in DROP IF EXISTS).
+ *   (legacy names in DROP IF EXISTS).
  * - durable-bls-workflow DEC-012 / DEC-020: ensure BLS indexes + partial unique
- *   for one active workflow per application (synchronize cannot express partial
- *   unique). Does **not** drop `portal_autofill_runs`.
- * - bls-register-ymd-passport-fields: backfill applicant jsonb
- *   `passportType` / `passportIssueCountry` (defaults + known legacy labels).
+ *   for one active workflow per application (partial unique cannot be
+ *   expressed via entity metadata alone). Does **not** drop `portal_autofill_runs`.
+ * - roles-and-applications T2: drop legacy `applications.applicants` jsonb;
+ *   unique partial index for at most one `superadmin`; ensure unique
+ *   `applications.client_id` (AC-1 / AC-6 / AC-9).
  * Seed-if-empty runs in SeedService.onModuleInit (keeps database ↔ seed imports one-way).
  */
 @Injectable()
@@ -36,17 +37,43 @@ export class SchemaBootstrap implements OnModuleInit {
       'Schema ensure: settings legacy proxy columns dropped (IF EXISTS)',
     );
 
+    await this.ensureRolesAndApplicationsSchema();
     await this.ensureBlsWorkflowIndexes();
-    await this.ensureApplicantPassportFields();
   }
 
-  private async ensureApplicantPassportFields(): Promise<void> {
-    const updated = await backfillApplicationApplicantPassportFields(
-      this.dataSource,
+  /**
+   * Constraints / drops synchronize cannot express for roles-and-applications.
+   */
+  private async ensureRolesAndApplicationsSchema(): Promise<void> {
+    await this.dataSource.query(
+      `ALTER TABLE applications DROP COLUMN IF EXISTS applicants`,
     );
     this.logger.log(
-      `Schema ensure: applications.applicants passportType/passportIssueCountry backfill OK (rows updated=${updated})`,
+      'Schema ensure: applications.applicants jsonb dropped (IF EXISTS)',
     );
+
+    await this.dataSource.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_users_one_superadmin
+      ON users (role)
+      WHERE role = 'superadmin'
+    `);
+    this.logger.log(
+      'Schema ensure: users at-most-one-superadmin partial unique OK',
+    );
+
+    await this.dataSource.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_applications_client_id
+      ON applications (client_id)
+    `);
+    this.logger.log(
+      'Schema ensure: applications.client_id unique index OK',
+    );
+
+    await this.dataSource.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS balance NUMERIC(14, 2) DEFAULT 0
+    `);
+    this.logger.log('Schema ensure: users.balance column OK');
   }
 
   /**

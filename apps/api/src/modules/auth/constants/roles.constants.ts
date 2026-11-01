@@ -1,8 +1,14 @@
-/** Known application roles (auth demo + user create defaults). */
-export const USER_ROLES = ['admin', 'manager', 'client'] as const;
+import { STAFF_ROLES } from '@vises/contracts';
+import type { StaffRole } from '@vises/contracts';
 
-export type UserRole = (typeof USER_ROLES)[number];
+/** Staff roles (FR-1 / AC-1). Alias kept for existing auth/users imports. */
+export const USER_ROLES = STAFF_ROLES;
 
-export const DEFAULT_USER_ROLE: UserRole = 'client';
+/** Public registration and staff-created agents default to agent (FR-2). */
+export const DEFAULT_USER_ROLE: StaffRole = 'agent';
 
-export const ADMIN_ROLE: UserRole = 'admin';
+export const ADMIN_ROLE: StaffRole = 'admin';
+
+export const SUPERADMIN_ROLE: StaffRole = 'superadmin';
+
+export const AGENT_ROLE: StaffRole = 'agent';
