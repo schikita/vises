@@ -1,15 +1,16 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { staffListPageCount } from '@/shared/lib'
+import { LIST_PAGER_BUTTON_CLASS } from './list-pager.constants'
+import type { ListPagerProps } from './list-pager.types'
 
-type ListPagerProps = {
-  page: number
-  pageSize: number
-  total: number
-  onPageChange: (page: number) => void
-}
+export const ListPager = (props: ListPagerProps): React.ReactElement | null => {
+  const { page, pageSize, total, onPageChange } = props
+  const { t } = useTranslation()
 
-export const ListPager = ({ page, pageSize, total, onPageChange }: ListPagerProps) => {
-  if (total <= pageSize) return null
+  if (total <= pageSize) {
+    return null
+  }
 
   const pageCount = staffListPageCount(total, pageSize)
   const safePage = Math.min(Math.max(1, page), pageCount)
@@ -18,27 +19,36 @@ export const ListPager = ({ page, pageSize, total, onPageChange }: ListPagerProp
 
   return (
     <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-muted">
-        Страница {safePage} из {pageCount}
-        {total > 0 ? ` · показано ${rangeStart}–${rangeEnd}` : null}
+      <p className="text-sm text-text-secondary">
+        {t('chrome.listPager.pageOf', { page: safePage, pageCount })}
+        {total > 0
+          ? t('chrome.listPager.shownRange', {
+              start: rangeStart,
+              end: rangeEnd,
+            })
+          : null}
       </p>
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold disabled:opacity-40"
+          className={LIST_PAGER_BUTTON_CLASS}
           disabled={safePage <= 1}
-          onClick={() => onPageChange(safePage - 1)}
+          onClick={(): void => {
+            onPageChange(safePage - 1)
+          }}
         >
           <ChevronLeft size={16} />
-          Назад
+          {t('chrome.listPager.previous')}
         </button>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold disabled:opacity-40"
+          className={LIST_PAGER_BUTTON_CLASS}
           disabled={safePage >= pageCount}
-          onClick={() => onPageChange(safePage + 1)}
+          onClick={(): void => {
+            onPageChange(safePage + 1)
+          }}
         >
-          Вперёд
+          {t('chrome.listPager.next')}
           <ChevronRight size={16} />
         </button>
       </div>

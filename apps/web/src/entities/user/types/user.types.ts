@@ -1,4 +1,7 @@
-export type Role = 'admin' | 'manager' | 'client'
+import type { StaffRole } from '@vises/contracts'
+
+/** Staff role union aligned with `@vises/contracts` (FR-1). */
+export type Role = StaffRole
 
 export type User = {
   id: string

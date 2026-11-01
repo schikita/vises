@@ -1,17 +1,75 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* FR-16 binding tokens — light defaults; `.dark` overrides below. */
+:root {
+  --vises-background: #f8fafc;
+  --vises-surface: #ffffff;
+  --vises-border: #e2e8f0;
+  --vises-text-primary: #0f172a;
+  --vises-text-secondary: #64748b;
+  --vises-accent: #3b82f6;
+  --vises-accent-hover: #2563eb;
+  --vises-accent-subtle: #eff6ff;
+  --vises-success: #10b981;
+  --vises-warning: #f59e0b;
+  --vises-danger: #ef4444;
+  --vises-shadow-elevated: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --vises-radius-control: 8px;
+  --vises-radius-panel: 12px;
+  --vises-radius-section: 16px;
+  color-scheme: light;
+}
+
+.dark {
+  --vises-background: #0f172a;
+  --vises-surface: #1e293b;
+  --vises-border: #334155;
+  --vises-text-primary: #f8fafc;
+  --vises-text-secondary: #94a3b8;
+  --vises-accent: #60a5fa;
+  --vises-accent-hover: #3b82f6;
+  --vises-accent-subtle: #1e3a8a;
+  --vises-success: #34d399;
+  --vises-warning: #fbbf24;
+  --vises-danger: #f87171;
+  color-scheme: dark;
+}
+
 @theme {
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --color-ink: #121814;
-  --color-muted: #5c6b64;
-  --color-line: #d8e0db;
-  --color-paper: #f4f1ea;
-  --color-card: #fffcf7;
-  --color-forest: #163a32;
-  --color-forest-2: #1f5348;
-  --color-leaf: #2f7a64;
-  --color-clay: #c45c26;
-  --color-sand: #e9dcc8;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-background: var(--vises-background);
+  --color-surface: var(--vises-surface);
+  --color-border: var(--vises-border);
+  --color-text-primary: var(--vises-text-primary);
+  --color-text-secondary: var(--vises-text-secondary);
+  --color-accent: var(--vises-accent);
+  --color-accent-hover: var(--vises-accent-hover);
+  --color-accent-subtle: var(--vises-accent-subtle);
+  --color-success: var(--vises-success);
+  --color-warning: var(--vises-warning);
+  --color-danger: var(--vises-danger);
+
+  /* Compat aliases for pages not yet migrated off legacy token names. */
+  --color-ink: var(--vises-text-primary);
+  --color-muted: var(--vises-text-secondary);
+  --color-line: var(--vises-border);
+  --color-paper: var(--vises-background);
+  --color-card: var(--vises-surface);
+  --color-forest: var(--vises-accent);
+  --color-forest-2: var(--vises-accent-hover);
+  --color-leaf: var(--vises-accent);
+  --color-clay: var(--vises-danger);
+  --color-sand: var(--vises-accent-subtle);
+
+  --radius-control: var(--vises-radius-control);
+  --radius-panel: var(--vises-radius-panel);
+  --radius-section: var(--vises-radius-section);
+
+  --shadow-elevated: var(--vises-shadow-elevated);
 }
 
 html,
@@ -22,14 +80,16 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--vises-background);
+  color: var(--vises-text-primary);
   font-family: var(--font-sans);
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: #cde4db;
+  background: var(--vises-accent-subtle);
+  color: var(--vises-text-primary);
 }
 
 input,
@@ -39,40 +99,49 @@ button {
   font-family: inherit;
 }
 
-.field {
-  width: 100%;
-  border: 1px solid var(--color-line);
-  background: #fff;
-  border-radius: 12px;
-  padding: 11px 13px;
-  font-size: 14px;
-  color: var(--color-ink);
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-.field:focus {
-  border-color: var(--color-leaf);
-  box-shadow: 0 0 0 3px rgba(47, 122, 100, 0.16);
+.field {
+  width: 100%;
+  border: 1px solid var(--vises-border);
+  background: var(--vises-surface);
+  border-radius: var(--vises-radius-control);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--vises-text-primary);
+  outline: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.field:hover {
+  border-color: var(--vises-accent);
+}
+
+.field:focus-visible {
+  border-color: var(--vises-accent);
+  outline: 2px solid var(--vises-accent);
+  outline-offset: 2px;
 }
 
 .field[aria-invalid="true"],
 [data-invalid="true"] .field {
-  border-color: var(--color-clay);
-  box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.16);
+  border-color: var(--vises-danger);
 }
 
-.field[aria-invalid="true"]:focus,
-[data-invalid="true"] .field:focus {
-  border-color: var(--color-clay);
-  box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.22);
+.field[aria-invalid="true"]:focus-visible,
+[data-invalid="true"] .field:focus-visible {
+  border-color: var(--vises-danger);
+  outline-color: var(--vises-danger);
 }
 
 .field-label {
   display: block;
   font-size: 12px;
-  font-weight: 600;
-  color: var(--color-muted);
+  font-weight: 500;
+  color: var(--vises-text-secondary);
   margin-bottom: 6px;
   letter-spacing: 0.01em;
 }

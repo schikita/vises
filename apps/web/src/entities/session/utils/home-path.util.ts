@@ -1,7 +1,7 @@
-import type { Role } from '@/entities/user'
+import type { StaffRole } from '@vises/contracts'
 
-export const homePath = (role: Role) => {
-  if (role === 'admin') return '/owner'
-  if (role === 'manager') return '/admin'
-  return '/app'
+/** FR-1: staff → `/admin`, agent → `/app`. */
+export const homePath = (role: StaffRole): string => {
+  if (role === 'agent') return '/app'
+  return '/admin'
 }

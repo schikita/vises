@@ -1,76 +1,135 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { useStore } from '@/app/providers'
-import { inviteUrl, staffBase } from '@/entities/session'
+import { useTranslation } from 'react-i18next'
+import { staffBase, useSession } from '@/entities/session'
 import type { IssuedAccess, Role, UserListItem } from '@/entities/user'
-import { fetchUsersPage } from '@/entities/user'
-import { CreateUserForm } from '@/features/users-admin'
-import { STAFF_LIST_PAGE_SIZE, staffListPageCount } from '@/shared/lib'
-import type { UsersListSortKey, UsersListSortState } from './types'
-import { USERS_NO_APPS_MESSAGE } from './constants'
+import {
+  USER_QUERY_KEYS,
+  canMutateUser,
+  createUser,
+  deleteUser,
+  fetchUsersPage,
+  patchUser,
+  reissueUser,
+} from '@/entities/user'
+import {
+  CreateUserForm,
+  resolveCreateUserAllowedRoles,
+} from '@/features/users-admin'
+import { resolveApiErrorI18nKey } from '@/shared/api'
+import { STAFF_LIST_PAGE_SIZE } from '@/shared/lib'
+import type { UsersListSortKey, UsersListSortState, UsersRoleFilter } from './types'
 import { UsersRender } from './UsersRender'
 
-export const UsersPage = () => {
-  const { createUser, updateUser, reissueAccess, removeUser, session } = useStore()
+export const UsersPage = (): React.ReactElement => {
+  const { session } = useSession()
+  const { t } = useTranslation()
   const navigate = useNavigate()
-  const [error, setError] = useState('')
+  const queryClient = useQueryClient()
+
+  const [actionError, setActionError] = useState('')
   const [rowMessage, setRowMessage] = useState('')
   const [issued, setIssued] = useState<IssuedAccess | null>(null)
-  const [copied, setCopied] = useState(false)
   const [q, setQ] = useState('')
-  const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all')
+  const [roleFilter, setRoleFilter] = useState<UsersRoleFilter>('all')
   const [createOpen, setCreateOpen] = useState(false)
+  const [createError, setCreateError] = useState('')
   const [sort, setSort] = useState<UsersListSortState>({ key: 'created', dir: 'desc' })
   const [page, setPage] = useState(1)
-  const [reloadNonce, setReloadNonce] = useState(0)
-  const [pageItems, setPageItems] = useState<UserListItem[]>([])
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [listError, setListError] = useState('')
+
+  const actorRole = session?.role ?? 'admin'
+  const allowedCreateRoles = useMemo(
+    () => resolveCreateUserAllowedRoles(actorRole),
+    [actorRole],
+  )
   const appsBase = `${staffBase(session?.role)}/apps`
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setListError('')
-    void fetchUsersPage({
+  const listParams = useMemo(
+    () => ({
       page,
       pageSize: STAFF_LIST_PAGE_SIZE,
       q,
       role: roleFilter,
       sort: sort.key,
       sortDir: sort.dir,
-    })
-      .then((data) => {
-        if (cancelled) return
-        setPageItems(data.items)
-        setTotal(data.total)
-        const pageCount = staffListPageCount(data.total, data.pageSize)
-        if (page > pageCount) setPage(pageCount)
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return
-        setPageItems([])
-        setTotal(0)
-        setListError(err instanceof Error ? err.message : 'Не удалось загрузить пользователей')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [page, q, roleFilter, sort, reloadNonce])
+    }),
+    [page, q, roleFilter, sort],
+  )
 
-  const refreshList = () => setReloadNonce((n) => n + 1)
+  const listQuery = useQuery({
+    queryKey: USER_QUERY_KEYS.list(listParams),
+    queryFn: (): Promise<Awaited<ReturnType<typeof fetchUsersPage>>> =>
+      fetchUsersPage(listParams),
+  })
 
-  const copyLink = (token: string) => {
-    void navigator.clipboard.writeText(inviteUrl(token))
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1500)
-  }
+  const invalidateUsers = (): Promise<void> =>
+    queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.all })
 
-  const onSortChange = (key: UsersListSortKey) => {
+  const createMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: async (data): Promise<void> => {
+      setIssued(data)
+      setCreateError('')
+      setActionError('')
+      setCreateOpen(false)
+      setPage(1)
+      await invalidateUsers()
+    },
+    onError: (err: unknown): void => {
+      setCreateError(t(resolveApiErrorI18nKey(err)))
+    },
+  })
+
+  const patchMutation = useMutation({
+    mutationFn: (input: { userId: string; active: boolean }): Promise<unknown> =>
+      patchUser(input.userId, { active: input.active }),
+    onSuccess: async (): Promise<void> => {
+      setActionError('')
+      await invalidateUsers()
+    },
+    onError: (err: unknown): void => {
+      setActionError(t(resolveApiErrorI18nKey(err)))
+    },
+  })
+
+  const reissueMutation = useMutation({
+    mutationFn: reissueUser,
+    onSuccess: (data): void => {
+      setIssued(data)
+      setActionError('')
+    },
+    onError: (err: unknown): void => {
+      setActionError(t(resolveApiErrorI18nKey(err)))
+    },
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: async (): Promise<void> => {
+      setActionError('')
+      await invalidateUsers()
+    },
+    onError: (err: unknown): void => {
+      setActionError(t(resolveApiErrorI18nKey(err)))
+    },
+  })
+
+  const mutating =
+    createMutation.isPending ||
+    patchMutation.isPending ||
+    reissueMutation.isPending ||
+    removeMutation.isPending
+
+  const pageItems = listQuery.data?.items ?? []
+  const total = listQuery.data?.total ?? 0
+  const pageSize = listQuery.data?.pageSize ?? STAFF_LIST_PAGE_SIZE
+
+  const listError = listQuery.isError
+    ? t(resolveApiErrorI18nKey(listQuery.error))
+    : ''
+
+  const onSortChange = (key: UsersListSortKey): void => {
     setSort((prev) =>
       prev.key === key
         ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
@@ -79,19 +138,19 @@ export const UsersPage = () => {
     setPage(1)
   }
 
-  const onQueryChange = (value: string) => {
+  const onQueryChange = (value: string): void => {
     setQ(value)
     setPage(1)
   }
 
-  const onRoleFilterChange = (role: Role | 'all') => {
+  const onRoleFilterChange = (role: UsersRoleFilter): void => {
     setRoleFilter(role)
     setPage(1)
   }
 
-  const onRowActivate = (user: UserListItem) => {
+  const onRowActivate = (user: UserListItem): void => {
     if (!user.latestAppId) {
-      setRowMessage(USERS_NO_APPS_MESSAGE)
+      setRowMessage(t('usersAdmin.noApps'))
       return
     }
     setRowMessage('')
@@ -100,20 +159,20 @@ export const UsersPage = () => {
 
   const createForm: ReactNode = (
     <CreateUserForm
-      apiError={error}
-      onValidSubmit={async ({ name, email, login, role }) => {
-        const result = await createUser({ name, email, login, role })
-        if (typeof result === 'string') {
-          setError(result)
-          setIssued(null)
+      apiError={createError}
+      allowedRoles={allowedCreateRoles}
+      onValidSubmit={async ({ name, email, login, role }): Promise<boolean> => {
+        try {
+          await createMutation.mutateAsync({
+            name,
+            role,
+            ...(email.trim() ? { email: email.trim() } : {}),
+            ...(login.trim() ? { login: login.trim() } : {}),
+          })
+          return true
+        } catch {
           return false
         }
-        setError('')
-        setIssued(result)
-        setCreateOpen(false)
-        setPage(1)
-        refreshList()
-        return true
       }}
     />
   )
@@ -123,54 +182,46 @@ export const UsersPage = () => {
       pageItems={pageItems}
       total={total}
       page={page}
-      pageSize={STAFF_LIST_PAGE_SIZE}
-      loading={loading}
+      pageSize={pageSize}
+      loading={listQuery.isLoading}
       listError={listError}
+      actionError={actionError}
       createForm={createForm}
       createOpen={createOpen}
+      canOpenCreate={Boolean(session)}
       issued={issued}
-      copied={copied}
       q={q}
       roleFilter={roleFilter}
       sort={sort}
       rowMessage={rowMessage}
       sessionUserId={session?.userId}
-      onOpenCreate={() => {
-        setError('')
+      mutating={mutating}
+      canMutateTarget={(targetRole: Role): boolean =>
+        canMutateUser({ actorRole, targetRole })
+      }
+      onOpenCreate={(): void => {
+        setCreateError('')
         setCreateOpen(true)
       }}
-      onCloseCreate={() => setCreateOpen(false)}
+      onCloseCreate={(): void => setCreateOpen(false)}
       onQueryChange={onQueryChange}
       onRoleFilterChange={onRoleFilterChange}
       onSortChange={onSortChange}
       onPageChange={setPage}
       onRowActivate={onRowActivate}
-      onCopyLink={copyLink}
-      onCopyCredentials={(issuedAccess) => {
+      onCopyCredentials={(issuedAccess): void => {
         void navigator.clipboard.writeText(
-          `Vises\nЛогин: ${issuedAccess.user.login}\nПароль: ${issuedAccess.password}\nСсылка: ${inviteUrl(issuedAccess.token)}`,
+          `Vises\n${t('usersAdmin.issued.login')}: ${issuedAccess.user.login}\n${t('usersAdmin.issued.password')}: ${issuedAccess.password}`,
         )
       }}
-      onReissue={(userId) => {
-        void reissueAccess(userId).then((result) => {
-          if (typeof result === 'string') setError(result)
-          else {
-            setError('')
-            setIssued(result)
-          }
-        })
+      onReissue={(userId): void => {
+        reissueMutation.mutate(userId)
       }}
-      onToggleActive={(userId, active) => {
-        void updateUser(userId, { active: !active }).then((err) => {
-          if (err) setError(err)
-          else refreshList()
-        })
+      onToggleActive={(userId, active): void => {
+        patchMutation.mutate({ userId, active: !active })
       }}
-      onRemove={(userId) => {
-        void removeUser(userId).then((err) => {
-          if (err) setError(err)
-          else refreshList()
-        })
+      onRemove={(userId): void => {
+        removeMutation.mutate(userId)
       }}
     />
   )

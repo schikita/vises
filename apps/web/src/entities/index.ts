@@ -9,23 +9,3 @@ export type {
   TimelineItem,
   Application,
 } from './application'
-export type {
-  PortalAutofillCaptureStatus,
-  PortalAutofillRunListItem,
-  PortalAutofillRunListResponse,
-  PortalAutofillRetryEligibility,
-  PortalAutofillRunOptions,
-  AutofillReportSummary,
-  PortalAutofillRunResult,
-  PortalAutofillCrmOutcome,
-  PortalClientPortalProgress,
-} from './portal-autofill'
-export type {
-  BlsWorkflowSnapshot,
-  BlsWorkflowStep,
-  BlsWorkflowTask,
-  BlsWorkflowSafeError,
-  StartBlsWorkflowBody,
-  StartBlsWorkflowResult,
-  BlsWorkflowControlResult,
-} from './bls-workflow'

@@ -8,4 +8,6 @@
   Empty,
   Dialog,
   ListPager,
+  ThemeControl,
 } from './components'
+export { UI_BREAKPOINTS } from './config'

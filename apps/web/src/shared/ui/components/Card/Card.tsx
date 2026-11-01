@@ -1,15 +1,7 @@
-import type { ReactNode } from 'react'
+import { CARD_BASE_CLASS } from './card.constants'
+import type { CardProps } from './card.types'
 
-export const Card = ({
-  children,
-  className = '',
-}: {
-  children: ReactNode
-  className?: string
-}) => {
-  return (
-    <div className={`rounded-2xl border border-line bg-card p-5 shadow-[0_1px_0_rgba(18,24,20,0.04)] ${className}`}>
-      {children}
-    </div>
-  )
+export const Card = (props: CardProps): React.ReactElement => {
+  const { children, className = '' } = props
+  return <div className={`${CARD_BASE_CLASS} ${className}`.trim()}>{children}</div>
 }

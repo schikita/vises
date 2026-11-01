@@ -1,7 +1,8 @@
 import axios, { type AxiosRequestConfig } from 'axios'
 import type { ApiRawResponse, ApiRequestOptions, ApiTokenProvider } from './types'
 import { buildApiUrl } from './utils/build-api-url.util'
-import { parseApiError } from './utils/parse-api-error.util'
+import { createApiHttpError } from './utils/create-api-http-error.util'
+import { extractApiErrorDetail } from './utils/extract-api-error-detail.util'
 
 let tokenProvider: ApiTokenProvider = () => null
 
@@ -11,7 +12,7 @@ export const setApiTokenProvider = (provider: ApiTokenProvider) => {
 
 /**
  * JSON/FormData API call with Bearer token.
- * 204 → `undefined`. Non-2xx → `Error` with detail / `Ошибка ${status}`.
+ * 204 → `undefined`. Non-2xx → `ApiHttpError` with status + Nest detail (FR-19 / AC-19c).
  * FormData: do not force JSON Content-Type (browser sets multipart boundary).
  */
 export const apiRequest = async <T>(
@@ -41,7 +42,8 @@ export const apiRequest = async <T>(
     return res.data
   } catch (err) {
     if (axios.isAxiosError(err) && err.response) {
-      throw new Error(parseApiError(err.response.data, err.response.status))
+      const detail = extractApiErrorDetail(err.response.data) ?? ''
+      throw createApiHttpError(err.response.status, detail, err.response.data)
     }
     throw err
   }

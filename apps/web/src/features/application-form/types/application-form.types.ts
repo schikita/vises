@@ -28,25 +28,3 @@ export type ApplicantFormValues = {
   entries?: string
   durationDays?: string
 }
-
-export type ClientTripFormValues = {
-  destination: string
-  visaType: string
-  submitCountry: string
-  submitCity: string
-  travelDate: string
-  returnDate: string
-  comment: string
-}
-
-export type StaffTripFormValues = {
-  category: string
-  submitCountry: string
-  submitCity: string
-  submitFrom: string
-  submitTo: string
-  travelDate: string
-  paused: boolean
-  transfer: boolean
-  comment: string
-}

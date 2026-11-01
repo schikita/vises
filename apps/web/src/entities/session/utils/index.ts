@@ -1,5 +1,5 @@
 ﻿export { homePath } from './home-path.util'
 export { staffBase } from './staff-base.util'
-export { invitePath } from './invite-path.util'
-export { inviteUrl } from './invite-url.util'
-export { toSession } from './to-session.util'
+export { isStaffRole } from './is-staff-role.util'
+export { toSessionFromAuthUser } from './to-session-from-auth-user.util'
+export { toSessionFromMe } from './to-session-from-me.util'

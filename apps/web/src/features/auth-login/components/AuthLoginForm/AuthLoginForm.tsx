@@ -4,7 +4,10 @@ import { authLoginFormSchema } from '../../constants'
 import type { AuthLoginFormProps, AuthLoginFormValues } from '../../types'
 import { AuthLoginFormRender } from './AuthLoginFormRender'
 
-export const AuthLoginForm = ({ apiError, onValidSubmit }: AuthLoginFormProps) => {
+export const AuthLoginForm = ({
+  apiError,
+  onValidSubmit,
+}: AuthLoginFormProps): React.ReactElement => {
   const {
     register,
     handleSubmit,

@@ -1,0 +1,1 @@
+export { ClientPassportEditForm } from './ClientPassportEditForm'

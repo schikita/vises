@@ -1,22 +1,13 @@
-import type { FormEvent } from 'react'
-import type { FieldErrors, UseFormRegister } from 'react-hook-form'
 import { Btn, Field } from '@/shared/ui'
 import { AUTH_LOGIN_MESSAGES } from '../../constants'
-import type { AuthLoginFormValues } from '../../types'
-
-type AuthLoginFormRenderProps = {
-  apiError: string
-  register: UseFormRegister<AuthLoginFormValues>
-  errors: FieldErrors<AuthLoginFormValues>
-  onSubmit: (e: FormEvent) => void
-}
+import type { AuthLoginFormRenderProps } from '../../types'
 
 export const AuthLoginFormRender = ({
   apiError,
   register,
   errors,
   onSubmit,
-}: AuthLoginFormRenderProps) => (
+}: AuthLoginFormRenderProps): React.ReactElement => (
   <form
     onSubmit={onSubmit}
     className="rounded-[28px] border border-line bg-card p-6 shadow-[0_20px_50px_rgba(18,24,20,0.06)]"

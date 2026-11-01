@@ -1,71 +1,83 @@
-import { useState, type ReactNode } from 'react'
-import { useStore } from '@/app/providers'
-import { LOCKED_SUBMIT_CITIES } from '@/entities/settings'
-import { Proxy6ProxiesPanel } from '@/features/proxy6-proxies'
-import { SettingsEditForm } from '@/features/settings-edit'
+import { useMemo, useState, type ReactNode } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import type { SettingsDto } from '@vises/contracts'
+import {
+  SETTINGS_QUERY_KEYS,
+  fetchSettings,
+  patchSettings,
+} from '@/entities/settings'
+import { SettingsPriceEditForm } from '@/features/settings-price-edit'
+import { resolveApiErrorI18nKey } from '@/shared/api'
 import { SettingsRender } from './SettingsRender'
 
-export const SettingsPage = () => {
-  const { session, settings, saveSettings, resetDemo } = useStore()
-  const isAdmin = session?.role === 'admin'
+/**
+ * Staff settings page (`/admin/settings`) — read/edit `price_per_client` (FE7 / AC-13).
+ * Agents have no settings route; they use `PricePerClientHint` inline (FE9).
+ */
+export const SettingsPage = (): React.ReactElement => {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [apiError, setApiError] = useState('')
   const [saved, setSaved] = useState(false)
-  const [error, setError] = useState('')
-  const [editFormKey, setEditFormKey] = useState(0)
 
-  const onResetDemo = async () => {
-    setError('')
-    try {
-      await resetDemo()
+  const settingsQuery = useQuery({
+    queryKey: SETTINGS_QUERY_KEYS.detail(),
+    queryFn: (): Promise<SettingsDto> => fetchSettings(),
+  })
+
+  const patchMutation = useMutation({
+    mutationFn: patchSettings,
+    onSuccess: async (data): Promise<void> => {
+      setApiError('')
+      setSaved(true)
+      queryClient.setQueryData(SETTINGS_QUERY_KEYS.detail(), data)
+      await queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEYS.all })
+    },
+    onError: (err: unknown): void => {
       setSaved(false)
-      setEditFormKey((key) => key + 1)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось сбросить демо')
-    }
-  }
+      setApiError(t(resolveApiErrorI18nKey(err)))
+    },
+  })
 
-  const settingsForm: ReactNode = isAdmin ? (
-    <SettingsEditForm
-      key={editFormKey}
-      lockedCitiesLabel={LOCKED_SUBMIT_CITIES.join(', ')}
-      defaultValues={{
-        company: settings.company,
-        price: String(settings.defaultPrice),
-        destinations: settings.destinations.join(', '),
-      }}
-      saved={saved}
-      onValidSubmit={async ({ company, price, destinations }) => {
-        setError('')
-        setSaved(false)
-        try {
-          await saveSettings({
-            company: company.trim() || 'Vises',
-            defaultPrice: Number(price) || 0,
-            cities: [...LOCKED_SUBMIT_CITIES],
-            destinations: destinations
-              .split(',')
-              .map((x) => x.trim())
-              .filter(Boolean),
-          })
-          setSaved(true)
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Не удалось сохранить настройки')
-        }
-      }}
-    />
-  ) : null
+  const defaultValues = useMemo(
+    () => ({
+      price_per_client: settingsQuery.data?.price_per_client ?? '',
+    }),
+    [settingsQuery.data?.price_per_client],
+  )
 
-  const proxy6Panel: ReactNode = isAdmin ? <Proxy6ProxiesPanel /> : null
+  const loadError = settingsQuery.isError
+    ? t(resolveApiErrorI18nKey(settingsQuery.error))
+    : ''
+
+  const priceForm: ReactNode =
+    settingsQuery.data !== undefined ? (
+      <SettingsPriceEditForm
+        key={settingsQuery.data.price_per_client}
+        defaultValues={defaultValues}
+        apiError={apiError}
+        saved={saved}
+        pending={patchMutation.isPending}
+        onValidSubmit={async ({ price_per_client }): Promise<boolean> => {
+          setApiError('')
+          setSaved(false)
+          try {
+            await patchMutation.mutateAsync({ price_per_client })
+            return true
+          } catch {
+            return false
+          }
+        }}
+      />
+    ) : null
 
   return (
     <SettingsRender
-      isAdmin={isAdmin}
-      settingsForm={settingsForm}
-      proxy6Panel={proxy6Panel}
-      error={error}
-      settingsCompany={settings.company}
-      settingsCities={settings.cities}
-      demoControlsEnabled={Boolean(settings.demoControlsEnabled)}
-      onResetDemo={() => void onResetDemo()}
+      loading={settingsQuery.isLoading}
+      loadError={loadError}
+      priceForm={priceForm}
+      currentPrice={settingsQuery.data?.price_per_client ?? null}
     />
   )
 }

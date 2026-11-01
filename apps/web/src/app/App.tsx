@@ -2,67 +2,55 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { RoleGuard } from '@/app/guards'
 import { Shell } from '@/widgets/shell'
 import { Landing } from '@/pages/landing'
-import { InvitePage } from '@/pages/invite'
-import { ClientHome } from '@/pages/client-home'
-import { NewApplication } from '@/pages/new-application'
-import { ClientApplication } from '@/pages/client-application'
-import { Dashboard } from '@/pages/dashboard'
+import { RegisterPage } from '@/pages/register'
+import { AnalyticsPage } from '@/pages/analytics'
+import { ClientDetailPage, ClientsPage } from '@/pages/clients'
+import { AgentBalancePage, AgentsPage } from '@/pages/agents'
+import { BalancePage } from '@/pages/balance'
 import { Applications } from '@/pages/applications'
 import { ApplicationDetail } from '@/pages/application-detail'
-import { Payments } from '@/pages/payments'
 import { SettingsPage } from '@/pages/settings'
-import { OwnerHome } from '@/pages/owner-home'
 import { UsersPage } from '@/pages/users'
-import { StaffCreateApplication } from '@/pages/staff-create-application'
-import { Visits } from '@/pages/visits'
 
-export const App = () => (
+/**
+ * FE5/FE12 route map (AC-1 / AC-14 / AC-15): `/admin/*` staff, `/app/*` agent.
+ * No `/client/*`, `/owner`, invite, payments, visits, or apps/new trees.
+ */
+export const App = (): React.ReactElement => (
   <Routes>
     <Route path="/" element={<Landing />} />
-    <Route path="/invite/:token" element={<InvitePage />} />
+    <Route path="/register" element={<RegisterPage />} />
     <Route
       path="/app"
       element={
-        <RoleGuard roles={['client']}>
-          <Shell kind="client" />
+        <RoleGuard roles={['agent']}>
+          <Shell kind="agent" />
         </RoleGuard>
       }
     >
-      <Route index element={<ClientHome />} />
-      <Route path="new" element={<NewApplication />} />
-      <Route path=":id" element={<ClientApplication />} />
+      <Route index element={<AnalyticsPage />} />
+      <Route path="clients" element={<ClientsPage />} />
+      <Route path="clients/:clientId" element={<ClientDetailPage />} />
+      <Route path="apps" element={<Applications />} />
+      <Route path="apps/:id" element={<ApplicationDetail />} />
+      <Route path="balance" element={<BalancePage />} />
     </Route>
     <Route
       path="/admin"
       element={
-        <RoleGuard roles={['manager']}>
-          <Shell kind="office" />
+        <RoleGuard roles={['superadmin', 'admin']}>
+          <Shell kind="admin" />
         </RoleGuard>
       }
     >
-      <Route index element={<Dashboard />} />
-      <Route path="apps" element={<Applications />} />
-      <Route path="apps/new" element={<StaffCreateApplication />} />
-      <Route path="apps/:id" element={<ApplicationDetail />} />
-      <Route path="visits" element={<Visits />} />
-      <Route path="payments" element={<Payments />} />
-      <Route path="settings" element={<SettingsPage />} />
-    </Route>
-    <Route
-      path="/owner"
-      element={
-        <RoleGuard roles={['admin']}>
-          <Shell kind="owner" />
-        </RoleGuard>
-      }
-    >
-      <Route index element={<OwnerHome />} />
+      <Route index element={<AnalyticsPage />} />
       <Route path="users" element={<UsersPage />} />
+      <Route path="agents" element={<AgentsPage />} />
+      <Route path="agents/:agentId" element={<AgentBalancePage />} />
+      <Route path="clients" element={<ClientsPage />} />
+      <Route path="clients/:clientId" element={<ClientDetailPage />} />
       <Route path="apps" element={<Applications />} />
-      <Route path="apps/new" element={<StaffCreateApplication />} />
       <Route path="apps/:id" element={<ApplicationDetail />} />
-      <Route path="visits" element={<Visits />} />
-      <Route path="payments" element={<Payments />} />
       <Route path="settings" element={<SettingsPage />} />
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />

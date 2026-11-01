@@ -1,14 +1,12 @@
-import type { ReactNode } from 'react'
 import { FileCheck, Shield, Timer } from 'lucide-react'
-import { homePath, type Session } from '@/entities/session'
+import { homePath } from '@/entities/session'
 import { Btn, Logo } from '@/shared/ui'
+import type { LandingRenderProps } from './types'
 
-type LandingRenderProps = {
-  session: Session | null
-  loginForm: ReactNode
-}
-
-export const LandingRender = ({ session, loginForm }: LandingRenderProps) => (
+export const LandingRender = ({
+  session,
+  loginForm,
+}: LandingRenderProps): React.ReactElement => (
   <div className="min-h-screen">
     <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
       <Logo />

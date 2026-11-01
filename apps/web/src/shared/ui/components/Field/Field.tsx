@@ -1,16 +1,8 @@
-import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react'
+import { cloneElement, isValidElement, type ReactElement } from 'react'
+import type { FieldProps } from './field.types'
 
-export const Field = ({
-  label,
-  required,
-  error,
-  children,
-}: {
-  label: string
-  required?: boolean
-  error?: string
-  children: ReactNode
-}) => {
+export const Field = (props: FieldProps): React.ReactElement => {
+  const { label, required, error, children } = props
   const invalid = Boolean(error)
   const control =
     isValidElement(children) && invalid
@@ -23,10 +15,12 @@ export const Field = ({
     <label className="block" data-invalid={invalid ? 'true' : undefined}>
       <span className="field-label">
         {label}
-        {required ? <span className="text-clay"> *</span> : null}
+        {required ? <span className="text-danger"> *</span> : null}
       </span>
       {control}
-      {error ? <span className="mt-1 block text-xs font-semibold text-clay">{error}</span> : null}
+      {error ? (
+        <span className="mt-1 block text-xs font-medium text-danger">{error}</span>
+      ) : null}
     </label>
   )
 }

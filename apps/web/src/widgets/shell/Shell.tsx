@@ -1,25 +1,21 @@
 import { useNavigate } from 'react-router-dom'
-import { useStore } from '@/app/providers'
-import { CLIENT_NAV, OFFICE_NAV, OWNER_NAV } from './constants'
-import { ShellRender } from './ShellRender'
-import type { ShellKind } from './types'
+import { useSession } from '@/entities/session'
+import { ADMIN_NAV, AGENT_NAV } from './constants'
+import { ShellLayout } from './ShellLayout'
+import type { ShellProps } from './types'
 
-type ShellProps = {
-  kind: ShellKind
-}
-
-export const Shell = ({ kind }: ShellProps) => {
-  const { session, logout } = useStore()
+export const Shell = ({ kind }: ShellProps): React.ReactElement => {
+  const { session, logout } = useSession()
   const nav = useNavigate()
-  const items = kind === 'owner' ? OWNER_NAV : kind === 'office' ? OFFICE_NAV : CLIENT_NAV
+  const items = kind === 'admin' ? ADMIN_NAV : AGENT_NAV
 
-  const onLogout = () => {
+  const onLogout = (): void => {
     logout()
     nav('/')
   }
 
   return (
-    <ShellRender
+    <ShellLayout
       kind={kind}
       items={items}
       sessionName={session?.name}

@@ -1,10 +1,10 @@
 import type { LucideIcon } from 'lucide-react'
 
-export type ShellKind = 'owner' | 'office' | 'client'
+export type ShellKind = 'admin' | 'agent'
 
 export type ShellNavItem = {
   to: string
-  label: string
+  labelKey: string
   icon: LucideIcon
   end?: boolean
 }

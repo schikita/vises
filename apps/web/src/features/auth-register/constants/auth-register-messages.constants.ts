@@ -1,0 +1,15 @@
+export const AUTH_REGISTER_MESSAGES = {
+  nameRequired: 'Enter your name',
+  loginRequired: 'Enter a login',
+  passwordRequired: 'Enter a password',
+  passwordMin: 'Password must be at least 6 characters',
+  subtitle: 'Create an agent account to manage your clients and applications.',
+  title: 'Register',
+  nameLabel: 'Name',
+  loginLabel: 'Login',
+  emailLabel: 'Email (optional)',
+  passwordLabel: 'Password',
+  submit: 'Create account',
+  hasAccount: 'Already have an account?',
+  signIn: 'Sign in',
+} as const

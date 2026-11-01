@@ -1,10 +1,14 @@
+import type { Role } from '@/entities/user'
 import type { UsersListSortKey } from '../types'
 
-export const USERS_LIST_SORT_COLUMNS: Array<{ key: UsersListSortKey; label: string }> = [
-  { key: 'user', label: 'Пользователь' },
-  { key: 'role', label: 'Роль' },
-  { key: 'status', label: 'Статус' },
-  { key: 'created', label: 'Создан' },
+export const USERS_LIST_SORT_COLUMNS: Array<{
+  key: UsersListSortKey
+  labelKey: `usersAdmin.columns.${UsersListSortKey}`
+}> = [
+  { key: 'user', labelKey: 'usersAdmin.columns.user' },
+  { key: 'role', labelKey: 'usersAdmin.columns.role' },
+  { key: 'status', labelKey: 'usersAdmin.columns.status' },
+  { key: 'created', labelKey: 'usersAdmin.columns.created' },
 ]
 
-export const USERS_NO_APPS_MESSAGE = 'У этого пользователя пока нет заявок.'
+export const USERS_ROLE_FILTER_OPTIONS: Role[] = ['superadmin', 'admin', 'agent']

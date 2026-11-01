@@ -1,3 +1,3 @@
 export const CREATE_USER_MESSAGES = {
-  nameRequired: 'Укажите имя',
+  nameRequired: 'Enter a name',
 } as const

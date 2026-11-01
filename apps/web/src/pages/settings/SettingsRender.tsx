@@ -1,57 +1,50 @@
-import type { ReactNode } from 'react'
-import { Btn, Card } from '@/shared/ui'
-
-type SettingsRenderProps = {
-  isAdmin: boolean
-  settingsForm: ReactNode
-  proxy6Panel: ReactNode
-  error: string
-  settingsCompany: string
-  settingsCities: string[]
-  demoControlsEnabled: boolean
-  onResetDemo: () => void
-}
+import { useTranslation } from 'react-i18next'
+import { Card, Empty } from '@/shared/ui'
+import type { SettingsRenderProps } from './types'
 
 export const SettingsRender = ({
-  isAdmin,
-  settingsForm,
-  proxy6Panel,
-  error,
-  settingsCompany,
-  settingsCities,
-  demoControlsEnabled,
-  onResetDemo,
-}: SettingsRenderProps) => (
-  <div className="max-w-xl">
-    <h1 className="text-2xl font-extrabold tracking-tight">Настройки</h1>
-    {isAdmin ? (
-      <Card className="mt-5 space-y-4">
-        <p className="font-bold">Система</p>
-        {settingsForm}
-      </Card>
-    ) : (
-      <Card className="mt-5">
-        <p className="font-bold">{settingsCompany}</p>
-        <p className="mt-1 text-sm text-muted">
-          Города: {settingsCities.join(', ')}. Изменить может только админ.
+  loading,
+  loadError,
+  priceForm,
+  currentPrice,
+}: SettingsRenderProps): React.ReactElement => {
+  const { t } = useTranslation()
+
+  return (
+    <div className="max-w-xl">
+      <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
+        {t('settingsPrice.title')}
+      </h1>
+      <p className="mt-1 text-sm text-text-secondary">{t('settingsPrice.subtitle')}</p>
+
+      {loadError ? (
+        <p className="mt-4 text-sm font-medium text-danger" role="alert">
+          {loadError}
         </p>
-      </Card>
-    )}
+      ) : null}
 
-    {proxy6Panel}
+      {loading ? (
+        <Empty
+          title={t('settingsPrice.loadingTitle')}
+          text={t('settingsPrice.loadingText')}
+        />
+      ) : null}
 
-    {isAdmin && demoControlsEnabled ? (
-      <Card className="mt-5 space-y-3">
-        <p className="font-bold">Демо-данные</p>
-        <p className="text-sm text-muted">
-          Сброс вернёт заявки, пользователей и настройки к исходному набору.
-        </p>
-        <Btn variant="soft" onClick={onResetDemo}>
-          Сбросить демо
-        </Btn>
-      </Card>
-    ) : null}
-
-    {error && <p className="mt-4 text-sm font-semibold text-clay">{error}</p>}
-  </div>
-)
+      {!loading && !loadError ? (
+        <Card className="mt-5 space-y-4">
+          <div>
+            <p className="font-semibold text-text-primary">
+              {t('settingsPrice.cardTitle')}
+            </p>
+            {currentPrice ? (
+              <p className="mt-1 text-sm text-text-secondary">
+                {t('settingsPrice.currentPrice', { price: currentPrice })}
+              </p>
+            ) : null}
+          </div>
+          {priceForm}
+        </Card>
+      ) : null}
+    </div>
+  )
+}

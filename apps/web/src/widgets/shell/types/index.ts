@@ -1,1 +1,8 @@
 export type { ShellKind, ShellNavItem } from './shell.types'
+export type { ShellProps } from './shell-props.types'
+export type { ShellLayoutProps } from './shell-layout.types'
+export type { ShellTopBarProps } from './shell-top-bar.types'
+export type { ShellNavListProps } from './shell-nav-list.types'
+export type { ShellDrawerProps } from './shell-drawer.types'
+export type { ShellSidebarProps } from './shell-sidebar.types'
+export type { ShellUserMenuProps } from './shell-user-menu.types'

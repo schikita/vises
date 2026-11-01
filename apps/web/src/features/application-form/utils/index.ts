@@ -1,4 +1,5 @@
 ﻿export { toLatin } from './to-latin.util'
+export { digitsOnly } from './digits-only.util'
 export { getNestedFormError } from './get-nested-form-error.util'
 export { parseBelarusLocalPhoneDigits } from './parse-belarus-local-phone-digits.util'
 export { formatBelarusLocalPhoneDisplay } from './format-belarus-local-phone-display.util'
@@ -13,4 +14,3 @@ export { refineApplicantPassportDates } from './refine-applicant-passport-dates.
 export { refineApplicantPhoneDigits } from './refine-applicant-phone-digits.util'
 export { refineApplicationPassportExpiresVsReturn } from './refine-application-passport-expires-vs-return.util'
 export { mapApplicantDateFieldToSection } from './map-applicant-date-field-to-section.util'
-export { mapApplicantStartFieldToSection } from './map-applicant-start-field-to-section.util'

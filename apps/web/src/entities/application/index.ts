@@ -8,14 +8,15 @@
   AppUpsertWrite,
   UpsertAppResult,
   AppsPaginatedList,
-  VisitsPaginatedList,
-  PaymentsPaginatedList,
-  PaymentsSummary,
   FetchAppsPageParams,
-  FetchVisitsPageParams,
-  FetchPaymentsPageParams,
+  ApplicationStatusHistoryTimelineProps,
 } from './types'
-export { STATUSES, APPLICATION_STATUS_NEEDS_FIXES, DOC_TYPES } from './constants'
+export {
+  STATUSES,
+  APPLICATION_STATUS_NEEDS_FIXES,
+  DOC_TYPES,
+  APPLICATION_QUERY_KEYS,
+} from './constants'
 export {
   statusLabel,
   money,
@@ -26,7 +27,10 @@ export {
   resolveLatestAppIdForUser,
   fetchAppsPage,
   fetchAppById,
-  fetchVisitsPage,
-  fetchPaymentsPage,
   toAppUpsertPayload,
+  isApplicationStatus,
+  listLegalApplicationStatusTargets,
+  postApplicationStatus,
+  fetchApplicationStatusHistory,
 } from './utils'
+export { ApplicationStatusHistoryTimeline } from './ui'
