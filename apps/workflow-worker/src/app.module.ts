@@ -12,6 +12,7 @@ import { PortalCoreModule } from './modules/portal-core';
 import { PortalFillModule } from './modules/portal-fill';
 import { BlsClientsModule } from './modules/bls-clients';
 import { BlsWorkflowModule } from './modules/bls-workflow';
+import { BlsHttpWorkflowModule } from './modules/bls-http-workflow';
 import { MessagingModule } from './modules/messaging';
 
 /**
@@ -33,6 +34,7 @@ import { MessagingModule } from './modules/messaging';
     PortalFillModule,
     BlsClientsModule,
     BlsWorkflowModule,
+    BlsHttpWorkflowModule,
     MessagingModule,
   ],
 })

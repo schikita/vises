@@ -29,3 +29,5 @@ export type {
   StartBlsWorkflowResult,
   BlsWorkflowControlResult,
 } from './bls-workflow'
+
+export * from './bls-http-workflow'

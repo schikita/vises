@@ -22,6 +22,7 @@ export const OFFICE_NAV: ShellNavItem[] = [
   { to: '/admin', label: 'Дашборд', icon: LayoutDashboard, end: true },
   { to: '/admin/apps', label: 'Заявки', icon: FileText },
   { to: '/admin/visits', label: 'Визиты', icon: CalendarDays },
+  { to: '/admin/flow-http', label: 'Безбраузерный флоу', icon: CalendarDays },
   { to: '/admin/payments', label: 'Платежи', icon: CreditCard },
   { to: '/admin/settings', label: 'Настройки', icon: Settings },
 ]

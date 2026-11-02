@@ -4,7 +4,11 @@ import { Repository } from 'typeorm';
 import { uid } from '../../shared/utils';
 import { BlsSecretVault } from '../database/entities/bls-secret-vault.entity';
 import { SecretsCryptoService } from './secrets-crypto.service';
-import type { LoadBlsSecretInput, PersistBlsSecretInput } from './types';
+import type {
+  BlsSecretPurpose,
+  LoadBlsSecretInput,
+  PersistBlsSecretInput,
+} from './types';
 
 /**
  * Persist / load envelope-encrypted secrets via `bls_secret_vault` (DEC-005).
@@ -87,6 +91,50 @@ export class BlsSecretVaultService {
     if (plain === null) {
       throw new NotFoundException('Secret not found in vault');
     }
+    return plain;
+  }
+
+  /**
+   * Application-wide fallback for engine-parallel workflows: resolve the most
+   * recently rotated secret for the application across all its workflows
+   * (e.g. a portal account registered by an earlier run of either engine),
+   * then re-persist it under the calling workflow id so later per-workflow
+   * lookups hit. Returns null when nothing exists for the application.
+   */
+  async loadOrAdoptSecretPlain(input: {
+    workflowId: string;
+    applicationId: string;
+    purpose: BlsSecretPurpose;
+  }): Promise<string | null> {
+    const own = await this.loadSecretPlain({
+      workflowId: input.workflowId,
+      purpose: input.purpose,
+    });
+    if (own !== null) {
+      return own;
+    }
+    const row = await this.vaultRepo.findOne({
+      where: {
+        applicationId: input.applicationId,
+        purpose: input.purpose,
+      },
+      order: { rotatedAt: 'DESC', createdAt: 'DESC' },
+    });
+    if (!row) {
+      return null;
+    }
+    const plain = await this.crypto.decryptSecret({
+      ciphertext: row.ciphertext,
+      nonce: row.nonce,
+      wrappedDek: row.wrappedDek,
+      keyVersion: row.keyVersion,
+    });
+    await this.persistSecret({
+      workflowId: input.workflowId,
+      applicationId: input.applicationId,
+      purpose: input.purpose,
+      plain,
+    });
     return plain;
   }
 

@@ -33,6 +33,16 @@ export const appEnvSchema = z.object({
    * Empty/missing/invalid → accept (runtime default 1).
    */
   VISES_PORTAL_MAX_ATTEMPTS_PER_WORKER: z.string().optional(),
+  PORTAL_HTTP_PACING_MS: z.string().optional(),
+  /**
+   * Sticky residential proxy template for the browserless engine ({SESSION}
+   * placeholder, rotated automatically on 429). Implemented via evomi in this
+   * branch — NOT proxy6 (see modules/portal-http/README.md). Production needs
+   * its own evomi account (creds live only in gitignored .env.dev) or a code
+   * change to adapt the proxy6 provider. Empty = direct connection.
+   */
+  PORTAL_HTTP_PROXY_TEMPLATE: z.string().optional(),
+  BLS_SOLVER_URL: z.string().optional(),
   /** RabbitMQ URL — MessagingModule fail-closed when empty (NFR-008). */
   RABBITMQ_URL: z.string(),
   /**

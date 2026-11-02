@@ -13,7 +13,10 @@ __pycache__
 web/node_modules
 web/dist
 .cursor
+backend
 backend/artifacts
+.opencode
 specs
 *_pg
 logs
+*.tsbuildinfo

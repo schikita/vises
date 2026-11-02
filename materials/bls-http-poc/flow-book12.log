@@ -1,0 +1,44 @@
+13:55:24 GET /Global/account/login -> 200 (40736b)
+13:55:24 login email field: nozqj (10 fields, 9 decoys)
+13:56:36 POST /Global/account/LoginSubmit -> 504 (562b)
+13:56:36   504 portal flaky, waiting 90s (attempt 1/3)
+13:58:18 POST /Global/account/LoginSubmit -> 302 (0b) loc=/Global/newcaptcha/logincaptcha?data=c7QF2V3ZB7itfBsVxpzM%2B
+13:59:29 GET /Global/newcaptcha/logincaptcha -> 200 (452953b)
+13:59:29 on captcha page: /Global/newcaptcha/logincaptcha
+13:59:29   captcha: cells=9 target=468 solver=["186(1)","960(1)","468(1)","913(1)","468(1)","468(1)","468(1)","468(1)","977(0.9991)"] -> picks=["svqihw","qmltq","nyzsc","fivmw","ciryeqoi"] pickConf=1.000 anyConf=0.999
+13:59:42 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 302 (0b) loc=/Global/NewCaptcha/LoginCaptcha?data=c7QF2V3ZB7itfBsVxpzM%2B
+13:59:53 GET /Global/NewCaptcha/LoginCaptcha -> 200 (435750b)
+13:59:53 password field: lmxnbt (10 fields)
+13:59:53   captcha: cells=9 target=849 solver=["289(1)","130(0.9993)","134(1)","612(1)","849(1)","550(1)","670(1)","849(1)","849(1)"] -> picks=["gcrkuzjnj","qvebaa","xeaukjudj"] pickConf=1.000 anyConf=0.999
+14:00:06 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 302 (0b) loc=/
+14:00:19 GET / -> 200 (22759b)
+14:00:19 after password: /
+14:00:31 GET /Global/appointmentdata/myappointments -> 200 (47353b)
+14:00:31 AUTHENTICATED ✅
+14:00:31 session saved to bls-session.json
+14:00:31 applicant row: Applicant Name: VASILYEVA DARIA VASILYEVA Relationship: Primary Applicant Date Of Birth: 2002-10-28 Status: Form Filling [Form Filling In-Progress] id=8216326f-e679-4759-bc4e-816f4ba5b5cf
+14:00:31 applicant form incomplete — opening edit form
+14:00:31   location=Minsk visaType=Schengen Visa userId=ec814380-274a-4a44-961f-8749b467796c
+14:00:43 GET /Global/appointmentdata/ManageApplicant -> 200 (168568b)
+14:00:43   inline datasources: countryData,nationalityCountryData,genderData,maritalStatusData,occupationData,journeyPurposeData,schengenCountryData,costCoveredData,meansOfSupportData,familyRelationData,passportTypeData,relationshipData,noOfEntriesData
+14:00:43   submitting edit form (attempt 1) -> /Global/AppointmentData/ManageApplicant
+14:00:56 POST /Global/AppointmentData/ManageApplicant -> 200 (32b)
+14:00:56   edit response: {"success":true,"action":"Edit"}
+14:01:09 GET /Global/appointmentdata/myappointments -> 200 (48113b)
+14:01:09   status after edit: Ready To Book Appointment (editOk=true)
+14:01:21 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/Appointment/AppointmentCaptcha?data=VIazbNJKga7bw5vG
+14:02:33 GET /Global/Appointment/AppointmentCaptcha -> 200 (447429b)
+14:02:33 BOOKING: appointment captcha — solving
+14:02:33   captcha: cells=9 target=549 solver=["729(1)","995(1)","549(1)","549(1)","615(1)","549(0.9999)","549(1)","549(1)","549(1)"] -> picks=["bpknydvg","iqapmb","shwxh","ongkl","xoaxtk","fcnybbpij"] pickConf=1.000 anyConf=1.000
+14:02:44 POST /Global/appointment/appointmentcaptcha -> 302 (0b) loc=/Global/Appointment/VisaType?data=VIazbNJKga7bw5vGQ62Nu9P%2F
+14:02:57 GET /Global/Appointment/VisaType -> 200 (117834b)
+14:02:57 BOOKING: Visa Type Selection — filling and submitting
+14:02:57   real dropdown fields: {"Location":"toxhixef","Visa Type":"awjllfy","Visa Sub Type":"bkigwka","Category":"eoqfbz"}
+14:02:57   dropdown values: {"toxhixef":"3339","awjllfy":"9498","bkigwka":"3745","eoqfbz":"2048"}
+14:02:57   ResponseData: {"wffkai":"","eoqfbz":"2048","wfivxs":"","izuji":"","yrfybn":"","toxhixef":"3339","wklnuywry":"","xpvac":"","fpfzbghen":"","akfbqw":"","zelkd":"","vgkufgyjt":"","qyucmxcs":"","rjscipxt":"","awjllfy":"9498","nhbyvm":"","bkigwka":"3745","woofglekb":"","zhonr":"","micfyh":"","kzhdaah":"","miagr":"","mzkcn":"","wpwybxqa":"","jddyjuxnq":""}
+14:03:08 POST /Global/Appointment/VisaType -> 302 (0b) loc=/Global/Appointment/SlotSelection?data=VIazbNJKga7bw5vGQ62Nu
+14:03:19 GET /Global/Appointment/SlotSelection -> 302 (0b) loc=/Global/Appointment/NewAppointment?msg=ZokWWxtCWRl2wwydQeR8i
+14:03:32 GET /Global/Appointment/NewAppointment -> 200 (28814b)
+14:03:32   visa type submitted -> 200 /Global/Appointment/NewAppointment
+14:03:32 BOOKING: data protection consent page
+FLOW FAILED: dp consent appeared — inspect dp-page.html for the accept control request

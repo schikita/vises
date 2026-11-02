@@ -10,6 +10,7 @@ import { StatsModule } from './modules/stats';
 import { DatabaseModule } from './modules/database/database.module';
 import { SeedModule } from './modules/seed/seed.module';
 import { BlsWorkflowModule } from './modules/bls-workflow';
+import { BlsHttpWorkflowModule } from './modules/bls-http-workflow';
 import { MessagingModule } from './modules/messaging';
 import { PortalScrapeModule } from './modules/portal-scrape';
 import { Proxy6Module } from './modules/proxy6';
@@ -28,6 +29,7 @@ import { Proxy6Module } from './modules/proxy6';
     SettingsModule,
     StatsModule,
     BlsWorkflowModule,
+    BlsHttpWorkflowModule,
     PortalScrapeModule,
     Proxy6Module,
   ],

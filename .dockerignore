@@ -1,0 +1,18 @@
+# Root build context is the repo root (see docker-compose.yml build.context).
+# Keep images lean and reproducible; secrets are injected at runtime via env_file.
+.git
+.opencode
+.turbo
+node_modules
+**/node_modules
+dist
+**/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.*.example
+logs
+**/logs
+uploads
+backend

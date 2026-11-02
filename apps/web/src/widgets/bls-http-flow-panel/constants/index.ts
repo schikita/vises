@@ -1,0 +1,5 @@
+export {
+  BLS_WORKFLOW_EVENTS_FEED_COMPACT_LIMIT,
+  BLS_WORKFLOW_PANEL_COPY,
+  BLS_WORKFLOW_POLL_SLOW_INDICATOR_MS,
+} from './bls-http-workflow-panel-copy.constants'

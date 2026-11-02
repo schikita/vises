@@ -1,0 +1,9 @@
+﻿import { BLS_WORKFLOW_MAILBOX_CLEANUP_GRACE_MS } from '../constants/bls-http-workflow.constants';
+
+/**
+ * Grace deadline for deferred temporary email / MAILBOX_* cleanup (DEC-004 / REQ-007).
+ * `from` defaults to now; production grace is 72h.
+ */
+export const computeBlsHttpWorkflowMailboxCleanupDueAt = (
+  from: Date = new Date(),
+): Date => new Date(from.getTime() + BLS_WORKFLOW_MAILBOX_CLEANUP_GRACE_MS);

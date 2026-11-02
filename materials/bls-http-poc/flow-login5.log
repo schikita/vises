@@ -1,0 +1,25 @@
+07:16:14 GET /Global/account/login -> 200 (40171b)
+07:16:14 login email field: xrowlolq (10 fields, 9 decoys)
+07:16:22 POST /Global/account/LoginSubmit -> 302 (0b) loc=/Global/newcaptcha/logincaptcha?data=c7QF2V3ZB7itfBsVxpzM%2B
+07:18:02   network error: timeout of 90000ms exceeded (attempt 1/3)
+07:18:30 GET /Global/newcaptcha/logincaptcha -> 200 (463257b)
+07:18:30 on captcha page: /Global/newcaptcha/logincaptcha
+07:18:30   captcha: cells=9 target=773
+07:18:30   solver: ["773(0.9543)","773(1)","809(1)","264(1)","150(1)","749(1)","773(1)","773(1)","773(0.9999)"] -> picks ["gjfhbm","scvifue","uvujzfxm","zdvda","sgcyv"]
+07:18:39 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 302 (0b) loc=/Global/NewCaptcha/LoginCaptcha?data=c7QF2V3ZB7itfBsVxpzM%2B
+07:20:17   network error: timeout of 90000ms exceeded (attempt 1/3)
+07:20:54 GET /Global/NewCaptcha/LoginCaptcha -> 200 (461260b)
+07:20:54 password field: jcuyhfmat (10 fields)
+07:20:54   captcha: cells=9 target=349
+07:20:54   solver: ["349(1)","545(1)","472(1)","918(1)","349(1)","349(1)","355(1)","871(1)","455(1)"] -> picks ["cbmne","taumjx","jegflwm"]
+07:22:03 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 504 (562b)
+07:22:03   504 from password submit (attempt 1) — refetching password page
+07:22:11 GET /Global/NewCaptcha/LoginCaptcha -> 200 (469277b)
+07:22:11   captcha: cells=9 target=215
+07:22:11   solver: ["270(0.516)","405(1)","215(0.8886)","992(1)","215(1)","926(1)","215(1)","215(1)","975(1)"] -> picks ["iinusfww","xsqtbdleg","turop","jikod"]
+07:22:21 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 302 (0b) loc=/Global/NewCaptcha/LoginCaptcha?data=c7QF2V3ZB7itfBsVxpzM%2B
+07:23:30 GET /Global/NewCaptcha/LoginCaptcha -> 200 (77253b)
+07:23:30 after password: /Global/NewCaptcha/LoginCaptcha
+07:23:39 GET /Global/appointmentdata/myappointments -> 302 (0b) loc=http://appointment.blsspainbelarus.by/Global/Account/LogIn?R
+07:23:47 GET /Global/Account/LogIn -> 308 (164b) loc=https://appointment.blsspainbelarus.by/Global/Account/LogIn?
+FLOW FAILED: not authenticated: redirected to http://appointment.blsspainbelarus.by/Global/Account/LogIn?ReturnUrl=%2FGlobal%2Fappointmentdata%2Fmyappointments

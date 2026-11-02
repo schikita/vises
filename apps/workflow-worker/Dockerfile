@@ -30,6 +30,13 @@ COPY --from=build /repo/packages/domain-bls/dist ./packages/domain-bls/dist
 WORKDIR /app/apps/workflow-worker
 RUN npx patchright install --with-deps chrome
 
+# Headed Chromium needs an X display (REQ-001: always headed for browser-mail,
+# non-prod portal clients). Xvfb provides a virtual one in containers.
+# Note: xvfb-run hangs waiting for X readiness in slim images — start Xvfb
+# directly and wait for the socket instead.
+RUN apt-get update && apt-get install -y --no-install-recommends xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
 EXPOSE 8101
-ENV PORT=8101
-CMD ["node", "dist/main.js"]
+ENV PORT=8101 DISPLAY=:99
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1280x720x24 -nolisten tcp & until [ -S /tmp/.X11-unix/X99 ]; do sleep 0.1; done; exec node dist/main.js"]
