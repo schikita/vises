@@ -6,7 +6,9 @@ import {
 
 /**
  * Query for `GET /stats/roles-applications`.
- * Both omitted → current totals. Either/both → filter status metrics by receivedAt.
+ * Both date bounds omitted → current totals. Either/both → filter by receivedAt.
+ * `page`/`pageSize` paginate only `perAgent` (qa-polish DEC-P2 / DEC-P14).
+ * Optional `q` filters `perAgent` agent universe before pagination (DEC-P15).
  */
 export class AnalyticsQueryDto {
   @IsOptional()
@@ -22,4 +24,16 @@ export class AnalyticsQueryDto {
     message: ANALYTICS_DATE_QUERY_PATTERN_MESSAGE,
   })
   to?: string;
+
+  @IsOptional()
+  @IsString()
+  page?: string;
+
+  @IsOptional()
+  @IsString()
+  pageSize?: string;
+
+  @IsOptional()
+  @IsString()
+  q?: string;
 }

@@ -9,4 +9,8 @@ export type AgentBalanceRenderProps = {
   topUpForm: ReactNode
   adjustForm: ReactNode
   ledger: ReactNode
+  ledgerPage: number
+  ledgerPageSize: number
+  ledgerTotal: number
+  onLedgerPageChange: (page: number) => void
 }

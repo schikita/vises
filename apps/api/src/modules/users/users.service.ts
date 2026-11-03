@@ -1,7 +1,9 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Application } from '../database/entities/application.entity';
+import { BalanceTransaction } from '../database/entities/balance-transaction.entity';
+import { Client } from '../database/entities/client.entity';
 import { User } from '../database/entities/user.entity';
 import { userOut } from '../../shared/mappers';
 import {
@@ -13,6 +15,7 @@ import {
 import { DEFAULT_USER_ROLE } from '../auth/constants';
 import type { IUsersService } from './interfaces';
 import type {
+  AgentTotalRevenueRow,
   EnsureClientResult,
   ManagerNamesOut,
   UserCredentialsOut,
@@ -26,9 +29,12 @@ import {
   applyUsersListSort,
   assertCanAssignStaffRole,
   assertCanMutateUser,
+  buildAgentTotalRevenueMap,
+  formatAgentCurrentBalance,
   isValidEmailFormat,
   mapToStaffRole,
   normalizeClientIdentity,
+  resolveLatestAppIdForAgent,
   resolveLatestAppIdForUserIdentity,
 } from './utils';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -40,6 +46,10 @@ export class UsersService implements IUsersService {
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Application)
     private readonly apps: Repository<Application>,
+    @InjectRepository(Client)
+    private readonly clients: Repository<Client>,
+    @InjectRepository(BalanceTransaction)
+    private readonly ledger: Repository<BalanceTransaction>,
   ) {}
 
   async list(): Promise<UserOut[]> {
@@ -62,15 +72,45 @@ export class UsersService implements IUsersService {
       .take(query.pageSize)
       .getMany();
 
+    const agentIds = rows
+      .filter((row): boolean => row.role === 'agent')
+      .map((row): string => row.id);
+
+    const agentClients =
+      agentIds.length === 0
+        ? []
+        : await this.clients.find({
+            where: { agentId: In(agentIds) },
+            select: { id: true, agentId: true },
+          });
+
+    const clientIdsByAgent = new Map<string, Set<string>>();
+    for (const client of agentClients) {
+      const set = clientIdsByAgent.get(client.agentId) ?? new Set<string>();
+      set.add(client.id);
+      clientIdsByAgent.set(client.agentId, set);
+    }
+
+    const allAgentClientIds = agentClients.map((client): string => client.id);
+    const agentAppsPool =
+      allAgentClientIds.length === 0
+        ? []
+        : await this.apps.find({
+            where: { clientId: In(allAgentClientIds) },
+          });
+
     const identityKeys = new Set<string>();
     for (const row of rows) {
+      if (row.role === 'agent') {
+        continue;
+      }
       const email = row.email.trim().toLowerCase();
       const login = row.login.trim().toLowerCase();
       if (email) identityKeys.add(email);
       if (login) identityKeys.add(login);
     }
 
-    const appsPool =
+    const identityAppsPool =
       identityKeys.size === 0
         ? []
         : await this.apps
@@ -80,10 +120,32 @@ export class UsersService implements IUsersService {
             })
             .getMany();
 
-    const items: UserListItemOut[] = rows.map((row) => ({
-      ...userOut(row),
-      latestAppId: resolveLatestAppIdForUserIdentity(appsPool, row),
-    }));
+    const totalRevenueByAgent = await this.loadAgentTotalRevenues(agentIds);
+
+    const items: UserListItemOut[] = rows.map((row): UserListItemOut => {
+      if (row.role === 'agent') {
+        const clientIds =
+          clientIdsByAgent.get(row.id) ?? new Set<string>();
+        return {
+          ...userOut(row),
+          latestAppId: resolveLatestAppIdForAgent(agentAppsPool, clientIds),
+          clientsCount: clientIds.size,
+          currentBalance: formatAgentCurrentBalance(row.balance),
+          totalRevenue: totalRevenueByAgent.get(row.id) ?? '0.00',
+        };
+      }
+
+      return {
+        ...userOut(row),
+        latestAppId: resolveLatestAppIdForUserIdentity(
+          identityAppsPool,
+          row,
+        ),
+        clientsCount: null,
+        currentBalance: null,
+        totalRevenue: null,
+      };
+    });
 
     return buildPaginatedList({
       items,
@@ -393,5 +455,24 @@ export class UsersService implements IUsersService {
 
     await this.users.remove(row);
     return { ok: true };
+  }
+
+  private async loadAgentTotalRevenues(
+    agentIds: string[],
+  ): Promise<Map<string, string>> {
+    if (agentIds.length === 0) {
+      return buildAgentTotalRevenueMap([], []);
+    }
+
+    const rows = await this.ledger
+      .createQueryBuilder('bt')
+      .select('bt.agent_id', 'agentId')
+      .addSelect('COALESCE(SUM(ABS(bt.amount)), 0)', 'total')
+      .where('bt.agent_id IN (:...agentIds)', { agentIds })
+      .andWhere('bt.type = :type', { type: 'client_creation_debit' })
+      .groupBy('bt.agent_id')
+      .getRawMany<AgentTotalRevenueRow>();
+
+    return buildAgentTotalRevenueMap(agentIds, rows);
   }
 }

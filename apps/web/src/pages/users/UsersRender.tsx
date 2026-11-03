@@ -1,9 +1,25 @@
-import { Copy, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Ban, Copy, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import type { UserListItem } from '@/entities/user'
 import { formatDateTime } from '@/shared/lib'
-import { Avatar, Btn, Card, Dialog, Empty, ListPager } from '@/shared/ui'
-import { USERS_LIST_SORT_COLUMNS, USERS_ROLE_FILTER_OPTIONS } from './constants'
+import {
+  Avatar,
+  Btn,
+  Card,
+  DataTable,
+  Dialog,
+  Empty,
+  ListPager,
+  type DataTableColumnDef,
+} from '@/shared/ui'
+import {
+  USERS_ACTION_BUTTON_CLASS,
+  USERS_ACTION_BUTTON_DANGER_CLASS,
+  USERS_LIST_SORT_COLUMNS,
+  USERS_ROLE_FILTER_OPTIONS,
+} from './constants'
 import type { UsersRenderProps } from './types'
+import { UsersConfirmDialog } from './UsersConfirmDialog'
 import { UsersListSortIcon } from './UsersListSortIcon'
 
 export const UsersRender = ({
@@ -24,6 +40,7 @@ export const UsersRender = ({
   rowMessage,
   sessionUserId,
   mutating,
+  confirmAction,
   canMutateTarget,
   onOpenCreate,
   onCloseCreate,
@@ -33,11 +50,149 @@ export const UsersRender = ({
   onPageChange,
   onRowActivate,
   onCopyCredentials,
-  onReissue,
-  onToggleActive,
-  onRemove,
+  onRequestConfirm,
+  onCancelConfirm,
+  onApplyConfirm,
 }: UsersRenderProps): React.ReactElement => {
   const { t } = useTranslation()
+
+  const columns: DataTableColumnDef<UserListItem>[] = [
+    ...USERS_LIST_SORT_COLUMNS.map(
+      (col): DataTableColumnDef<UserListItem> => ({
+        id: col.key,
+        header: (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-left uppercase tracking-wide hover:text-text-primary"
+            onClick={(): void => onSortChange(col.key)}
+          >
+            {t(col.labelKey)}
+            <UsersListSortIcon active={sort.key === col.key} dir={sort.dir} />
+          </button>
+        ),
+        cell: (u): React.ReactNode => {
+          if (col.key === 'user') {
+            return (
+              <div className="flex items-center gap-3">
+                <Avatar name={u.name} size={36} />
+                <span>
+                  <span className="block font-semibold text-text-primary">
+                    {u.name}
+                  </span>
+                  <span className="text-xs text-text-secondary">{u.login}</span>
+                </span>
+              </div>
+            )
+          }
+          if (col.key === 'role') {
+            return (
+              <span className="font-medium text-text-primary">
+                {t(`usersAdmin.roles.${u.role}`)}
+              </span>
+            )
+          }
+          if (col.key === 'status') {
+            return (
+              <span
+                className={`inline-flex rounded-control px-2.5 py-1 text-xs font-medium ${
+                  u.active
+                    ? 'bg-accent-subtle text-success'
+                    : 'bg-accent-subtle text-danger'
+                }`}
+              >
+                {u.active
+                  ? t('usersAdmin.status.active')
+                  : t('usersAdmin.status.inactive')}
+              </span>
+            )
+          }
+          return (
+            <span className="text-text-secondary">
+              {formatDateTime(u.createdAt)}
+            </span>
+          )
+        },
+      }),
+    ),
+    {
+      id: 'actions',
+      header: t('usersAdmin.columns.actions'),
+      cell: (u): React.ReactNode => {
+        const allowMutate = canMutateTarget(u.role)
+        return (
+          <div
+            className="flex flex-wrap gap-1"
+            onClick={(e): void => e.stopPropagation()}
+            onKeyDown={(e): void => e.stopPropagation()}
+          >
+            {allowMutate ? (
+              <>
+                <button
+                  className={USERS_ACTION_BUTTON_CLASS}
+                  type="button"
+                  disabled={mutating}
+                  aria-label={t('usersAdmin.actions.reissue')}
+                  title={t('usersAdmin.actions.reissue')}
+                  onClick={(): void =>
+                    onRequestConfirm({
+                      kind: 'reissue',
+                      userId: u.id,
+                      userName: u.name,
+                    })
+                  }
+                >
+                  <RefreshCw size={16} />
+                </button>
+                <button
+                  className={USERS_ACTION_BUTTON_CLASS}
+                  type="button"
+                  disabled={mutating}
+                  aria-label={
+                    u.active
+                      ? t('usersAdmin.actions.disable')
+                      : t('usersAdmin.actions.enable')
+                  }
+                  title={
+                    u.active
+                      ? t('usersAdmin.actions.disable')
+                      : t('usersAdmin.actions.enable')
+                  }
+                  onClick={(): void =>
+                    onRequestConfirm({
+                      kind: 'toggleActive',
+                      userId: u.id,
+                      userName: u.name,
+                      active: u.active,
+                    })
+                  }
+                >
+                  <Ban size={16} />
+                </button>
+                {sessionUserId !== u.id ? (
+                  <button
+                    className={USERS_ACTION_BUTTON_DANGER_CLASS}
+                    type="button"
+                    disabled={mutating}
+                    aria-label={t('usersAdmin.actions.remove')}
+                    title={t('usersAdmin.actions.remove')}
+                    onClick={(): void =>
+                      onRequestConfirm({
+                        kind: 'remove',
+                        userId: u.id,
+                        userName: u.name,
+                      })
+                    }
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        )
+      },
+    },
+  ]
 
   return (
     <div>
@@ -47,8 +202,7 @@ export const UsersRender = ({
             {t('usersAdmin.title')}
           </h1>
           <p className="mt-1 text-sm text-text-secondary">
-            {t('usersAdmin.subtitle')}
-            {total > 0 ? t('usersAdmin.totalSuffix', { total }) : null}
+            {t('usersAdmin.subtitle', { total })}
           </p>
         </div>
         {canOpenCreate ? (
@@ -79,7 +233,7 @@ export const UsersRender = ({
 
       <div className="mt-6 space-y-4">
         {issued ? (
-          <Card className="border-accent/30 bg-accent-subtle">
+          <Card className="rounded-panel border border-accent/30 bg-accent-subtle px-5 py-5">
             <p className="font-semibold text-text-primary">
               {t('usersAdmin.issued.title', { name: issued.user.name })}
             </p>
@@ -121,140 +275,24 @@ export const UsersRender = ({
           </select>
         </div>
 
-        <Card className="overflow-hidden p-0">
-          {loading && pageItems.length === 0 ? (
+        {loading && pageItems.length === 0 ? (
+          <Card className="overflow-hidden rounded-panel border border-border p-0">
             <Empty
               title={t('usersAdmin.loadingTitle')}
               text={t('usersAdmin.loadingText')}
             />
-          ) : pageItems.length === 0 ? (
-            <Empty title={t('usersAdmin.emptyTitle')} text={t('usersAdmin.emptyText')} />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="bg-accent-subtle text-xs uppercase text-text-secondary">
-                  <tr>
-                    {USERS_LIST_SORT_COLUMNS.map((col) => (
-                      <th key={col.key} className="px-4 py-3 font-semibold">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1.5 text-left uppercase tracking-wide hover:text-text-primary"
-                          onClick={(): void => onSortChange(col.key)}
-                        >
-                          {t(col.labelKey)}
-                          <UsersListSortIcon
-                            active={sort.key === col.key}
-                            dir={sort.dir}
-                          />
-                        </button>
-                      </th>
-                    ))}
-                    <th className="px-4 py-3 font-semibold">
-                      {t('usersAdmin.columns.actions')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageItems.map((u) => {
-                    const allowMutate = canMutateTarget(u.role)
-                    return (
-                      <tr
-                        key={u.id}
-                        role="link"
-                        tabIndex={0}
-                        className="cursor-pointer border-t border-border hover:bg-accent-subtle/50"
-                        onClick={(): void => onRowActivate(u)}
-                        onKeyDown={(e): void => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            onRowActivate(u)
-                          }
-                        }}
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar name={u.name} size={36} />
-                            <span>
-                              <span className="block font-semibold text-text-primary">
-                                {u.name}
-                              </span>
-                              <span className="text-xs text-text-secondary">{u.login}</span>
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-text-primary">
-                          {t(`usersAdmin.roles.${u.role}`)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex rounded-control px-2.5 py-1 text-xs font-medium ${
-                              u.active
-                                ? 'bg-accent-subtle text-success'
-                                : 'bg-accent-subtle text-danger'
-                            }`}
-                          >
-                            {u.active
-                              ? t('usersAdmin.status.active')
-                              : t('usersAdmin.status.inactive')}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary">
-                          {formatDateTime(u.createdAt)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div
-                            className="flex flex-wrap gap-2"
-                            onClick={(e): void => e.stopPropagation()}
-                            onKeyDown={(e): void => e.stopPropagation()}
-                          >
-                            {allowMutate ? (
-                              <>
-                                <button
-                                  className="text-xs font-medium text-text-primary"
-                                  type="button"
-                                  disabled={mutating}
-                                  onClick={(): void => onReissue(u.id)}
-                                >
-                                  <span className="inline-flex items-center gap-1">
-                                    <RefreshCw size={12} />
-                                    {t('usersAdmin.actions.reissue')}
-                                  </span>
-                                </button>
-                                <button
-                                  className="text-xs font-medium text-text-secondary"
-                                  type="button"
-                                  disabled={mutating}
-                                  onClick={(): void => onToggleActive(u.id, u.active)}
-                                >
-                                  {u.active
-                                    ? t('usersAdmin.actions.disable')
-                                    : t('usersAdmin.actions.enable')}
-                                </button>
-                                {sessionUserId !== u.id ? (
-                                  <button
-                                    className="text-xs font-medium text-danger"
-                                    type="button"
-                                    disabled={mutating}
-                                    onClick={(): void => onRemove(u.id)}
-                                  >
-                                    <span className="inline-flex items-center gap-1">
-                                      <Trash2 size={12} />
-                                      {t('usersAdmin.actions.remove')}
-                                    </span>
-                                  </button>
-                                ) : null}
-                              </>
-                            ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+          </Card>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={pageItems}
+            getRowId={(row): string => row.id}
+            onRowClick={onRowActivate}
+            emptyTitle={t('usersAdmin.emptyTitle')}
+            emptyText={t('usersAdmin.emptyText')}
+            tableClassName="min-w-[720px]"
+          />
+        )}
 
         <ListPager page={page} pageSize={pageSize} total={total} onPageChange={onPageChange} />
       </div>
@@ -266,6 +304,14 @@ export const UsersRender = ({
       >
         {createForm}
       </Dialog>
+
+      <UsersConfirmDialog
+        open={confirmAction !== null}
+        pending={mutating}
+        action={confirmAction}
+        onCancel={onCancelConfirm}
+        onApply={onApplyConfirm}
+      />
     </div>
   )
 }

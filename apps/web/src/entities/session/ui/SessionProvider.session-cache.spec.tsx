@@ -25,6 +25,8 @@ const authUser = (role: 'admin' | 'agent'): AuthSessionDto => ({
   user: {
     id: `id-${role}`,
     name: role,
+    firstName: null,
+    lastName: null,
     login: role,
     email: `${role}@example.com`,
     role,
@@ -60,7 +62,11 @@ const Probe = (): React.ReactElement => {
       <button
         type="button"
         onClick={(): void => {
-          void register({ name: 'n', login: 'l', password: 'secret1' })
+          void register({
+            login: 'l',
+            email: 'l@example.com',
+            password: 'secret1',
+          })
         }}
       >
         register

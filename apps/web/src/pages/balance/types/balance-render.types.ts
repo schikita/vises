@@ -5,4 +5,8 @@ export type BalanceRenderProps = {
   loadError: string
   currentBalance: string | null
   ledger: ReactNode
+  ledgerPage: number
+  ledgerPageSize: number
+  ledgerTotal: number
+  onLedgerPageChange: (page: number) => void
 }

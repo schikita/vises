@@ -1,5 +1,5 @@
 import { Btn, Field } from '@/shared/ui'
-import { AUTH_LOGIN_MESSAGES } from '../../constants'
+import { AUTH_LOGIN_FORM_CLASS, AUTH_LOGIN_MESSAGES } from '../../constants'
 import type { AuthLoginFormRenderProps } from '../../types'
 
 export const AuthLoginFormRender = ({
@@ -8,17 +8,18 @@ export const AuthLoginFormRender = ({
   errors,
   onSubmit,
 }: AuthLoginFormRenderProps): React.ReactElement => (
-  <form
-    onSubmit={onSubmit}
-    className="rounded-[28px] border border-line bg-card p-6 shadow-[0_20px_50px_rgba(18,24,20,0.06)]"
-  >
-    <p className="text-sm font-bold">Вход</p>
-    <p className="mt-1 text-sm text-muted">{AUTH_LOGIN_MESSAGES.subtitle}</p>
-    <div className="mt-5 space-y-3">
-      <Field label="Логин" error={errors.login?.message}>
-        <input className="field" autoComplete="username" {...register('login')} />
+  <form onSubmit={onSubmit} className={AUTH_LOGIN_FORM_CLASS}>
+    <div>
+      <p className="text-sm font-semibold text-text-primary">
+        {AUTH_LOGIN_MESSAGES.title}
+      </p>
+      <p className="mt-1 text-sm text-text-secondary">{AUTH_LOGIN_MESSAGES.subtitle}</p>
+    </div>
+    <div className="space-y-3">
+      <Field label={AUTH_LOGIN_MESSAGES.identifierLabel} error={errors.identifier?.message}>
+        <input className="field" autoComplete="username" {...register('identifier')} />
       </Field>
-      <Field label="Пароль" error={errors.password?.message}>
+      <Field label={AUTH_LOGIN_MESSAGES.passwordLabel} error={errors.password?.message}>
         <input
           className="field"
           type="password"
@@ -27,10 +28,10 @@ export const AuthLoginFormRender = ({
         />
       </Field>
     </div>
-    {apiError && <p className="mt-3 text-sm font-semibold text-clay">{apiError}</p>}
-    <div className="mt-4">
-      <Btn type="submit" className="w-full h-11">
-        Войти
+    {apiError ? <p className="text-sm font-semibold text-danger">{apiError}</p> : null}
+    <div>
+      <Btn type="submit" className="h-11 w-full">
+        {AUTH_LOGIN_MESSAGES.submit}
       </Btn>
     </div>
   </form>

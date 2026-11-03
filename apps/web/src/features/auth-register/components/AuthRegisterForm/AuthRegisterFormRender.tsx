@@ -1,5 +1,5 @@
 import { Btn, Field } from '@/shared/ui'
-import { AUTH_REGISTER_MESSAGES } from '../../constants'
+import { AUTH_REGISTER_FORM_CLASS, AUTH_REGISTER_MESSAGES } from '../../constants'
 import type { AuthRegisterFormRenderProps } from '../../types'
 
 export const AuthRegisterFormRender = ({
@@ -8,15 +8,23 @@ export const AuthRegisterFormRender = ({
   errors,
   onSubmit,
 }: AuthRegisterFormRenderProps): React.ReactElement => (
-  <form
-    onSubmit={onSubmit}
-    className="rounded-xl border border-border bg-surface p-6"
-  >
-    <p className="text-sm font-semibold text-text-primary">{AUTH_REGISTER_MESSAGES.title}</p>
-    <p className="mt-1 text-sm text-text-secondary">{AUTH_REGISTER_MESSAGES.subtitle}</p>
-    <div className="mt-5 space-y-3">
-      <Field label={AUTH_REGISTER_MESSAGES.nameLabel} error={errors.name?.message}>
-        <input className="field" autoComplete="name" {...register('name')} />
+  <form onSubmit={onSubmit} className={AUTH_REGISTER_FORM_CLASS}>
+    <div>
+      <p className="text-sm font-semibold text-text-primary">{AUTH_REGISTER_MESSAGES.title}</p>
+      <p className="mt-1 text-sm text-text-secondary">{AUTH_REGISTER_MESSAGES.subtitle}</p>
+    </div>
+    <div className="space-y-3">
+      <Field
+        label={AUTH_REGISTER_MESSAGES.firstNameLabel}
+        error={errors.firstName?.message}
+      >
+        <input className="field" autoComplete="given-name" {...register('firstName')} />
+      </Field>
+      <Field
+        label={AUTH_REGISTER_MESSAGES.lastNameLabel}
+        error={errors.lastName?.message}
+      >
+        <input className="field" autoComplete="family-name" {...register('lastName')} />
       </Field>
       <Field label={AUTH_REGISTER_MESSAGES.loginLabel} error={errors.login?.message}>
         <input className="field" autoComplete="username" {...register('login')} />
@@ -36,8 +44,8 @@ export const AuthRegisterFormRender = ({
         />
       </Field>
     </div>
-    {apiError ? <p className="mt-3 text-sm font-semibold text-danger">{apiError}</p> : null}
-    <div className="mt-4">
+    {apiError ? <p className="text-sm font-semibold text-danger">{apiError}</p> : null}
+    <div>
       <Btn type="submit" className="h-11 w-full">
         {AUTH_REGISTER_MESSAGES.submit}
       </Btn>

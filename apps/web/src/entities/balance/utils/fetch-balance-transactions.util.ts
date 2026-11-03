@@ -1,10 +1,20 @@
-import type { BalanceTransactionDto } from '@vises/contracts'
+import type {
+  BalanceTransactionsListDto,
+  BalanceTransactionsQuery,
+} from '@vises/contracts'
 import { apiRequest } from '@/shared/api'
+import { buildStaffListQuery } from '@/shared/lib'
 
-/** GET /agents/:agentId/balance/transactions → newest-first ledger (FR-7 / FR-8). */
+/** GET /agents/:agentId/balance/transactions → paginated newest-first ledger. */
 export const fetchBalanceTransactions = (
   agentId: string,
-): Promise<BalanceTransactionDto[]> =>
-  apiRequest<BalanceTransactionDto[]>(
-    `/agents/${encodeURIComponent(agentId)}/balance/transactions`,
+  query: BalanceTransactionsQuery = {},
+): Promise<BalanceTransactionsListDto> =>
+  apiRequest<BalanceTransactionsListDto>(
+    `/agents/${encodeURIComponent(agentId)}/balance/transactions${buildStaffListQuery(
+      {
+        page: query.page,
+        pageSize: query.pageSize,
+      },
+    )}`,
   )

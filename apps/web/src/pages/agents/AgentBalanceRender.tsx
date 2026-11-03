@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { BalanceAmountCard } from '@/entities/balance'
-import { Card, Empty } from '@/shared/ui'
+import { Card, Empty, ListPager } from '@/shared/ui'
 import type { AgentBalanceRenderProps } from './types'
 
 export const AgentBalanceRender = ({
@@ -13,6 +13,10 @@ export const AgentBalanceRender = ({
   topUpForm,
   adjustForm,
   ledger,
+  ledgerPage,
+  ledgerPageSize,
+  ledgerTotal,
+  onLedgerPageChange,
 }: AgentBalanceRenderProps): React.ReactElement => {
   const { t } = useTranslation()
 
@@ -56,11 +60,11 @@ export const AgentBalanceRender = ({
 
       {!loading && !loadError ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="space-y-3">
+          <Card className="space-y-3 rounded-panel border border-border bg-surface px-5 py-5">
             <h2 className="font-semibold text-text-primary">{t('balance.topUp.title')}</h2>
             {topUpForm}
           </Card>
-          <Card className="space-y-3">
+          <Card className="space-y-3 rounded-panel border border-border bg-surface px-5 py-5">
             <h2 className="font-semibold text-text-primary">{t('balance.adjust.title')}</h2>
             {adjustForm}
           </Card>
@@ -71,6 +75,12 @@ export const AgentBalanceRender = ({
         <section className="space-y-3">
           <h2 className="font-semibold text-text-primary">{t('balance.ledger.title')}</h2>
           {ledger}
+          <ListPager
+            page={ledgerPage}
+            pageSize={ledgerPageSize}
+            total={ledgerTotal}
+            onPageChange={onLedgerPageChange}
+          />
         </section>
       ) : null}
     </div>

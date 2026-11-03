@@ -1,2 +1,2 @@
 export const CARD_BASE_CLASS =
-  'rounded-panel border border-border bg-surface p-5'
+  'border-t border-border bg-transparent px-0 py-5'

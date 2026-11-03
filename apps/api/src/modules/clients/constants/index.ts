@@ -7,3 +7,8 @@ export {
   CLIENT_APP_CODE_BASE,
   CLIENT_APP_CODE_RANGE,
 } from './client-app-code.constants';
+export {
+  CLIENTS_LIST_SORT_KEYS,
+  DEFAULT_CLIENTS_LIST_SORT_BY,
+  DEFAULT_CLIENTS_LIST_SORT_DIR,
+} from './clients-list-sort.constants';

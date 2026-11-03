@@ -1,4 +1,4 @@
-import type { AnalyticsQueryParams } from '@/entities/analytics'
+import type { AnalyticsQuery } from '@/entities/analytics'
 import {
   ANALYTICS_RANGE_MODE,
   type AnalyticsRangeMode,
@@ -12,11 +12,11 @@ export const resolveAnalyticsQueryParams = (
   mode: AnalyticsRangeMode,
   from: string,
   to: string,
-): AnalyticsQueryParams => {
+): AnalyticsQuery => {
   if (mode === ANALYTICS_RANGE_MODE.Current) {
     return {}
   }
-  const params: AnalyticsQueryParams = {}
+  const params: AnalyticsQuery = {}
   if (from.trim().length > 0) {
     params.from = from.trim()
   }

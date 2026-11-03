@@ -1,0 +1,246 @@
+/* Theme-aware DateRangePicker (FE20/FE22): range + year/month grids + mid-range. */
+.vises-date-range-picker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 17.5rem;
+}
+
+.vises-date-range-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.vises-date-range-picker-header__caption {
+  flex: 1;
+  border: 1px solid var(--vises-border);
+  border-radius: var(--vises-radius-control);
+  background: var(--vises-surface-muted);
+  color: var(--vises-text-primary);
+  padding: 0.4rem 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+button.vises-date-range-picker-header__caption {
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+button.vises-date-range-picker-header__caption:hover {
+  background: var(--vises-accent-subtle);
+  border-color: color-mix(in srgb, var(--vises-accent) 35%, var(--vises-border));
+}
+
+button.vises-date-range-picker-header__caption:focus-visible {
+  outline: 2px solid var(--vises-accent);
+  outline-offset: 2px;
+}
+
+.vises-date-range-picker-header__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: var(--vises-radius-control);
+  background: transparent;
+  color: var(--vises-text-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.vises-date-range-picker-header__nav:hover:not(:disabled) {
+  background: var(--vises-accent-subtle);
+  color: var(--vises-text-primary);
+}
+
+.vises-date-range-picker-header__nav:focus-visible {
+  outline: 2px solid var(--vises-accent);
+  outline-offset: 2px;
+}
+
+.vises-date-range-picker-header__nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.vises-date-range-picker-year-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.4rem;
+  min-height: 14.5rem;
+  align-content: start;
+}
+
+.vises-date-range-picker-month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  min-height: 14.5rem;
+  align-content: start;
+}
+
+.vises-date-range-picker-grid-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--vises-radius-control);
+  background: transparent;
+  color: var(--vises-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.vises-date-range-picker-grid-cell:hover:not(:disabled) {
+  background: var(--vises-accent-subtle);
+}
+
+.vises-date-range-picker-grid-cell:focus-visible {
+  outline: 2px solid var(--vises-accent);
+  outline-offset: 2px;
+}
+
+.vises-date-range-picker-grid-cell--active {
+  background: var(--vises-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.vises-date-range-picker-grid-cell--active:hover:not(:disabled) {
+  background: var(--vises-accent);
+  color: #ffffff;
+}
+
+.vises-date-range-picker-grid-cell--disabled,
+.vises-date-range-picker-grid-cell:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.vises-date-range-picker-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--vises-border);
+}
+
+.vises-date-range-picker-preset {
+  border: 1px solid var(--vises-border);
+  border-radius: var(--vises-radius-control);
+  background: var(--vises-surface-muted);
+  color: var(--vises-text-primary);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.vises-date-range-picker-preset:hover {
+  background: var(--vises-accent-subtle);
+  border-color: color-mix(in srgb, var(--vises-accent) 35%, var(--vises-border));
+  color: var(--vises-accent);
+}
+
+.vises-date-range-picker-preset:focus-visible {
+  outline: 2px solid var(--vises-accent);
+  outline-offset: 2px;
+}
+
+.vises-day-picker.rdp-root {
+  --rdp-accent-color: var(--vises-accent);
+  --rdp-accent-background-color: var(--vises-accent-subtle);
+  --rdp-today-color: var(--vises-accent);
+  --rdp-selected-border: 2px solid var(--vises-accent);
+  --rdp-range_start-date-background-color: var(--vises-accent);
+  --rdp-range_end-date-background-color: var(--vises-accent);
+  --rdp-range_middle-background-color: var(--vises-accent-subtle);
+  --rdp-range_middle-color: var(--vises-text-primary);
+  --rdp-range_start-color: #ffffff;
+  --rdp-range_end-color: #ffffff;
+  --rdp-day_button-border-radius: var(--vises-radius-control);
+  --rdp-nav-height: 0px;
+  color: var(--vises-text-primary);
+  font-family: inherit;
+  margin: 0;
+}
+
+.vises-day-picker .rdp-months {
+  max-width: 100%;
+}
+
+.vises-day-picker .rdp-month {
+  width: 100%;
+}
+
+.vises-day-picker .rdp-month_caption {
+  display: none;
+}
+
+.vises-day-picker .rdp-weekday {
+  color: var(--vises-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.vises-day-picker .rdp-day_button {
+  color: var(--vises-text-primary);
+}
+
+.vises-day-picker .rdp-day_button:hover:not([disabled]):not([aria-disabled='true']) {
+  background: var(--vises-accent-subtle);
+}
+
+.vises-day-picker .rdp-outside .rdp-day_button {
+  color: var(--vises-text-secondary);
+}
+
+.vises-day-picker .rdp-selected .rdp-day_button {
+  border-color: var(--vises-accent);
+}
+
+.vises-day-picker .rdp-range_start {
+  background: var(--rdp-range_start-background);
+}
+
+.vises-day-picker .rdp-range_end {
+  background: var(--rdp-range_end-background);
+}
+
+.vises-day-picker .rdp-range_start .rdp-day_button,
+.vises-day-picker .rdp-range_end .rdp-day_button {
+  background-color: var(--vises-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.vises-day-picker .rdp-range_middle {
+  background-color: var(--vises-accent-subtle);
+}
+
+.vises-day-picker .rdp-range_middle .rdp-day_button {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--vises-text-primary);
+  border-radius: 0;
+}
+
+.vises-day-picker .rdp-range_start.rdp-range_end {
+  background: transparent;
+}
+
+.vises-day-picker .rdp-range_start.rdp-range_end .rdp-day_button {
+  border-radius: var(--vises-radius-control);
+}

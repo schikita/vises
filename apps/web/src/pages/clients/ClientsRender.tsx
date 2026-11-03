@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import { ClientListTable } from '@/entities/client'
-import { Btn, Dialog, Empty } from '@/shared/ui'
+import { Btn, Dialog, Empty, ListPager } from '@/shared/ui'
 import type { ClientsRenderProps } from './types'
 
 export const ClientsRender = ({
@@ -9,12 +9,22 @@ export const ClientsRender = ({
   loading,
   listError,
   notice,
-  detailBasePath,
+  total,
+  page,
+  pageSize,
+  search,
+  sortBy,
+  sortDir,
+  showAgentColumn,
   canCreate,
   createOpen,
   createForm,
   onOpenCreate,
   onCloseCreate,
+  onSearchChange,
+  onSortChange,
+  onPageChange,
+  onRowActivate,
 }: ClientsRenderProps): React.ReactElement => {
   const { t } = useTranslation()
 
@@ -27,6 +37,7 @@ export const ClientsRender = ({
           </h1>
           <p className="mt-1 text-sm text-text-secondary">
             {t('clients.list.subtitle')}
+            {total > 0 ? t('clients.list.totalSuffix', { total }) : null}
           </p>
         </div>
         {canCreate ? (
@@ -49,6 +60,16 @@ export const ClientsRender = ({
         </p>
       ) : null}
 
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <input
+          className="field"
+          type="search"
+          value={search}
+          onChange={(event): void => onSearchChange(event.target.value)}
+          placeholder={t('clients.list.searchPlaceholder')}
+        />
+      </div>
+
       {loading ? (
         <Empty
           title={t('clients.list.loadingTitle')}
@@ -60,15 +81,28 @@ export const ClientsRender = ({
         <div className="mt-5">
           <ClientListTable
             items={items}
-            detailBasePath={detailBasePath}
             emptyTitle={t('clients.list.emptyTitle')}
             emptyText={
               canCreate
                 ? t('clients.list.emptyTextAgent')
                 : t('clients.list.emptyTextStaff')
             }
+            showAgentColumn={showAgentColumn}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={onSortChange}
+            onRowActivate={onRowActivate}
           />
         </div>
+      ) : null}
+
+      {!loading ? (
+        <ListPager
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={onPageChange}
+        />
       ) : null}
 
       {canCreate ? (

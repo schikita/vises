@@ -97,7 +97,7 @@ export const buildFr11AgentApps = (
       input.applications.create({
         id: applicationId,
         clientId,
-        code: `VS-${input.agentKey === 'a' ? 2600 + n : 2700 + n}`,
+        code: `VS-${input.agentKey}${String(n).padStart(3, '0')}`,
         clientEmail: applicant.email,
         portalFormEmail: hasVisit
           ? `${SEED_PORTAL_FORM_EMAIL_LOCAL_PREFIX}${input.agentKey}-${n}@${SEED_PORTAL_FORM_EMAIL_DOMAIN}`

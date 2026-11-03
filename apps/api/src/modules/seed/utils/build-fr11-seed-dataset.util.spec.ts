@@ -6,12 +6,15 @@ import type { Client } from '../../database/entities/client.entity';
 import { PII_ENCRYPTED_FIELD_KEYS } from '../../pii';
 import type { PiiEncryptedFieldMap } from '../../pii';
 import {
-  SEED_AGENT_A_USER_ID,
-  SEED_AGENT_B_USER_ID,
+  SEED_CLIENTS_PER_AGENT_MAX,
+  SEED_CLIENTS_PER_AGENT_MIN,
+  SEED_DEFAULT_PRICE,
   SEED_SUPERADMIN_USER_ID,
   SEED_TIMELINE_ACTOR,
 } from '../constants';
+import { buildSeedAgentPlans } from './build-seed-agent-plans.util';
 import { buildFr11SeedDataset } from './build-fr11-seed-dataset.util';
+import { formatSeedMoney } from './format-seed-money.util';
 
 const STUB_CIPHER_PREFIX = 'cipher:';
 
@@ -28,32 +31,6 @@ const APPLICATION_FORBIDDEN_PLAIN_KEYS = new Set([
   'nationalId',
   'otherNames',
 ]);
-
-const countByStatus = (
-  apps: Application[],
-  agentId: string,
-): Record<ApplicationStatus, number> => {
-  const counts: Record<ApplicationStatus, number> = {
-    drafting: 0,
-    pending: 0,
-    rejected: 0,
-    booked: 0,
-    issued: 0,
-  };
-  for (const app of apps) {
-    const client = app.clientId;
-    const belongsToA = client.startsWith('c-a-');
-    const belongsToB = client.startsWith('c-b-');
-    if (agentId === SEED_AGENT_A_USER_ID && !belongsToA) {
-      continue;
-    }
-    if (agentId === SEED_AGENT_B_USER_ID && !belongsToB) {
-      continue;
-    }
-    counts[app.status] += 1;
-  }
-  return counts;
-};
 
 describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
   const createClient = (data: Partial<Client>): Client => data as Client;
@@ -90,50 +67,52 @@ describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
     return out;
   };
 
+  const agentPlans = buildSeedAgentPlans();
   const dataset = buildFr11SeedDataset({
     applications: { create: createApp },
     clients: { create: createClient },
     history: { create: createHistory },
     ledger: { create: createLedger },
     superadminId: SEED_SUPERADMIN_USER_ID,
-    agentAId: SEED_AGENT_A_USER_ID,
-    agentBId: SEED_AGENT_B_USER_ID,
-    agentAName: 'Agent A',
-    agentBName: 'Agent B',
+    agentPlans,
     now: new Date('2026-03-01T12:00:00.000Z'),
     encryptFields: stubEncryptFields,
   });
 
-  it('seeds 13 clients and 13 applications with 1:1 clientId links', (): void => {
-    expect(dataset.clients).toHaveLength(13);
-    expect(dataset.applications).toHaveLength(13);
+  const expectedClientCount = agentPlans.reduce(
+    (sum, plan) => sum + plan.clientCount,
+    0,
+  );
+
+  it('seeds 1:1 clients and applications for all agents within 2–50 bounds', (): void => {
+    expect(dataset.clients).toHaveLength(expectedClientCount);
+    expect(dataset.applications).toHaveLength(expectedClientCount);
+    expect(agentPlans.every((plan) =>
+      plan.clientCount >= SEED_CLIENTS_PER_AGENT_MIN &&
+      plan.clientCount <= SEED_CLIENTS_PER_AGENT_MAX,
+    )).toBe(true);
+
     const clientIds = new Set(dataset.clients.map((c) => c.id));
     const appClientIds = dataset.applications.map((a) => a.clientId);
-    expect(new Set(appClientIds).size).toBe(13);
+    expect(new Set(appClientIds).size).toBe(expectedClientCount);
     expect(appClientIds.every((id) => clientIds.has(id))).toBe(true);
-  });
 
-  it('matches Agent A / Agent B status distributions', (): void => {
-    expect(countByStatus(dataset.applications, SEED_AGENT_A_USER_ID)).toEqual({
-      drafting: 2,
-      pending: 2,
-      rejected: 1,
-      booked: 2,
-      issued: 1,
-    });
-    expect(countByStatus(dataset.applications, SEED_AGENT_B_USER_ID)).toEqual({
-      drafting: 1,
-      pending: 1,
-      rejected: 0,
-      booked: 2,
-      issued: 1,
-    });
+    for (const plan of agentPlans) {
+      const agentClients = dataset.clients.filter((c) => c.agentId === plan.userId);
+      expect(agentClients).toHaveLength(plan.clientCount);
+    }
   });
 
   it('covers every status at least once globally', (): void => {
     const statuses = new Set(dataset.applications.map((a) => a.status));
     expect(statuses).toEqual(
-      new Set(['drafting', 'pending', 'rejected', 'booked', 'issued']),
+      new Set<ApplicationStatus>([
+        'drafting',
+        'pending',
+        'rejected',
+        'booked',
+        'issued',
+      ]),
     );
   });
 
@@ -165,21 +144,21 @@ describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
     }
   });
 
-  it('seeds ledger top_ups and debits with client ids + resulting balances', (): void => {
-    const agentARows = dataset.ledger.filter(
-      (row) => row.agentId === SEED_AGENT_A_USER_ID,
-    );
-    const agentBRows = dataset.ledger.filter(
-      (row) => row.agentId === SEED_AGENT_B_USER_ID,
-    );
-    expect(agentARows).toHaveLength(9);
-    expect(agentBRows).toHaveLength(6);
-    expect(agentARows[0]?.reason).toBe('seed');
-    expect(agentARows[agentARows.length - 1]?.resultingBalance).toBe('360.00');
-    expect(agentBRows[agentBRows.length - 1]?.resultingBalance).toBe('0.00');
-    expect(
-      agentARows.slice(1).every((row) => typeof row.clientId === 'string'),
-    ).toBe(true);
+  it('seeds ledger top_ups and debits with client ids + remaining unused slots', (): void => {
+    for (const plan of agentPlans) {
+      const rows = dataset.ledger.filter((row) => row.agentId === plan.userId);
+      expect(rows).toHaveLength(1 + plan.clientCount);
+      expect(rows[0]?.type).toBe('top_up');
+      expect(rows[0]?.reason).toBe('seed');
+      expect(rows[0]?.amount).toBe(formatSeedMoney(plan.topUpAmountWhole, 1));
+      expect(rows[rows.length - 1]?.resultingBalance).toBe(
+        formatSeedMoney(plan.finalBalanceWhole, 1),
+      );
+      expect(plan.finalBalanceWhole).toBe(plan.extraSlots * SEED_DEFAULT_PRICE);
+      expect(
+        rows.slice(1).every((row) => typeof row.clientId === 'string'),
+      ).toBe(true);
+    }
   });
 
   it('includes drafting→pending and booked→issued history where applicable', (): void => {
@@ -192,6 +171,7 @@ describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
     expect(pairs.filter((p) => p === 'booked->issued').length).toBeGreaterThan(0);
 
     const issuedApps = dataset.applications.filter((a) => a.status === 'issued');
+    expect(issuedApps.length).toBeGreaterThan(0);
     for (const app of issuedApps) {
       const appHistory = dataset.history.filter(
         (h) => h.applicationId === app.id,

@@ -6,7 +6,7 @@ import {
   UserRound,
   Wallet,
 } from 'lucide-react'
-import type { ShellKind, ShellNavItem } from '../types'
+import type { ShellNavItem } from '../types'
 
 /** Admin / superadmin sidebar (FR-2 / AC-4): no payments, Proxy6, visits, or BLS. */
 export const ADMIN_NAV: ShellNavItem[] = [
@@ -30,11 +30,6 @@ export const AGENT_NAV: ShellNavItem[] = [
   { to: '/app/apps', labelKey: 'chrome.shell.nav.applications', icon: FileText },
   { to: '/app/balance', labelKey: 'chrome.shell.nav.balance', icon: Wallet },
 ]
-
-export const SHELL_BADGE_KEY: Record<ShellKind, string> = {
-  admin: 'chrome.shell.badge.admin',
-  agent: 'chrome.shell.badge.agent',
-}
 
 /** Exact URL path segments banned from shell nav (AC-4 / FE5 board). */
 export const SHELL_NAV_FORBIDDEN_SEGMENTS = [

@@ -12,7 +12,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
-import { parseAnalyticsDateRange } from './utils';
+import { parseAnalyticsDateRange, parseAnalyticsPagination } from './utils';
 
 /**
  * Roles-and-applications analytics (FR-9 / §6.7 / AC-15).
@@ -34,6 +34,11 @@ export class AnalyticsController {
     return this.analytics.getRolesApplications(
       actor,
       parseAnalyticsDateRange({ from: query.from, to: query.to }),
+      parseAnalyticsPagination({
+        page: query.page,
+        pageSize: query.pageSize,
+      }),
+      (query.q ?? '').trim(),
     );
   }
 }

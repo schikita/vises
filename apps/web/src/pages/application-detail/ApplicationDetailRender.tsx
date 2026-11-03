@@ -111,7 +111,7 @@ export const ApplicationDetailRender = ({
         <p className="mb-4 text-sm font-semibold text-clay">{saveError}</p>
       ) : null}
 
-      <Card className="mb-5">
+      <div className="mb-5 border-b border-border pb-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <Avatar name={name} size={52} />
@@ -140,7 +140,7 @@ export const ApplicationDetailRender = ({
           </div>
           <StatusBadge status={form.status} label={statusBadgeLabel} />
         </div>
-      </Card>
+      </div>
 
       <div
         className="mb-5 flex flex-wrap gap-2 border-b border-line pb-3"

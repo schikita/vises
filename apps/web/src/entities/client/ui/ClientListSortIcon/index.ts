@@ -1,0 +1,1 @@
+export { ClientListSortIcon } from './ClientListSortIcon'

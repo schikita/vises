@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { homePath, isStaffRole, useSession } from '@/entities/session'
 import { AuthLoginForm } from '@/features/auth-login'
+import { LANDING_COPY } from './constants'
 import { LandingRender } from './LandingRender'
 
 export const Landing = (): React.ReactElement => {
@@ -32,8 +33,8 @@ export const Landing = (): React.ReactElement => {
         <>
           <AuthLoginForm
             apiError={error}
-            onValidSubmit={async ({ login: loginValue, password }) => {
-              const result = await loginWithPassword(loginValue, password)
+            onValidSubmit={async ({ identifier, password }) => {
+              const result = await loginWithPassword(identifier, password)
               if (typeof result === 'string') {
                 setError(result)
                 return
@@ -43,9 +44,9 @@ export const Landing = (): React.ReactElement => {
             }}
           />
           <p className="mt-3 text-center text-sm text-text-secondary">
-            No account?{' '}
+            {LANDING_COPY.noAccountPrompt}{' '}
             <Link className="font-medium text-accent hover:text-accent-hover" to="/register">
-              Register as agent
+              {LANDING_COPY.registerLinkLabel}
             </Link>
           </p>
         </>

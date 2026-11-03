@@ -45,9 +45,11 @@ export const ShellDrawer = ({
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-4">
           <Logo />
           <div className="flex items-center gap-2">
-            <span className="rounded-control bg-accent-subtle px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
-              {badgeLabel}
-            </span>
+            {badgeLabel ? (
+              <span className="rounded-control bg-accent-subtle px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                {badgeLabel}
+              </span>
+            ) : null}
             <button
               type="button"
               className="rounded-control p-2 text-text-secondary hover:bg-background hover:text-text-primary"

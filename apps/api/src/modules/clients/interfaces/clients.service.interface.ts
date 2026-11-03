@@ -1,17 +1,20 @@
 import type {
   ClientDetailDto,
   ClientDto,
-  ClientListDto,
+  ClientsListDto,
 } from '@vises/contracts';
 import type { User } from '../../database/entities/user.entity';
 import type { ClientCreateDto } from '../dto/client-create.dto';
 import type { ClientPassportUpdateDto } from '../dto/client-passport-update.dto';
-import type { ClientPassportPlainOut } from '../types';
+import type { ClientPassportPlainOut, ClientsListQueryParsed } from '../types';
 
 export interface IClientsService {
   create(body: ClientCreateDto, actor: User): Promise<ClientDto>;
 
-  list(actor: User): Promise<ClientListDto[]>;
+  list(
+    actor: User,
+    query: ClientsListQueryParsed,
+  ): Promise<ClientsListDto>;
 
   getById(clientId: string, actor: User): Promise<ClientDetailDto>;
 

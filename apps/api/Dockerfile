@@ -32,6 +32,10 @@ RUN pnpm --filter @vises/api deploy --prod /out
 FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+# curl for Compose healthcheck (slim image has no wget/curl by default)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
 
 # Копируем автономный пакет (включает dist и prod node_modules)
 COPY --from=deploy /out ./

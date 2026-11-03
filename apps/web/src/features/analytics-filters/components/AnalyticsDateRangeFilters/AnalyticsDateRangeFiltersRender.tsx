@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Btn, Field } from '@/shared/ui'
+import { Btn, DateRangePicker, Field } from '@/shared/ui'
 import { ANALYTICS_RANGE_MODE } from '../../constants'
 import type { AnalyticsDateRangeFiltersRenderProps } from '../../types'
 
@@ -10,6 +10,7 @@ export const AnalyticsDateRangeFiltersRender = ({
   onModeChange,
   onFromChange,
   onToChange,
+  onApply,
 }: AnalyticsDateRangeFiltersRenderProps): React.ReactElement => {
   const { t } = useTranslation()
   const isRange = mode === ANALYTICS_RANGE_MODE.Range
@@ -42,41 +43,40 @@ export const AnalyticsDateRangeFiltersRender = ({
       </div>
 
       {isRange ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t('analytics.filters.fromLabel')}>
-            <input
-              type="date"
-              className="field"
-              value={from}
-              onChange={(event): void => {
-                onFromChange(event.target.value)
+        <div
+          className="rounded-panel border border-border bg-surface-muted/60 p-4 shadow-elevated"
+          role="group"
+          aria-label={t('analytics.filters.rangePanelAriaLabel')}
+        >
+          <Field label={t('analytics.filters.rangePickerLabel')}>
+            <DateRangePicker
+              from={from}
+              to={to}
+              onFromChange={onFromChange}
+              onToChange={onToChange}
+              placeholder={t('analytics.filters.rangePickerPlaceholder')}
+              ariaLabel={t('analytics.filters.rangePickerAriaLabel')}
+              presetLabels={{
+                last7Days: t('analytics.filters.presetLast7Days'),
+                thisMonth: t('analytics.filters.presetThisMonth'),
+                thisYear: t('analytics.filters.presetThisYear'),
               }}
-              aria-label={t('analytics.filters.fromLabel')}
             />
           </Field>
-          <Field label={t('analytics.filters.toLabel')}>
-            <input
-              type="date"
-              className="field"
-              value={to}
-              onChange={(event): void => {
-                onToChange(event.target.value)
-              }}
-              aria-label={t('analytics.filters.toLabel')}
-            />
-          </Field>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-text-secondary">
+              {t('analytics.filters.rangeHint')}
+            </p>
+            <Btn type="button" onClick={onApply}>
+              {t('analytics.filters.apply')}
+            </Btn>
+          </div>
         </div>
       ) : (
         <p className="text-sm text-text-secondary">
           {t('analytics.filters.currentHint')}
         </p>
       )}
-
-      {isRange ? (
-        <p className="text-sm text-text-secondary">
-          {t('analytics.filters.rangeHint')}
-        </p>
-      ) : null}
     </div>
   )
 }

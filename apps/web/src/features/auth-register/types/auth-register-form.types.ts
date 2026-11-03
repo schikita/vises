@@ -1,8 +1,9 @@
 export type AuthRegisterFormValues = {
-  name: string
+  firstName: string
+  lastName: string
   login: string
-  password: string
   email: string
+  password: string
 }
 
 export type AuthRegisterFormProps = {

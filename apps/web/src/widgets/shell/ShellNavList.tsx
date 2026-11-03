@@ -4,17 +4,24 @@ import {
   SHELL_NAV_LINK_ACTIVE_CLASS,
   SHELL_NAV_LINK_BASE_CLASS,
   SHELL_NAV_LINK_INACTIVE_CLASS,
+  SHELL_NAV_LIST_HORIZONTAL_CLASS,
+  SHELL_NAV_LIST_VERTICAL_CLASS,
 } from './constants'
 import type { ShellNavListProps } from './types'
 
 export const ShellNavList = ({
   items,
+  orientation = 'vertical',
   onNavigate,
 }: ShellNavListProps): React.ReactElement => {
   const { t } = useTranslation()
+  const listClass =
+    orientation === 'horizontal'
+      ? SHELL_NAV_LIST_HORIZONTAL_CLASS
+      : SHELL_NAV_LIST_VERTICAL_CLASS
 
   return (
-    <ul className="flex flex-col gap-1 p-3">
+    <ul className={listClass}>
       {items.map((item) => (
         <li key={item.to}>
           <NavLink

@@ -1,7 +1,7 @@
 import type { AnalyticsDateRangeFiltersProps } from '../../types'
 import { AnalyticsDateRangeFiltersRender } from './AnalyticsDateRangeFiltersRender'
 
-/** Current-totals vs receivedAt date-range toggle (AC-12a). */
+/** Current-totals vs receivedAt date-range toggle with Apply (DEC-P10). */
 export const AnalyticsDateRangeFilters = ({
   mode,
   from,
@@ -9,6 +9,7 @@ export const AnalyticsDateRangeFilters = ({
   onModeChange,
   onFromChange,
   onToChange,
+  onApply,
 }: AnalyticsDateRangeFiltersProps): React.ReactElement => (
   <AnalyticsDateRangeFiltersRender
     mode={mode}
@@ -17,5 +18,6 @@ export const AnalyticsDateRangeFilters = ({
     onModeChange={onModeChange}
     onFromChange={onFromChange}
     onToChange={onToChange}
+    onApply={onApply}
   />
 )

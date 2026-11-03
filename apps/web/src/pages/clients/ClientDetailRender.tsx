@@ -91,7 +91,7 @@ export const ClientDetailRender = ({
       ) : null}
 
       {!loading && detail ? (
-        <Card className="space-y-3">
+        <Card className="space-y-3 rounded-panel border border-border bg-surface px-5 py-5">
           <h2 className="font-semibold text-text-primary">
             {t('clients.passport.title')}
           </h2>

@@ -1,37 +1,18 @@
-# Root compose: db + rabbitmq + api + workflow-worker + web.
-# Dev (with image rebuild on code changes):
-#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch
-# Prod:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-#
-# Target images: apps/api, apps/workflow-worker, apps/web (DEC-023).
-# Interim dual-folder `backend/` may still exist for host Nest; default compose
-# builds from monorepo apps/*.
-# Env is injected via dev/prod env_file (not baked into images).
-# Copy env examples first — see apps/api/.env.*.example and apps/web/.env.*.example.
-
 services:
   db:
     image: postgres:18.6-alpine
-    volumes:
-      - ./apps/api/vises_pg:/var/lib/postgresql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vises"]
+      test: ['CMD-SHELL', 'pg_isready -U vises']
       interval: 5s
       timeout: 5s
       retries: 10
 
   rabbitmq:
     image: rabbitmq:4.1-management-alpine
-    volumes:
-      - ./apps/api/vises_rabbitmq:/var/lib/rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
       interval: 10s
       timeout: 5s
       retries: 10
@@ -40,21 +21,23 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    ports:
-      - "8100:8100"
     depends_on:
       db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8100/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   workflow-worker:
     build:
       context: .
       dockerfile: apps/workflow-worker/Dockerfile
-    ports:
-      - "8101:8101"
     depends_on:
       db:
         condition: service_healthy
@@ -66,13 +49,13 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    ports:
-      - "8090:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
-
-volumes:
-  vises_pg:
-  vises_uploads:
-  vises_logs:
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/vises/']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s

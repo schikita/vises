@@ -1,2 +1,4 @@
 export type { ClientListTableProps } from './client-list-table.types'
 export type { ClientApplicationJoin } from './client-application-join.types'
+export type { ClientListSortIconProps } from './client-list-sort-icon.types'
+export type { ClientRouteDisplayProps } from './client-route-display.types'

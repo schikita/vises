@@ -1,5 +1,9 @@
 export const AUTH_LOGIN_MESSAGES = {
-  loginRequired: 'Укажите логин',
+  identifierRequired: 'Укажите логин или email',
   passwordRequired: 'Укажите пароль',
-  subtitle: 'Логин и пароль, которые выдал админ/менеджер.',
+  title: 'Вход в систему',
+  subtitle: 'Войдите, чтобы управлять заявками и клиентами.',
+  identifierLabel: 'Логин или Email',
+  passwordLabel: 'Пароль',
+  submit: 'Войти',
 } as const

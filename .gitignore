@@ -18,3 +18,11 @@ specs
 logs
 vises_rabbitmq
 vises_pg
+
+# Compose bind-mount data (dev overlay)
+apps/api/db/
+apps/api/rabbitmq/
+apps/api/uploads/
+apps/api/logs/
+apps/workflow-worker/uploads/
+apps/workflow-worker/logs/

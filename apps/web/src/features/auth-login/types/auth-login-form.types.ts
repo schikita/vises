@@ -1,5 +1,5 @@
 export type AuthLoginFormValues = {
-  login: string
+  identifier: string
   password: string
 }
 

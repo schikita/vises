@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { Empty, StatusBadge } from '@/shared/ui'
+import type { AnalyticsStatusBucketDto } from '@vises/contracts'
+import { DataTable, StatusBadge, type DataTableColumnDef } from '@/shared/ui'
 import type { AnalyticsStatusBucketsTableProps } from '../../types'
 import { formatAnalyticsPercentageDisplay } from '../../utils'
 
@@ -11,50 +12,45 @@ export const AnalyticsStatusBucketsTable = ({
 }: AnalyticsStatusBucketsTableProps): React.ReactElement => {
   const { t } = useTranslation()
 
-  if (buckets.length === 0) {
-    return <Empty title={emptyTitle} text={emptyText} />
-  }
+  const columns: DataTableColumnDef<AnalyticsStatusBucketDto>[] = [
+    {
+      id: 'status',
+      header: t('analytics.columns.status'),
+      cell: (bucket): React.ReactNode => (
+        <StatusBadge
+          status={bucket.status}
+          label={t(`applications.status.${bucket.status}`)}
+        />
+      ),
+    },
+    {
+      id: 'count',
+      header: t('analytics.columns.count'),
+      cell: (bucket): React.ReactNode => (
+        <span className="tabular-nums text-text-primary">{bucket.count}</span>
+      ),
+    },
+    {
+      id: 'percentage',
+      header: t('analytics.columns.percentage'),
+      cell: (bucket): React.ReactNode => (
+        <span
+          className="font-medium tabular-nums text-text-primary"
+          data-testid={`analytics-percentage-${bucket.status}`}
+        >
+          {formatAnalyticsPercentageDisplay(bucket.percentage)}
+        </span>
+      ),
+    },
+  ]
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="min-w-full text-left text-sm">
-        <thead className="bg-surface-muted text-text-secondary">
-          <tr>
-            <th className="px-3 py-2 font-medium">
-              {t('analytics.columns.status')}
-            </th>
-            <th className="px-3 py-2 font-medium">
-              {t('analytics.columns.count')}
-            </th>
-            <th className="px-3 py-2 font-medium">
-              {t('analytics.columns.percentage')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {buckets.map(
-            (bucket): React.ReactElement => (
-              <tr key={bucket.status} className="border-t border-border">
-                <td className="px-3 py-2">
-                  <StatusBadge
-                    status={bucket.status}
-                    label={t(`applications.status.${bucket.status}`)}
-                  />
-                </td>
-                <td className="px-3 py-2 tabular-nums text-text-primary">
-                  {bucket.count}
-                </td>
-                <td
-                  className="px-3 py-2 font-medium tabular-nums text-text-primary"
-                  data-testid={`analytics-percentage-${bucket.status}`}
-                >
-                  {formatAnalyticsPercentageDisplay(bucket.percentage)}
-                </td>
-              </tr>
-            ),
-          )}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={buckets}
+      getRowId={(row): string => row.status}
+      emptyTitle={emptyTitle}
+      emptyText={emptyText}
+    />
   )
 }

@@ -6,9 +6,13 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import type { BalanceTransactionDto } from '@vises/contracts';
+import type {
+  BalanceTransactionDto,
+  BalanceTransactionsListDto,
+} from '@vises/contracts';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { RolesGuard } from '../../shared/guards/roles.guard';
@@ -22,6 +26,8 @@ import { User } from '../database/entities/user.entity';
 import { BalanceService } from './balance.service';
 import { BalanceAdjustDto } from './dto/balance-adjust.dto';
 import { BalanceTopUpDto } from './dto/balance-top-up.dto';
+import { BalanceTransactionsQueryDto } from './dto/balance-transactions-query.dto';
+import { parseBalanceTransactionsQuery } from './utils';
 
 @Controller('agents/:agentId/balance')
 @UseGuards(JwtAuthGuard)
@@ -56,14 +62,20 @@ export class BalanceController {
 
   /**
    * Admin/superadmin: any agent. Owning agent: self read-only (§6.4).
+   * Paginated newest-first ledger (DEC-P4).
    */
   @Get('transactions')
   @UseGuards(RolesGuard)
   @Roles(ADMIN_ROLE, SUPERADMIN_ROLE, AGENT_ROLE)
   listTransactions(
     @Param('agentId') agentId: string,
+    @Query() query: BalanceTransactionsQueryDto,
     @CurrentUser() actor: User,
-  ): Promise<BalanceTransactionDto[]> {
-    return this.balance.listTransactions(agentId, actor);
+  ): Promise<BalanceTransactionsListDto> {
+    return this.balance.listTransactions(
+      agentId,
+      actor,
+      parseBalanceTransactionsQuery(query),
+    );
   }
 }

@@ -14,7 +14,13 @@ export const AuthRegisterForm = ({
     formState: { errors },
   } = useForm<AuthRegisterFormValues>({
     resolver: zodResolver(authRegisterFormSchema),
-    defaultValues: { name: '', login: '', password: '', email: '' },
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      login: '',
+      password: '',
+      email: '',
+    },
   })
 
   return (

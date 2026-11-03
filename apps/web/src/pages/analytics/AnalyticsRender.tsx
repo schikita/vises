@@ -8,6 +8,8 @@ export const AnalyticsRender = ({
   filters,
   report,
   data,
+  agentSearch,
+  onAgentSearchChange,
 }: AnalyticsRenderProps): React.ReactElement => {
   const { t } = useTranslation()
 
@@ -21,6 +23,17 @@ export const AnalyticsRender = ({
       </div>
 
       <Card className="space-y-3">{filters}</Card>
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <input
+          className="field"
+          type="search"
+          value={agentSearch}
+          onChange={(event): void => onAgentSearchChange(event.target.value)}
+          placeholder={t('analytics.searchPlaceholder')}
+          aria-label={t('analytics.searchLabel')}
+        />
+      </div>
 
       {loadError ? (
         <p className="text-sm font-medium text-danger" role="alert">

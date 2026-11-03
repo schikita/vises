@@ -7,4 +7,6 @@ export type AnalyticsRenderProps = {
   data: AnalyticsDto | null
   filters: ReactNode
   report: ReactNode
+  agentSearch: string
+  onAgentSearchChange: (value: string) => void
 }

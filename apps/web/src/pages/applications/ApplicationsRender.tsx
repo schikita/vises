@@ -1,11 +1,18 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
 import { APPLICATION_STATUSES } from '@vises/contracts'
 import { formatDate } from '@/shared/lib'
-import { Avatar, Card, Empty, ListPager, StatusBadge } from '@/shared/ui'
+import {
+  Avatar,
+  Card,
+  DataTable,
+  Empty,
+  ListPager,
+  StatusBadge,
+  type DataTableColumnDef,
+} from '@/shared/ui'
 import { APPS_LIST_SORT_COLUMNS } from './constants'
-import type { ApplicationsRenderProps } from './types'
+import type { ApplicationsListRow, ApplicationsRenderProps } from './types'
 import { AppsListSortIcon } from './ui/AppsListSortIcon'
 
 export const ApplicationsRender = ({
@@ -32,6 +39,86 @@ export const ApplicationsRender = ({
   const { t } = useTranslation()
   const rangeStart = filteredCount === 0 ? 0 : (page - 1) * pageSize + 1
   const rangeEnd = Math.min(page * pageSize, filteredCount)
+
+  const columns: DataTableColumnDef<ApplicationsListRow>[] = [
+    ...APPS_LIST_SORT_COLUMNS.map(
+      (col): DataTableColumnDef<ApplicationsListRow> => ({
+        id: col.key,
+        header: (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-left uppercase tracking-wide hover:text-ink"
+            onClick={(): void => {
+              onSortChange(col.key)
+            }}
+          >
+            {t(`applications.list.columns.${
+              col.key === 'name'
+                ? 'application'
+                : col.key === 'city'
+                  ? 'city'
+                  : col.key === 'category'
+                    ? 'category'
+                    : col.key === 'status'
+                      ? 'status'
+                      : 'travelDate'
+            }`)}
+            <AppsListSortIcon active={sort.key === col.key} dir={sort.dir} />
+          </button>
+        ),
+        cell: (row): React.ReactNode => {
+          if (col.key === 'name') {
+            return (
+              <Link
+                to={`${appsBase}/${row.id}`}
+                className="flex items-center gap-3 text-ink no-underline"
+              >
+                <Avatar name={row.clientName || row.code} size={36} />
+                <span>
+                  <span className="block font-bold">{row.clientName}</span>
+                  <span className="text-xs text-muted">{row.code}</span>
+                </span>
+              </Link>
+            )
+          }
+          if (col.key === 'category') {
+            return (
+              <span className="font-semibold">
+                {row.category || row.visaType}
+              </span>
+            )
+          }
+          if (col.key === 'city') {
+            return row.submitCity
+          }
+          if (col.key === 'status') {
+            const statusLabel = row.applicationStatus
+              ? t(`applications.status.${row.applicationStatus}`)
+              : row.status
+            return <StatusBadge status={row.status} label={statusLabel} />
+          }
+          return <span className="text-muted">{formatDate(row.travelDate)}</span>
+        },
+      }),
+    ),
+    {
+      id: 'client',
+      header: t('applications.list.columns.client'),
+      cell: (row): React.ReactNode => {
+        if (row.clientId) {
+          return (
+            <Link
+              to={`${clientsBase}/${row.clientId}`}
+              className="text-sm font-medium text-forest no-underline hover:underline"
+            >
+              {t('applications.list.openClient')}
+            </Link>
+          )
+        }
+        return <span className="text-xs text-muted">—</span>
+      },
+    },
+  ]
 
   return (
     <div>
@@ -61,35 +148,36 @@ export const ApplicationsRender = ({
         </p>
       ) : null}
 
-      <div className="mt-5 flex flex-col gap-3 lg:flex-row">
-        <label className="field flex flex-1 items-center gap-2 py-0">
-          <Search size={16} className="shrink-0 text-muted" aria-hidden />
-          <input
-            className="min-w-0 flex-1 border-0 bg-transparent py-[11px] outline-none"
-            placeholder={t('applications.list.searchPlaceholder')}
-            value={q}
-            onChange={(e): void => {
-              onQueryChange(e.target.value)
-            }}
-            aria-label={t('applications.list.searchLabel')}
-          />
-        </label>
-        <select
-          className="field lg:max-w-[180px]"
-          value={city}
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <input
+          className="field"
+          type="search"
+          value={q}
           onChange={(e): void => {
-            onCityChange(e.target.value)
+            onQueryChange(e.target.value)
           }}
-        >
-          <option value="all">{t('applications.list.allCities')}</option>
-          {cities.map(
-            (c): React.ReactElement => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ),
-          )}
-        </select>
+          placeholder={t('applications.list.searchPlaceholder')}
+          aria-label={t('applications.list.searchLabel')}
+        />
+        <label className="block w-full sm:max-w-[220px]">
+          <span className="sr-only">{t('applications.list.allCities')}</span>
+          <select
+            className="field"
+            value={city}
+            onChange={(e): void => {
+              onCityChange(e.target.value)
+            }}
+          >
+            <option value="all">{t('applications.list.allCities')}</option>
+            {cities.map(
+              (c): React.ReactElement => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ),
+            )}
+          </select>
+        </label>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Status">
@@ -97,8 +185,8 @@ export const ApplicationsRender = ({
           type="button"
           className={`rounded-full px-3 py-1.5 text-xs font-bold ${
             status === 'all'
-              ? 'bg-forest text-white'
-              : 'border border-line bg-white'
+              ? 'bg-accent text-white'
+              : 'border border-border bg-white text-slate-900'
           }`}
           onClick={(): void => {
             onStatusChange('all')
@@ -113,8 +201,8 @@ export const ApplicationsRender = ({
               type="button"
               className={`rounded-full px-3 py-1.5 text-xs font-bold ${
                 status === s
-                  ? 'bg-forest text-white'
-                  : 'border border-line bg-white'
+                  ? 'bg-accent text-white'
+                  : 'border border-border bg-white text-slate-900'
               }`}
               onClick={(): void => {
                 onStatusChange(s)
@@ -126,112 +214,25 @@ export const ApplicationsRender = ({
         )}
       </div>
 
-      <Card className="mt-5 overflow-hidden p-0">
+      <div className="mt-5">
         {loading && pageItems.length === 0 ? (
-          <Empty
-            title={t('applications.list.loadingTitle')}
-            text={t('applications.list.loadingText')}
-          />
-        ) : filteredCount === 0 ? (
-          <Empty
-            title={t('applications.list.emptyTitle')}
-            text={t('applications.list.emptyText')}
-          />
+          <Card className="overflow-hidden p-0">
+            <Empty
+              title={t('applications.list.loadingTitle')}
+              text={t('applications.list.loadingText')}
+            />
+          </Card>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-surface-muted text-xs uppercase tracking-wide text-text-secondary">
-                <tr>
-                  {APPS_LIST_SORT_COLUMNS.map(
-                    (col): React.ReactElement => (
-                      <th key={col.key} className="px-4 py-3 font-bold">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1.5 text-left uppercase tracking-wide hover:text-ink"
-                          onClick={(): void => {
-                            onSortChange(col.key)
-                          }}
-                        >
-                          {t(`applications.list.columns.${
-                            col.key === 'name'
-                              ? 'application'
-                              : col.key === 'city'
-                                ? 'city'
-                                : col.key === 'category'
-                                  ? 'category'
-                                  : col.key === 'status'
-                                    ? 'status'
-                                    : 'travelDate'
-                          }`)}
-                          <AppsListSortIcon
-                            active={sort.key === col.key}
-                            dir={sort.dir}
-                          />
-                        </button>
-                      </th>
-                    ),
-                  )}
-                  <th className="px-4 py-3 font-bold">
-                    {t('applications.list.columns.client')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageItems.map(
-                  (row): React.ReactElement => {
-                    const statusLabel = row.applicationStatus
-                      ? t(`applications.status.${row.applicationStatus}`)
-                      : row.status
-                    return (
-                      <tr
-                        key={row.id}
-                        className="border-t border-border hover:bg-surface-muted/40"
-                      >
-                        <td className="px-4 py-3">
-                          <Link
-                            to={`${appsBase}/${row.id}`}
-                            className="flex items-center gap-3 text-ink no-underline"
-                          >
-                            <Avatar name={row.clientName || row.code} size={36} />
-                            <span>
-                              <span className="block font-bold">
-                                {row.clientName}
-                              </span>
-                              <span className="text-xs text-muted">{row.code}</span>
-                            </span>
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 font-semibold">
-                          {row.category || row.visaType}
-                        </td>
-                        <td className="px-4 py-3">{row.submitCity}</td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={row.status} label={statusLabel} />
-                        </td>
-                        <td className="px-4 py-3 text-muted">
-                          {formatDate(row.travelDate)}
-                        </td>
-                        <td className="px-4 py-3">
-                          {row.clientId ? (
-                            <Link
-                              to={`${clientsBase}/${row.clientId}`}
-                              className="text-sm font-medium text-forest no-underline hover:underline"
-                            >
-                              {t('applications.list.openClient')}
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-muted">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  },
-                )}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={columns}
+            data={pageItems}
+            getRowId={(row): string => row.id}
+            emptyTitle={t('applications.list.emptyTitle')}
+            emptyText={t('applications.list.emptyText')}
+            tableClassName="min-w-[720px]"
+          />
         )}
-      </Card>
+      </div>
 
       <ListPager
         page={page}

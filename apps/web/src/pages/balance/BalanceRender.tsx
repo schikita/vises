@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { BalanceAmountCard } from '@/entities/balance'
-import { Empty } from '@/shared/ui'
+import { Empty, ListPager } from '@/shared/ui'
 import type { BalanceRenderProps } from './types'
 
 /** Agent own balance + ledger (FE8 / AC-11) — no top-up/adjust controls. */
@@ -9,6 +9,10 @@ export const BalanceRender = ({
   loadError,
   currentBalance,
   ledger,
+  ledgerPage,
+  ledgerPageSize,
+  ledgerTotal,
+  onLedgerPageChange,
 }: BalanceRenderProps): React.ReactElement => {
   const { t } = useTranslation()
 
@@ -46,6 +50,12 @@ export const BalanceRender = ({
         <section className="space-y-3">
           <h2 className="font-semibold text-text-primary">{t('balance.ledger.title')}</h2>
           {ledger}
+          <ListPager
+            page={ledgerPage}
+            pageSize={ledgerPageSize}
+            total={ledgerTotal}
+            onPageChange={onLedgerPageChange}
+          />
         </section>
       ) : null}
     </div>

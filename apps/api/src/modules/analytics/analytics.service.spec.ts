@@ -6,7 +6,7 @@ import { Client } from '../database/entities/client.entity';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from './analytics.service';
 
-describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
+describe('AnalyticsService (AC-15 / AC-16 / FR-9 / DEC-P15)', (): void => {
   type QbStub = {
     innerJoin: jest.Mock;
     select: jest.Mock;
@@ -27,6 +27,7 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
   let appsQb: QbStub;
   let historyFind: jest.Mock;
   let clientsFind: jest.Mock;
+  let usersFind: jest.Mock;
   let service: AnalyticsService;
 
   const admin: User = Object.assign(new User(), {
@@ -76,6 +77,12 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
     appsQb = createQb(owners);
     historyFind = jest.fn(async (): Promise<typeof historyRows> => historyRows);
     clientsFind = jest.fn(async (): Promise<typeof clientRows> => clientRows);
+    usersFind = jest.fn(
+      async (): Promise<Array<Pick<User, 'id' | 'login' | 'name'>>> => [
+        { id: 'agent-a', login: 'alice', name: 'Alice Agent' },
+        { id: 'agent-b', login: 'bob', name: 'Bob Agent' },
+      ],
+    );
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
@@ -94,14 +101,25 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
           provide: getRepositoryToken(Client),
           useValue: { find: clientsFind },
         },
+        {
+          provide: getRepositoryToken(User),
+          useValue: { find: usersFind },
+        },
       ],
     }).compile();
 
     service = moduleRef.get(AnalyticsService);
   });
 
+  const defaultPagination = { page: 1, pageSize: 20 };
+
   it('returns full aggregates for admin (current totals)', async (): Promise<void> => {
-    const dto = await service.getRolesApplications(admin, null);
+    const dto = await service.getRolesApplications(
+      admin,
+      null,
+      defaultPagination,
+      '',
+    );
 
     expect(dto.global.totalApplications).toBe(3);
     // app-2 has no history → drafting; app-1 booked; app-3 pending
@@ -118,12 +136,23 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
       { agentId: 'agent-a', count: 2, percentage: '66.67' },
       { agentId: 'agent-b', count: 1, percentage: '33.33' },
     ]);
+    expect(dto.perAgent.total).toBe(2);
+    expect(dto.perAgent.page).toBe(1);
+    expect(dto.perAgent.pageSize).toBe(20);
+    expect(usersFind).not.toHaveBeenCalled();
   });
 
   it('scopes response for agent actors (self subset)', async (): Promise<void> => {
-    const dto = await service.getRolesApplications(agent, null);
+    const dto = await service.getRolesApplications(
+      agent,
+      null,
+      defaultPagination,
+      '',
+    );
 
-    expect(dto.perAgent.every((p) => p.agentId === 'agent-a')).toBe(true);
+    expect(dto.perAgent.items.every((p) => p.agentId === 'agent-a')).toBe(
+      true,
+    );
     expect(dto.global.totalApplications).toBe(2);
     expect(dto.clientsPerAgent).toEqual([
       { agentId: 'agent-a', count: 2, percentage: '100.00' },
@@ -131,15 +160,70 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
   });
 
   it('filters status metrics by receivedAt range', async (): Promise<void> => {
-    const dto = await service.getRolesApplications(admin, {
-      from: new Date('2026-01-01T00:00:00.000Z'),
-      to: new Date('2026-01-31T23:59:59.999Z'),
-    });
+    const dto = await service.getRolesApplications(
+      admin,
+      {
+        from: new Date('2026-01-01T00:00:00.000Z'),
+        to: new Date('2026-01-31T23:59:59.999Z'),
+      },
+      defaultPagination,
+      '',
+    );
 
     // Only app-1 received in January (app-2 never; app-3 in February)
     expect(dto.global.totalApplications).toBe(1);
     expect(
       dto.global.byStatus.find((b) => b.status === 'booked')?.count,
     ).toBe(1);
+  });
+
+  it('filters perAgent by q and loads agent lookup (DEC-P15)', async (): Promise<void> => {
+    const dto = await service.getRolesApplications(
+      admin,
+      null,
+      { page: 1, pageSize: 5 },
+      'bob',
+    );
+
+    expect(usersFind).toHaveBeenCalled();
+    expect(dto.perAgent.items.map((p) => p.agentId)).toEqual(['agent-b']);
+    expect(dto.perAgent.items.length).toBe(Math.min(5, dto.perAgent.total));
+    expect(dto.perAgent.total).toBe(1);
+    expect(dto.perAgent.page).toBe(1);
+    expect(dto.perAgent.pageSize).toBe(5);
+    expect(dto.clientsPerAgent).toHaveLength(2);
+    expect(dto.global.totalApplications).toBe(3);
+  });
+
+  it('paginates perAgent strictly for pageSize=5 (T23)', async (): Promise<void> => {
+    const manyOwners = Array.from({ length: 8 }, (_, i) => ({
+      applicationId: `app-x${i}`,
+      agentId: `agent-${i}`,
+    }));
+    appsQb = createQb(manyOwners);
+    historyFind.mockResolvedValue(
+      manyOwners.map((row) => ({
+        applicationId: row.applicationId,
+        fromStatus: 'drafting' as const,
+        toStatus: 'pending' as const,
+        createdAt: new Date('2026-01-10T00:00:00.000Z'),
+      })),
+    );
+    clientsFind.mockResolvedValue(
+      manyOwners.map((row) => ({ agentId: row.agentId })),
+    );
+
+    const dto = await service.getRolesApplications(
+      admin,
+      null,
+      { page: 1, pageSize: 5 },
+      '',
+    );
+
+    expect(dto.perAgent.items.length).toBe(5);
+    expect(dto.perAgent.total).toBe(8);
+    expect(dto.perAgent.page).toBe(1);
+    expect(dto.perAgent.pageSize).toBe(5);
+    expect(dto.clientsPerAgent).toHaveLength(8);
   });
 });

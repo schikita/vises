@@ -89,16 +89,21 @@ export type ClientPassportUpdateDto = {
 };
 
 /**
- * Client list row (Decision 2A / T15.1).
+ * Client list row (Decision 2A / T15.1 / qa-polish DEC-P11 / DEC-P12).
  * `maskedPassport` is a single display mask (e.g. `"AB****CD"`); no plaintext passport fields.
+ * `agentName`: non-empty `User.name`, else `login`.
+ * `routeFrom` / `routeTo`: application `submitCity` / `destination` (empty → null).
  */
 export type ClientListDto = {
   id: string;
   agentId: string;
+  agentName: string;
   firstName: string;
   lastName: string;
   maskedPassport: string;
   status: ApplicationStatus;
+  routeFrom: string | null;
+  routeTo: string | null;
   /** ISO-8601 timestamp */
   createdAt: string;
 };

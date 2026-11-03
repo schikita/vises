@@ -14,3 +14,9 @@ export { applyEncryptedPassportFields } from './apply-encrypted-passport-fields.
 export { buildPassportPlainOut } from './build-passport-plain-out.util';
 export { pickPassportUpdateFields } from './pick-passport-update-fields.util';
 export { parsePricePerClientWholeUnits } from './parse-price-per-client-whole-units.util';
+export { parseClientsListQuery } from './parse-clients-list-query.util';
+export { filterClientsListBySearch } from './filter-clients-list-by-search.util';
+export { sortClientsList } from './sort-clients-list.util';
+export { paginateClientsList } from './paginate-clients-list.util';
+export { resolveAgentDisplayName } from './resolve-agent-display-name.util';
+export { normalizeRouteCity } from './normalize-route-city.util';

@@ -17,6 +17,7 @@ const renderShell = async (
   await i18n.changeLanguage('en')
   const user = userEvent.setup()
   const items = kind === 'admin' ? ADMIN_NAV : AGENT_NAV
+  const badgeLabel = kind === 'admin' ? 'Admin' : null
   render(
     <ThemeProvider>
       <MemoryRouter initialEntries={[path]}>
@@ -27,6 +28,7 @@ const renderShell = async (
               <ShellLayout
                 kind={kind}
                 items={items}
+                badgeLabel={badgeLabel}
                 sessionName="Ada Admin"
                 sessionLogin="ada"
                 onLogout={vi.fn()}
@@ -42,17 +44,28 @@ const renderShell = async (
   return user
 }
 
-describe('ShellLayout (FE5 / AC-1 chrome)', (): void => {
-  it('renders sticky top bar theme, language, and user menu controls', async (): Promise<void> => {
+describe('ShellLayout (FE14 top nav chrome)', (): void => {
+  it('renders sticky top bar with horizontal nav, language, and user menu', async (): Promise<void> => {
     await renderShell('admin', '/admin')
 
-    expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'User menu' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Analytics' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'User menu' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /payment/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /visit/i })).not.toBeInTheDocument()
+    expect(document.querySelector('aside')).toBeNull()
+  })
+
+  it('exposes theme and logout inside the top-right user menu', async (): Promise<void> => {
+    const user = await renderShell('admin', '/admin')
+
+    expect(screen.queryByRole('group', { name: 'Theme' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'User menu' }))
+
+    expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument()
   })
 
   it('opens responsive drawer from the top bar menu button', async (): Promise<void> => {
@@ -71,7 +84,7 @@ describe('ShellLayout (FE5 / AC-1 chrome)', (): void => {
   })
 })
 
-describe('ShellLayout responsive chrome (AC-19a)', (): void => {
+describe('ShellLayout responsive chrome (FE14)', (): void => {
   it.each([
     { width: 320, label: 'min' },
     { width: 768, label: 'md' },
@@ -88,18 +101,13 @@ describe('ShellLayout responsive chrome (AC-19a)', (): void => {
 
       const topBar = screen.getByRole('banner')
       expect(topBar.className).toContain('sticky')
-      expect(screen.getByRole('group', { name: 'Theme' })).toBeInTheDocument()
       expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
+      expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument()
 
       const main = document.querySelector('main')
       expect(main).toBeTruthy()
       expect(main?.className).toContain('min-w-0')
-
-      const sidebar = document.querySelector('aside')
-      expect(sidebar).toBeTruthy()
-      expect(sidebar?.className).toContain('md:flex')
-      expect(sidebar?.className).toContain('hidden')
+      expect(document.querySelector('aside')).toBeNull()
     },
   )
 })
-

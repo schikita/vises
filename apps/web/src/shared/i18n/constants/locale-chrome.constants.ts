@@ -32,6 +32,7 @@ export const LOCALE_CHROME_EN = {
       logout: 'Log out',
       badge: {
         admin: 'Admin',
+        superadmin: 'Superadmin',
         agent: 'Agent',
       },
       nav: {
@@ -109,6 +110,7 @@ export const LOCALE_CHROME_RU = {
       logout: 'Выйти',
       badge: {
         admin: 'Админ',
+        superadmin: 'Superadmin',
         agent: 'Агент',
       },
       nav: {

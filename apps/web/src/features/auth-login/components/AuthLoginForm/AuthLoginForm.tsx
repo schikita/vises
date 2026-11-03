@@ -14,7 +14,7 @@ export const AuthLoginForm = ({
     formState: { errors },
   } = useForm<AuthLoginFormValues>({
     resolver: zodResolver(authLoginFormSchema),
-    defaultValues: { login: '', password: '' },
+    defaultValues: { identifier: '', password: '' },
   })
 
   return (

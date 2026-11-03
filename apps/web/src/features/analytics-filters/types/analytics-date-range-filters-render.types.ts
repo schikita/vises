@@ -7,4 +7,5 @@ export type AnalyticsDateRangeFiltersRenderProps = {
   onModeChange: (mode: AnalyticsRangeMode) => void
   onFromChange: (value: string) => void
   onToChange: (value: string) => void
+  onApply: () => void
 }

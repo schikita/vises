@@ -1,6 +1,5 @@
+import type { UserListItemDto } from '@vises/contracts'
 import type { User } from './user.types'
 
-/** Users list row with latest application id for navigation (DEC-007). */
-export type UserListItem = User & {
-  latestAppId: string | null
-}
+/** Users list row with T19 enrichment (latestAppId, agent metrics). */
+export type UserListItem = User & UserListItemDto

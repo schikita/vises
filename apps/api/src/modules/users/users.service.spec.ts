@@ -3,6 +3,8 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { StaffRole } from '@vises/contracts';
 import { Application } from '../database/entities/application.entity';
+import { BalanceTransaction } from '../database/entities/balance-transaction.entity';
+import { Client } from '../database/entities/client.entity';
 import { User } from '../database/entities/user.entity';
 import { UsersService } from './users.service';
 
@@ -42,6 +44,28 @@ describe('UsersService ACL matrix (T5 / AC-2 / FR-1 / NFR-6)', (): void => {
 
   const createModule = async (
     usersRepo: ReturnType<typeof createUsersRepo>,
+    appsRepo: {
+      createQueryBuilder: jest.Mock;
+      find: jest.Mock;
+    } = {
+      createQueryBuilder: jest.fn(),
+      find: jest.fn(async (): Promise<Application[]> => []),
+    },
+    clientsRepo: { find: jest.Mock } = {
+      find: jest.fn(async (): Promise<Client[]> => []),
+    },
+    ledgerRepo: {
+      createQueryBuilder: jest.Mock;
+    } = {
+      createQueryBuilder: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn(async (): Promise<unknown[]> => []),
+      }),
+    },
   ): Promise<UsersService> => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,7 +73,15 @@ describe('UsersService ACL matrix (T5 / AC-2 / FR-1 / NFR-6)', (): void => {
         { provide: getRepositoryToken(User), useValue: usersRepo },
         {
           provide: getRepositoryToken(Application),
-          useValue: { createQueryBuilder: jest.fn() },
+          useValue: appsRepo,
+        },
+        {
+          provide: getRepositoryToken(Client),
+          useValue: clientsRepo,
+        },
+        {
+          provide: getRepositoryToken(BalanceTransaction),
+          useValue: ledgerRepo,
         },
       ],
     }).compile();
@@ -253,5 +285,143 @@ describe('UsersService ACL matrix (T5 / AC-2 / FR-1 / NFR-6)', (): void => {
       where: { role: 'agent', active: true },
       order: { name: 'ASC' },
     });
+  });
+
+  it('listPaged enriches agents with metrics and latestAppId via clients (DEC-P5 / DEC-P6)', async (): Promise<void> => {
+    const usersRepo = createUsersRepo();
+    const agent = makeUser({
+      id: 'agent-1',
+      role: 'agent',
+      email: 'agent@example.com',
+      login: 'agent1',
+      balance: '250.50',
+    });
+    const admin = makeUser({
+      id: 'admin-1',
+      role: 'admin',
+      email: 'admin@example.com',
+      login: 'admin1',
+      balance: null,
+    });
+
+    const countQb = {
+      andWhere: jest.fn().mockReturnThis(),
+      getCount: jest.fn(async (): Promise<number> => 2),
+    };
+    const listQb = {
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn(async (): Promise<User[]> => [agent, admin]),
+    };
+    usersRepo.createQueryBuilder
+      .mockReturnValueOnce(countQb)
+      .mockReturnValueOnce(listQb);
+
+    const appsFind = jest.fn(
+      async (): Promise<Application[]> => [
+        Object.assign(new Application(), {
+          id: 'app-via-client',
+          clientId: 'cli-1',
+          clientEmail: 'someone-else@example.com',
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+        }),
+      ],
+    );
+    const appsCreateQueryBuilder = jest.fn().mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn(async (): Promise<Application[]> => []),
+    });
+    const clientsFind = jest.fn(
+      async (): Promise<Array<Pick<Client, 'id' | 'agentId'>>> => [
+        { id: 'cli-1', agentId: 'agent-1' },
+        { id: 'cli-2', agentId: 'agent-1' },
+      ],
+    );
+    const ledgerGetRawMany = jest.fn(
+      async (): Promise<Array<{ agentId: string; total: string }>> => [
+        { agentId: 'agent-1', total: '360.00' },
+      ],
+    );
+    const ledgerCreateQueryBuilder = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: ledgerGetRawMany,
+    });
+
+    const service = await createModule(
+      usersRepo,
+      { createQueryBuilder: appsCreateQueryBuilder, find: appsFind },
+      { find: clientsFind },
+      { createQueryBuilder: ledgerCreateQueryBuilder },
+    );
+
+    const result = await service.listPaged({
+      page: 1,
+      pageSize: 20,
+      q: '',
+      role: '',
+      sort: null,
+      sortDir: 'asc',
+    });
+
+    expect(result.total).toBe(2);
+    const agentItem = result.items.find((item) => item.id === 'agent-1');
+    const adminItem = result.items.find((item) => item.id === 'admin-1');
+    expect(agentItem).toMatchObject({
+      latestAppId: 'app-via-client',
+      clientsCount: 2,
+      currentBalance: '250.50',
+      totalRevenue: '360.00',
+    });
+    expect(adminItem).toMatchObject({
+      latestAppId: null,
+      clientsCount: null,
+      currentBalance: null,
+      totalRevenue: null,
+    });
+    expect(clientsFind).toHaveBeenCalled();
+    expect(appsFind).toHaveBeenCalled();
+    expect(ledgerCreateQueryBuilder).toHaveBeenCalled();
+  });
+
+  it('listPaged sets totalRevenue 0.00 when agent has no debit rows (DEC-P13)', async (): Promise<void> => {
+    const usersRepo = createUsersRepo();
+    const agent = makeUser({
+      id: 'agent-empty',
+      role: 'agent',
+      balance: '0',
+    });
+    const countQb = {
+      andWhere: jest.fn().mockReturnThis(),
+      getCount: jest.fn(async (): Promise<number> => 1),
+    };
+    const listQb = {
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn(async (): Promise<User[]> => [agent]),
+    };
+    usersRepo.createQueryBuilder
+      .mockReturnValueOnce(countQb)
+      .mockReturnValueOnce(listQb);
+
+    const service = await createModule(usersRepo);
+    const result = await service.listPaged({
+      page: 1,
+      pageSize: 20,
+      q: '',
+      role: 'agent',
+      sort: null,
+      sortDir: 'asc',
+    });
+
+    expect(result.items[0]?.totalRevenue).toBe('0.00');
   });
 });

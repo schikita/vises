@@ -72,7 +72,9 @@ export const ClientDetailPage = (): React.ReactElement => {
       await queryClient.invalidateQueries({
         queryKey: CLIENT_QUERY_KEYS.detail(clientId),
       })
-      await queryClient.invalidateQueries({ queryKey: CLIENT_QUERY_KEYS.list() })
+      await queryClient.invalidateQueries({
+        queryKey: [...CLIENT_QUERY_KEYS.all, 'list'],
+      })
     },
     onError: (err: unknown): void => {
       if (

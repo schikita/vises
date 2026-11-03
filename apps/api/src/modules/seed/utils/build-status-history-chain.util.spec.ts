@@ -1,7 +1,7 @@
 import { buildStatusHistoryChain } from './build-status-history-chain.util';
 
 describe('buildStatusHistoryChain', (): void => {
-  const agentId = 'u-agent-a';
+  const agentId = 'u-agent-01';
 
   it('returns empty chain for drafting (no history on create)', (): void => {
     expect(buildStatusHistoryChain('drafting', agentId)).toEqual([]);

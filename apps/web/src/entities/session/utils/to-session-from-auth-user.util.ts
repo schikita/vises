@@ -12,6 +12,8 @@ export const toSessionFromAuthUser = (user: AuthSessionUserDto): Session | null 
     userId: user.id,
     role: user.role,
     name: user.name,
+    firstName: user.firstName,
+    lastName: user.lastName,
     email: user.email || user.login,
     login: user.login,
     active: user.active,

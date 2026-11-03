@@ -1,15 +1,30 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card } from '@/shared/ui'
+import { Card, ListPager } from '@/shared/ui'
+import { ANALYTICS_CLIENTS_PER_AGENT_PAGE_SIZE } from '../../constants'
 import type { AnalyticsReportProps } from '../../types'
+import { sliceAnalyticsClientsPage } from '../../utils'
 import { AnalyticsClientsPerAgentTable } from '../AnalyticsClientsPerAgentTable'
 import { AnalyticsPerAgentList } from '../AnalyticsPerAgentList'
 import { AnalyticsStatusBucketsTable } from '../AnalyticsStatusBucketsTable'
 
-/** Full AnalyticsDto display: global, per-agent, clients-per-agent (AC-12). */
+/** Full AnalyticsDto display: global, per-agent, clients-per-agent (AC-12 / FE17 / FE18). */
 export const AnalyticsReport = ({
   data,
+  perAgentPage,
+  perAgentPageSize,
+  perAgentTotal,
+  onPerAgentPageChange,
 }: AnalyticsReportProps): React.ReactElement => {
   const { t } = useTranslation()
+  const [clientsPage, setClientsPage] = useState(1)
+  const clientsPageSize = ANALYTICS_CLIENTS_PER_AGENT_PAGE_SIZE
+  const clientsTotal = data.clientsPerAgent.length
+  const clientsPageItems = sliceAnalyticsClientsPage(
+    data.clientsPerAgent,
+    clientsPage,
+    clientsPageSize,
+  )
 
   return (
     <div className="space-y-8">
@@ -38,9 +53,15 @@ export const AnalyticsReport = ({
           {t('analytics.perAgent.title')}
         </h2>
         <AnalyticsPerAgentList
-          items={data.perAgent}
+          items={data.perAgent.items}
           emptyTitle={t('analytics.empty.perAgentTitle')}
           emptyText={t('analytics.empty.perAgentText')}
+        />
+        <ListPager
+          page={perAgentPage}
+          pageSize={perAgentPageSize}
+          total={perAgentTotal}
+          onPageChange={onPerAgentPageChange}
         />
       </section>
 
@@ -50,11 +71,17 @@ export const AnalyticsReport = ({
         </h2>
         <Card className="space-y-3">
           <AnalyticsClientsPerAgentTable
-            rows={data.clientsPerAgent}
+            rows={clientsPageItems}
             emptyTitle={t('analytics.empty.clientsTitle')}
             emptyText={t('analytics.empty.clientsText')}
           />
         </Card>
+        <ListPager
+          page={clientsPage}
+          pageSize={clientsPageSize}
+          total={clientsTotal}
+          onPageChange={setClientsPage}
+        />
       </section>
     </div>
   )

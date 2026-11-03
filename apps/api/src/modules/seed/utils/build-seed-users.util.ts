@@ -10,16 +10,6 @@ import {
   SEED_ADMIN_2_NAME,
   SEED_ADMIN_2_USER_ID,
   SEED_ADMIN_PASSWORD,
-  SEED_AGENT_A_FINAL_BALANCE,
-  SEED_AGENT_A_INVITE_TOKEN,
-  SEED_AGENT_A_LOGIN,
-  SEED_AGENT_A_NAME,
-  SEED_AGENT_A_USER_ID,
-  SEED_AGENT_B_FINAL_BALANCE,
-  SEED_AGENT_B_INVITE_TOKEN,
-  SEED_AGENT_B_LOGIN,
-  SEED_AGENT_B_NAME,
-  SEED_AGENT_B_USER_ID,
   SEED_AGENT_PASSWORD,
   SEED_SUPERADMIN_INVITE_TOKEN,
   SEED_SUPERADMIN_LOGIN,
@@ -28,9 +18,11 @@ import {
   SEED_SUPERADMIN_USER_ID,
 } from '../constants';
 import type { BuildSeedUsersResult, UserFactory } from '../types';
+import { buildSeedAgentPlans } from './build-seed-agent-plans.util';
+import { formatSeedMoney } from './format-seed-money.util';
 
 /**
- * FR-11 staff users: 1 superadmin, 2 admins, 2 agents (Agent A / Agent B).
+ * FR-11 staff users: 1 superadmin, 2 admins (unchanged), 20 generated agents.
  * Agent balances match ledger end-state after seed top_up + client debits.
  */
 export const buildSeedUsers = (
@@ -45,7 +37,9 @@ export const buildSeedUsers = (
   const adminRole: StaffRole = 'admin';
   const agentRole: StaffRole = 'agent';
 
-  const seeded = [
+  const agentPlans = buildSeedAgentPlans();
+
+  const staff = [
     users.create({
       id: SEED_SUPERADMIN_USER_ID,
       name: SEED_SUPERADMIN_NAME,
@@ -88,40 +82,28 @@ export const buildSeedUsers = (
       createdAt: now,
       updatedAt: now,
     }),
-    users.create({
-      id: SEED_AGENT_A_USER_ID,
-      name: SEED_AGENT_A_NAME,
-      login: SEED_AGENT_A_LOGIN,
-      email: SEED_AGENT_A_LOGIN,
-      passwordHash: agentHash,
-      invitePassword: SEED_AGENT_PASSWORD,
-      role: agentRole,
-      balance: SEED_AGENT_A_FINAL_BALANCE,
-      active: true,
-      inviteToken: SEED_AGENT_A_INVITE_TOKEN,
-      createdAt: now,
-      updatedAt: now,
-    }),
-    users.create({
-      id: SEED_AGENT_B_USER_ID,
-      name: SEED_AGENT_B_NAME,
-      login: SEED_AGENT_B_LOGIN,
-      email: SEED_AGENT_B_LOGIN,
-      passwordHash: agentHash,
-      invitePassword: SEED_AGENT_PASSWORD,
-      role: agentRole,
-      balance: SEED_AGENT_B_FINAL_BALANCE,
-      active: true,
-      inviteToken: SEED_AGENT_B_INVITE_TOKEN,
-      createdAt: now,
-      updatedAt: now,
-    }),
   ];
 
+  const agents = agentPlans.map((plan) =>
+    users.create({
+      id: plan.userId,
+      name: plan.name,
+      login: plan.login,
+      email: plan.login,
+      passwordHash: agentHash,
+      invitePassword: SEED_AGENT_PASSWORD,
+      role: agentRole,
+      balance: formatSeedMoney(plan.finalBalanceWhole, 1),
+      active: true,
+      inviteToken: plan.inviteToken,
+      createdAt: now,
+      updatedAt: now,
+    }),
+  );
+
   return {
-    users: seeded,
+    users: [...staff, ...agents],
     superadminId: SEED_SUPERADMIN_USER_ID,
-    agentAId: SEED_AGENT_A_USER_ID,
-    agentBId: SEED_AGENT_B_USER_ID,
+    agentPlans,
   };
 };

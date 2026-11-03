@@ -41,6 +41,8 @@ describe('RegisterPage (AC-5)', (): void => {
       userId: 'u-agent',
       role: 'agent',
       name: 'New Agent',
+      firstName: 'New',
+      lastName: 'Agent',
       email: 'new@example.com',
       login: 'newagent',
       active: true,
@@ -56,15 +58,19 @@ describe('RegisterPage (AC-5)', (): void => {
       </MemoryRouter>,
     )
 
-    await user.type(screen.getByLabelText(/^Name$/i), 'New Agent')
-    await user.type(screen.getByLabelText(/^Login$/i), 'newagent')
-    await user.type(screen.getByLabelText(/^Password$/i), 'secret1')
-    await user.click(screen.getByRole('button', { name: /create account/i }))
+    await user.type(screen.getByLabelText(/^Имя \(Опционально\)$/i), 'New')
+    await user.type(screen.getByLabelText(/^Фамилия \(Опционально\)$/i), 'Agent')
+    await user.type(screen.getByLabelText(/^Логин$/i), 'newagent')
+    await user.type(screen.getByLabelText(/^Email$/i), 'new@example.com')
+    await user.type(screen.getByLabelText(/^Пароль$/i), 'secret1')
+    await user.click(screen.getByRole('button', { name: /создать аккаунт/i }))
 
     await waitFor((): void => {
       expect(register).toHaveBeenCalledWith({
-        name: 'New Agent',
+        firstName: 'New',
+        lastName: 'Agent',
         login: 'newagent',
+        email: 'new@example.com',
         password: 'secret1',
       })
       expect(screen.getByText('Agent shell')).toBeInTheDocument()

@@ -21,6 +21,7 @@ export const CHROME_I18N_KEYS = [
   'chrome.shell.userMenuAriaLabel',
   'chrome.shell.logout',
   'chrome.shell.badge.admin',
+  'chrome.shell.badge.superadmin',
   'chrome.shell.badge.agent',
   'chrome.shell.nav.home',
   'chrome.shell.nav.analytics',

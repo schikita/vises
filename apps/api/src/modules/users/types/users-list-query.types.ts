@@ -1,5 +1,13 @@
-/** Users list sort keys matching staff UI (REQ-007). */
-export type UsersListSortKey = 'user' | 'role' | 'status' | 'created';
+/** Users list sort keys matching staff UI + agent metrics (REQ-007 / DEC-P17). */
+export type UsersListSortKey =
+  | 'user'
+  | 'name'
+  | 'role'
+  | 'status'
+  | 'created'
+  | 'currentBalance'
+  | 'clientsCount'
+  | 'totalRevenue';
 
 export type UsersListSortDir = 'asc' | 'desc';
 

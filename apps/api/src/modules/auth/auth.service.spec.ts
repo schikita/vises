@@ -4,7 +4,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { StaffRole, UserMeDto } from '@vises/contracts';
 import { User } from '../database/entities/user.entity';
-import { checkPassword } from '../../shared/utils';
+import { checkPassword, hashPassword } from '../../shared/utils';
 import { AuthService } from './auth.service';
 import type { RegisterDto } from './dto/register.dto';
 import { JwtTokenService } from './jwt.service';
@@ -80,7 +80,6 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
     const { service, moduleRef } = await createModule(usersRepo);
 
     const body: RegisterDto = {
-      name: 'Agent One',
       login: 'agent.one',
       password: 'secret-pass',
       email: 'agent.one@example.com',
@@ -93,14 +92,45 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
     expect(saved.role).toBe('agent');
     expect(saved.active).toBe(true);
     expect(saved.balance).toBe('0');
+    expect(saved.name).toBe('agent.one');
+    expect(saved.firstName).toBeNull();
+    expect(saved.lastName).toBeNull();
     expect(checkPassword('secret-pass', saved.passwordHash)).toBe(true);
     expect(session.user.role).toBe('agent');
+    expect(session.user.firstName).toBeNull();
+    expect(session.user.lastName).toBeNull();
     expect(session.token).toBe(`token:${saved.id}:agent`);
     expect(makeToken).toHaveBeenCalledWith(
       expect.objectContaining({ role: 'agent' satisfies StaffRole }),
     );
     // AuthService only injects User repository — registration must not touch clients/apps.
     expect(moduleRef.get(getRepositoryToken(User))).toBe(usersRepo);
+
+    await moduleRef.close();
+  });
+
+  it('POST /auth/register persists optional firstName/lastName and derives name', async (): Promise<void> => {
+    const usersRepo = createUsersRepo();
+    usersRepo.findOne.mockResolvedValue(null);
+    const { service, moduleRef } = await createModule(usersRepo);
+
+    const body: RegisterDto = {
+      login: 'agent.named',
+      email: 'named@example.com',
+      password: 'secret-pass',
+      firstName: ' Ada ',
+      lastName: ' Lovelace ',
+    };
+
+    const session = await service.register(body);
+    const saved = usersRepo.save.mock.calls[0][0] as User;
+
+    expect(saved.firstName).toBe('Ada');
+    expect(saved.lastName).toBe('Lovelace');
+    expect(saved.name).toBe('Ada Lovelace');
+    expect(session.user.firstName).toBe('Ada');
+    expect(session.user.lastName).toBe('Lovelace');
+    expect(session.user.name).toBe('Ada Lovelace');
 
     await moduleRef.close();
   });
@@ -112,8 +142,8 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
     let caught: HttpException | undefined;
     try {
       await service.register({
-        name: 'Hacker',
         login: 'hacker',
+        email: 'hacker@example.com',
         password: 'x',
         role: 'admin',
       });
@@ -127,6 +157,52 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
     await moduleRef.close();
   });
 
+  it('login accepts identifier matching login OR email', async (): Promise<void> => {
+    const usersRepo = createUsersRepo();
+    const user = {
+      id: 'u-agent',
+      name: 'Agent',
+      firstName: null,
+      lastName: null,
+      login: 'agent.login',
+      email: 'agent@example.com',
+      passwordHash: hashPassword('secret-pass'),
+      invitePassword: '',
+      role: 'agent' as const,
+      balance: '0',
+      active: true,
+      inviteToken: 'inv-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    } satisfies User;
+
+    const getOne = jest.fn().mockResolvedValue(user);
+    const where = jest.fn().mockReturnValue({ getOne });
+    usersRepo.createQueryBuilder.mockReturnValue({ where });
+
+    const { service, moduleRef } = await createModule(usersRepo);
+
+    const byLogin = await service.login('agent.login', 'secret-pass');
+    expect(where).toHaveBeenCalledWith(
+      'LOWER(u.login) = :needle OR LOWER(u.email) = :needle',
+      { needle: 'agent.login' },
+    );
+    expect(byLogin.token).toBe('token:u-agent:agent');
+
+    where.mockClear();
+    getOne.mockClear();
+    getOne.mockResolvedValue(user);
+
+    const byEmail = await service.login('agent@example.com', 'secret-pass');
+    expect(where).toHaveBeenCalledWith(
+      'LOWER(u.login) = :needle OR LOWER(u.email) = :needle',
+      { needle: 'agent@example.com' },
+    );
+    expect(byEmail.token).toBe('token:u-agent:agent');
+
+    await moduleRef.close();
+  });
+
   it('GET /auth/me returns UserMeDto with agent balance string and null for others', async (): Promise<void> => {
     const usersRepo = createUsersRepo();
     const { service, moduleRef } = await createModule(usersRepo);
@@ -134,6 +210,8 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
     const agent = {
       id: 'u-agent',
       name: 'Agent',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
       login: 'agent',
       email: 'a@example.com',
       passwordHash: 'x',
@@ -152,6 +230,8 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
       login: 'admin',
       role: 'admin' as const,
       balance: '0',
+      firstName: null,
+      lastName: null,
     } satisfies User;
 
     const superadmin = {
@@ -160,6 +240,8 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
       login: 'super',
       role: 'superadmin' as const,
       balance: '99.00',
+      firstName: null,
+      lastName: null,
     } satisfies User;
 
     const agentMe = service.me(agent);
@@ -169,6 +251,8 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
       role: 'agent',
       active: true,
       balance: '360.00',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
     } satisfies UserMeDto);
     expect(typeof agentMe.balance).toBe('string');
     expect(agentMe).not.toHaveProperty('name');
@@ -181,6 +265,8 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
     const adminMe = service.me(admin);
     expect(adminMe.role).toBe('admin');
     expect(adminMe.balance).toBeNull();
+    expect(adminMe.firstName).toBeNull();
+    expect(adminMe.lastName).toBeNull();
 
     const superadminMe = service.me(superadmin);
     expect(superadminMe.role).toBe('superadmin');
@@ -194,6 +280,8 @@ describe('AuthService (T4 / FR-2 / §6.1)', (): void => {
     const user = {
       id: 'u-sa',
       name: 'Super',
+      firstName: null,
+      lastName: null,
       login: 'super',
       email: 's@example.com',
       passwordHash: 'x',

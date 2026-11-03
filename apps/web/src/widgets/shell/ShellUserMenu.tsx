@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, LogOut } from 'lucide-react'
-import { Avatar } from '@/shared/ui'
+import { Avatar, ThemeControl } from '@/shared/ui'
 import { SHELL_USER_MENU_PANEL_CLASS } from './constants'
 import type { ShellUserMenuProps } from './types'
 
@@ -60,6 +60,9 @@ export const ShellUserMenu = ({
         <div id={menuId} role="menu" className={SHELL_USER_MENU_PANEL_CLASS}>
           <p className="truncate text-sm font-semibold text-text-primary">{sessionName}</p>
           <p className="truncate text-xs text-text-secondary">{sessionLogin}</p>
+          <div className="mt-3 border-t border-border pt-3">
+            <ThemeControl className="w-full justify-stretch" />
+          </div>
           <button
             type="button"
             role="menuitem"

@@ -19,7 +19,12 @@ import {
 } from '@/features/users-admin'
 import { resolveApiErrorI18nKey } from '@/shared/api'
 import { STAFF_LIST_PAGE_SIZE } from '@/shared/lib'
-import type { UsersListSortKey, UsersListSortState, UsersRoleFilter } from './types'
+import type {
+  UsersConfirmAction,
+  UsersListSortKey,
+  UsersListSortState,
+  UsersRoleFilter,
+} from './types'
 import { UsersRender } from './UsersRender'
 
 export const UsersPage = (): React.ReactElement => {
@@ -37,6 +42,7 @@ export const UsersPage = (): React.ReactElement => {
   const [createError, setCreateError] = useState('')
   const [sort, setSort] = useState<UsersListSortState>({ key: 'created', dir: 'desc' })
   const [page, setPage] = useState(1)
+  const [confirmAction, setConfirmAction] = useState<UsersConfirmAction | null>(null)
 
   const actorRole = session?.role ?? 'admin'
   const allowedCreateRoles = useMemo(
@@ -86,6 +92,7 @@ export const UsersPage = (): React.ReactElement => {
       patchUser(input.userId, { active: input.active }),
     onSuccess: async (): Promise<void> => {
       setActionError('')
+      setConfirmAction(null)
       await invalidateUsers()
     },
     onError: (err: unknown): void => {
@@ -98,6 +105,7 @@ export const UsersPage = (): React.ReactElement => {
     onSuccess: (data): void => {
       setIssued(data)
       setActionError('')
+      setConfirmAction(null)
     },
     onError: (err: unknown): void => {
       setActionError(t(resolveApiErrorI18nKey(err)))
@@ -108,6 +116,7 @@ export const UsersPage = (): React.ReactElement => {
     mutationFn: deleteUser,
     onSuccess: async (): Promise<void> => {
       setActionError('')
+      setConfirmAction(null)
       await invalidateUsers()
     },
     onError: (err: unknown): void => {
@@ -157,6 +166,24 @@ export const UsersPage = (): React.ReactElement => {
     navigate(`${appsBase}/${user.latestAppId}`)
   }
 
+  const onApplyConfirm = (): void => {
+    if (!confirmAction) {
+      return
+    }
+    if (confirmAction.kind === 'reissue') {
+      reissueMutation.mutate(confirmAction.userId)
+      return
+    }
+    if (confirmAction.kind === 'toggleActive') {
+      patchMutation.mutate({
+        userId: confirmAction.userId,
+        active: !confirmAction.active,
+      })
+      return
+    }
+    removeMutation.mutate(confirmAction.userId)
+  }
+
   const createForm: ReactNode = (
     <CreateUserForm
       apiError={createError}
@@ -196,6 +223,7 @@ export const UsersPage = (): React.ReactElement => {
       rowMessage={rowMessage}
       sessionUserId={session?.userId}
       mutating={mutating}
+      confirmAction={confirmAction}
       canMutateTarget={(targetRole: Role): boolean =>
         canMutateUser({ actorRole, targetRole })
       }
@@ -214,15 +242,9 @@ export const UsersPage = (): React.ReactElement => {
           `Vises\n${t('usersAdmin.issued.login')}: ${issuedAccess.user.login}\n${t('usersAdmin.issued.password')}: ${issuedAccess.password}`,
         )
       }}
-      onReissue={(userId): void => {
-        reissueMutation.mutate(userId)
-      }}
-      onToggleActive={(userId, active): void => {
-        patchMutation.mutate({ userId, active: !active })
-      }}
-      onRemove={(userId): void => {
-        removeMutation.mutate(userId)
-      }}
+      onRequestConfirm={setConfirmAction}
+      onCancelConfirm={(): void => setConfirmAction(null)}
+      onApplyConfirm={onApplyConfirm}
     />
   )
 }

@@ -1,12 +1,15 @@
 import { useTranslation } from 'react-i18next'
 import { Menu } from 'lucide-react'
 import { LanguageControl } from '@/features/language-switch'
-import { Logo, ThemeControl } from '@/shared/ui'
-import { SHELL_TOP_BAR_CLASS } from './constants'
+import { Logo } from '@/shared/ui'
+import { SHELL_TOP_BAR_CLASS, SHELL_TOP_NAV_CLASS } from './constants'
+import { ShellNavList } from './ShellNavList'
 import { ShellUserMenu } from './ShellUserMenu'
 import type { ShellTopBarProps } from './types'
 
 export const ShellTopBar = ({
+  items,
+  badgeLabel,
   sessionName,
   sessionLogin,
   drawerOpen,
@@ -26,11 +29,21 @@ export const ShellTopBar = ({
       >
         <Menu size={20} />
       </button>
-      <div className="md:hidden">
+
+      <div className="flex shrink-0 items-center gap-2">
         <Logo />
+        {badgeLabel ? (
+          <span className="hidden rounded-control bg-accent-subtle px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent sm:inline">
+            {badgeLabel}
+          </span>
+        ) : null}
       </div>
-      <div className="ml-auto flex items-center gap-2 sm:gap-3">
-        <ThemeControl />
+
+      <nav className={SHELL_TOP_NAV_CLASS} aria-label={t('chrome.shell.navAriaLabel')}>
+        <ShellNavList items={items} orientation="horizontal" />
+      </nav>
+
+      <div className="ml-auto flex items-center gap-2 sm:gap-3 md:ml-0">
         <LanguageControl />
         <ShellUserMenu
           sessionName={sessionName}

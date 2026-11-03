@@ -6,7 +6,9 @@
 :root {
   --vises-background: #f8fafc;
   --vises-surface: #ffffff;
-  --vises-border: #e2e8f0;
+  --vises-surface-muted: #f1f5f9;
+  /* Stronger than slate-200 so light inputs/rows separate from white surfaces (FE17). */
+  --vises-border: #cbd5e1;
   --vises-text-primary: #0f172a;
   --vises-text-secondary: #64748b;
   --vises-accent: #3b82f6;
@@ -25,7 +27,8 @@
 .dark {
   --vises-background: #0f172a;
   --vises-surface: #1e293b;
-  --vises-border: #334155;
+  --vises-surface-muted: #334155;
+  --vises-border: #64748b;
   --vises-text-primary: #f8fafc;
   --vises-text-secondary: #94a3b8;
   --vises-accent: #60a5fa;
@@ -43,6 +46,7 @@
 
   --color-background: var(--vises-background);
   --color-surface: var(--vises-surface);
+  --color-surface-muted: var(--vises-surface-muted);
   --color-border: var(--vises-border);
   --color-text-primary: var(--vises-text-primary);
   --color-text-secondary: var(--vises-text-secondary);
@@ -105,7 +109,7 @@ button {
 
 .field {
   width: 100%;
-  border: 1px solid var(--vises-border);
+  border: 1.5px solid var(--vises-border);
   background: var(--vises-surface);
   border-radius: var(--vises-radius-control);
   padding: 10px 12px;
@@ -113,7 +117,18 @@ button {
   font-weight: 400;
   color: var(--vises-text-primary);
   outline: none;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vises-border) 35%, transparent);
+}
+
+.table-row-interactive {
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.table-row-interactive:hover,
+.table-row-interactive:focus-visible {
+  background: color-mix(in srgb, var(--vises-accent-subtle) 55%, transparent);
 }
 
 .field:hover {

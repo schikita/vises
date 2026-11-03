@@ -31,7 +31,7 @@ export const SettingsRender = ({
       ) : null}
 
       {!loading && !loadError ? (
-        <Card className="mt-5 space-y-4">
+        <Card className="mt-5 space-y-4 rounded-panel border border-border bg-surface px-5 py-5">
           <div>
             <p className="font-semibold text-text-primary">
               {t('settingsPrice.cardTitle')}

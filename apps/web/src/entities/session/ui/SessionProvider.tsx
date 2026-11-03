@@ -64,9 +64,9 @@ export const SessionProvider = ({
   }, [clearSessionStorage])
 
   const loginWithPassword = useCallback(
-    async (loginValue: string, password: string): Promise<Session | string> => {
+    async (identifier: string, password: string): Promise<Session | string> => {
       try {
-        const data = await postAuthLogin({ login: loginValue, password })
+        const data = await postAuthLogin({ identifier, password })
         const next = toSessionFromAuthUser(data.user)
         if (!next) return 'Unsupported role'
         replaceSession(data.token, next)

@@ -32,6 +32,8 @@ export type {
   BalanceTopUpDto,
   BalanceTransactionDto,
 } from './balance.types';
+export type { BalanceTransactionsListDto } from './balance-transactions-list.types';
+export type { BalanceTransactionsQuery } from './balance-transactions-query.types';
 export type {
   ClientCreateDto,
   ClientDetailDto,
@@ -40,6 +42,10 @@ export type {
   ClientMaskedPassportDto,
   ClientPassportUpdateDto,
 } from './client.types';
+export type { ClientsListDto } from './clients-list.types';
+export type { ClientsListQuery } from './clients-list-query.types';
+export type { ClientsListSortBy } from './clients-list-sort-by.types';
+export type { ClientsListSortDir } from './clients-list-sort-dir.types';
 export type {
   ApplicationDto,
   ApplicationStatusChangeDto,
@@ -50,10 +56,13 @@ export type {
   ApplicationStatusHistoryResponseDto,
 } from './application-status-history.types';
 export type { UserMeDto } from './user-me.types';
+export type { UserListItemDto } from './user-list-item.types';
+export type { PaginatedList } from './paginated-list.types';
 export type {
   AnalyticsClientsPerAgentDto,
   AnalyticsDto,
   AnalyticsGlobalDto,
   AnalyticsPerAgentDto,
+  AnalyticsQuery,
   AnalyticsStatusBucketDto,
 } from './analytics.types';

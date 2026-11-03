@@ -5,6 +5,8 @@
 export type AuthSessionUserDto = {
   id: string
   name: string
+  firstName: string | null
+  lastName: string | null
   login: string
   email: string
   role: string

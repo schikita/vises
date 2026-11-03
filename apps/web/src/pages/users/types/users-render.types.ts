@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { IssuedAccess, UserListItem } from '@/entities/user'
+import type { UsersConfirmAction } from './users-confirm-action.types'
 import type { UsersListSortKey, UsersListSortState } from './users-list.types'
 import type { UsersRoleFilter } from './users-role-filter.types'
 
@@ -21,6 +22,7 @@ export type UsersRenderProps = {
   rowMessage: string
   sessionUserId?: string
   mutating: boolean
+  confirmAction: UsersConfirmAction | null
   canMutateTarget: (targetRole: UserListItem['role']) => boolean
   onOpenCreate: () => void
   onCloseCreate: () => void
@@ -30,7 +32,7 @@ export type UsersRenderProps = {
   onPageChange: (page: number) => void
   onRowActivate: (user: UserListItem) => void
   onCopyCredentials: (issued: IssuedAccess) => void
-  onReissue: (userId: string) => void
-  onToggleActive: (userId: string, active: boolean) => void
-  onRemove: (userId: string) => void
+  onRequestConfirm: (action: UsersConfirmAction) => void
+  onCancelConfirm: () => void
+  onApplyConfirm: () => void
 }

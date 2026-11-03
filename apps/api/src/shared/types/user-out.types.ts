@@ -8,6 +8,8 @@
 export type UserOut = {
   id: string;
   name: string;
+  firstName: string | null;
+  lastName: string | null;
   login: string;
   email: string;
   role: string;

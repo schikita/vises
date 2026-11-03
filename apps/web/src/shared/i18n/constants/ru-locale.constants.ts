@@ -216,7 +216,7 @@ export const RU_LOCALE = {
   },
   usersAdmin: {
     title: 'Пользователи',
-    subtitle: 'Создайте доступ и отправьте логин с паролем.',
+    subtitle: 'Управление пользователями ({{total}})',
     totalSuffix: ' · {{total}}',
     newUser: 'Новый пользователь',
     createDialogTitle: 'Новый пользователь',
@@ -238,9 +238,17 @@ export const RU_LOCALE = {
       active: 'Активен',
       inactive: 'Отключён',
     },
+    confirm: {
+      reissue: 'Сменить пароль для {{name}}?',
+      disable: 'Отключить пользователя {{name}}?',
+      enable: 'Включить пользователя {{name}}?',
+      remove: 'Удалить пользователя {{name}}?',
+      cancel: 'Отмена',
+      apply: 'Применить',
+    },
     actions: {
       copyLink: 'Ссылка',
-      reissue: 'Новый пароль',
+      reissue: 'Сменить пароль',
       disable: 'Отключить',
       enable: 'Включить',
       remove: 'Удалить',
@@ -291,16 +299,28 @@ export const RU_LOCALE = {
   clients: {
     list: {
       title: 'Клиенты',
-      subtitle:
-        'В списке только маскированный паспорт — откройте клиента для редактирования.',
+      subtitle: 'Откройте клиента для просмотра и редактирования паспорта.',
+      totalSuffix: ' · {{total}}',
+      searchPlaceholder: 'Поиск по имени или паспорту',
+      sortLabel: 'Сортировка',
+      sortBy: {
+        createdAt: 'Создан',
+        firstName: 'Имя',
+        agentName: 'Агент',
+        route: 'Маршрут',
+        status: 'Статус',
+      },
       columns: {
         name: 'Имя',
+        agent: 'Агент',
+        route: 'Маршрут',
         maskedPassport: 'Паспорт',
         status: 'Статус',
         createdAt: 'Создан',
         open: 'Открыть',
       },
       open: 'Открыть',
+      routeEmpty: '—',
       unnamed: 'Без имени',
       loadingTitle: 'Загрузка…',
       loadingText: 'Получаем список клиентов.',
@@ -355,6 +375,13 @@ export const RU_LOCALE = {
       emptyTitle: 'Нет агентов',
       emptyText: 'Зарегистрированные агенты появятся здесь.',
       openBalance: 'Баланс',
+      columns: {
+        agent: 'Агент',
+        clientsCount: 'Клиенты',
+        currentBalance: 'Текущий баланс',
+        totalRevenue: 'Выручка',
+      },
+      metricEmpty: '—',
     },
     agentDetail: {
       back: 'К списку агентов',
@@ -410,6 +437,8 @@ export const RU_LOCALE = {
     title: 'Аналитика',
     subtitle:
       'Сводки по заявкам и клиентам. Проценты отображаются точно как в ответе API.',
+    searchLabel: 'Поиск агентов',
+    searchPlaceholder: 'Поиск агентов по имени, логину или id',
     loadingTitle: 'Загрузка…',
     loadingText: 'Получаем аналитику.',
     empty: {
@@ -428,9 +457,17 @@ export const RU_LOCALE = {
       dateRange: 'Диапазон дат',
       currentHint: 'Показаны все заявки (без фильтра receivedAt).',
       rangeHint:
-        'Фильтрует метрики статусов заявок по receivedAt в границах from/to.',
+        'Выберите даты и нажмите «Применить», чтобы обновить метрики по receivedAt.',
       fromLabel: 'С даты',
       toLabel: 'По дату',
+      apply: 'Применить',
+      rangePanelAriaLabel: 'Выбор диапазона дат',
+      rangePickerLabel: 'Диапазон дат',
+      rangePickerPlaceholder: 'Выберите диапазон дат',
+      rangePickerAriaLabel: 'Выбор диапазона дат аналитики',
+      presetLast7Days: 'Последние 7 дней',
+      presetThisMonth: 'Этот месяц',
+      presetThisYear: 'Этот год',
     },
     columns: {
       status: 'Статус',

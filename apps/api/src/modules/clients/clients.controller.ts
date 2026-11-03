@@ -8,12 +8,13 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import type {
   ClientDetailDto,
   ClientDto,
-  ClientListDto,
+  ClientsListDto,
 } from '@vises/contracts';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
@@ -28,7 +29,9 @@ import { User } from '../database/entities/user.entity';
 import { ClientsService } from './clients.service';
 import { ClientCreateDto } from './dto/client-create.dto';
 import { ClientPassportUpdateDto } from './dto/client-passport-update.dto';
+import { ClientsListQueryDto } from './dto/clients-list-query.dto';
 import type { ClientPassportPlainOut } from './types';
+import { parseClientsListQuery } from './utils';
 
 @Controller('clients')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -48,12 +51,15 @@ export class ClientsController {
 
   /**
    * Agent: own clients. Admin/superadmin: all.
-   * Decision 2A `ClientListDto` — maskedPassport string only (no plaintext passport).
+   * Paginated envelope (DEC-P3). Decision 2A maskedPassport only (no plaintext).
    */
   @Get()
   @Roles(ADMIN_ROLE, SUPERADMIN_ROLE, AGENT_ROLE)
-  list(@CurrentUser() actor: User): Promise<ClientListDto[]> {
-    return this.clients.list(actor);
+  list(
+    @Query() query: ClientsListQueryDto,
+    @CurrentUser() actor: User,
+  ): Promise<ClientsListDto> {
+    return this.clients.list(actor, parseClientsListQuery(query));
   }
 
   /**

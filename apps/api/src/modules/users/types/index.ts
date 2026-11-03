@@ -9,3 +9,4 @@ export type {
 export type { UserListItemOut } from './user-list-item-out.types';
 export type { UsersPaginatedList } from './users-paginated-list.types';
 export type { ManagerNamesOut } from './manager-names-out.types';
+export type { AgentTotalRevenueRow } from './agent-total-revenue-row.types';
