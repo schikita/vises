@@ -1,6 +1,7 @@
 export { normalizeTargetUrl } from './normalize-target-url.util';
 export { resolveRegisterPath } from './resolve-register-path.util';
 export { resolveLoginPath } from './resolve-login-path.util';
+export { resolveHomePath } from './resolve-home-path.util';
 export { mappingOk } from './mapping-ok.util';
 export { maskSensitiveValue } from './mask-sensitive-value.util';
 export { buildReport } from './build-report.util';
@@ -19,6 +20,7 @@ export {
   mapClientToApplicantInput,
   mapClientToApplicantList,
 } from './map-client-to-applicant-input.util';
+export { optionalClientPlaintext } from './optional-client-plaintext.util';
 export { formatPortalLogContext } from './format-portal-log-context.util';
 export { summarizeFieldFillCounts } from './summarize-field-fill-counts.util';
 export { buildPortalAutofillLockOwner } from './build-portal-autofill-lock-owner.util';

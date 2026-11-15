@@ -158,10 +158,20 @@ export const BLS_BOOKING_UI_NOT_OPEN_ERROR_MESSAGE =
   'UI выбора локации/типа визы для записи не открыт';
 
 /**
- * BOOK: would advance past CON-006 VisaType submit / payment / Premium Lounge
- * (NOT_SAFE_TO_REPEAT — do not click).
+ * BOOK: Premium Lounge Accept / payment / ambiguous CRM prefill staff gate
+ * (NOT_SAFE_TO_REPEAT — DEC-001 / CON-004; Submit is allowlisted).
  */
 export const BLS_BOOKING_NOT_SAFE_ERROR_CODE = 'bls_booking_not_safe';
 
 export const BLS_BOOKING_NOT_SAFE_ERROR_MESSAGE =
-  'Действие бронирования за границей CON-006 — требуется персонал (без авто-клика Submit/оплаты)';
+  'Действие бронирования за границей CON-004 — требуется персонал (Premium/оплата/неоднозначный prefill; без авто-клика)';
+
+/**
+ * BOOK: slots-unavailable banner (SAFE_TO_REPEAT — Try Again + runner backoff;
+ * DEC-008 / NFR-001 / OQ-002 staff after maxAttempts).
+ */
+export const BLS_BOOKING_SLOTS_UNAVAILABLE_ERROR_CODE =
+  'bls_booking_slots_unavailable';
+
+export const BLS_BOOKING_SLOTS_UNAVAILABLE_ERROR_MESSAGE =
+  'Слоты записи недоступны — повтор с backoff (Try Again)';

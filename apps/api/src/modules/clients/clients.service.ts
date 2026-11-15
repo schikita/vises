@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import type {
-  ClientDetailDto,
   ClientDto,
   ClientListDto,
+  ClientPortalFormDetailDto,
   ClientsListDto,
 } from '@vises/contracts';
 import { DataSource, type EntityManager, In, Repository } from 'typeorm';
@@ -22,10 +22,16 @@ import {
 } from './constants';
 import type { ClientCreateDto } from './dto/client-create.dto';
 import type { ClientPassportUpdateDto } from './dto/client-passport-update.dto';
+import type { ClientPortalFormUpdateDto } from './dto/client-portal-form-update.dto';
 import type { IClientsService } from './interfaces';
-import type { ClientPassportPlainOut, ClientsListQueryParsed } from './types';
+import type {
+  ClientDetailWithPortalFormDto,
+  ClientPassportPlainOut,
+  ClientsListQueryParsed,
+} from './types';
 import {
   applyEncryptedPassportFields,
+  applyPortalFormFields,
   assertAgentCreate,
   assertCanAccessClient,
   buildPassportPlainOut,
@@ -35,10 +41,12 @@ import {
   mapClientToDetailDto,
   mapClientToDto,
   mapClientToListDto,
+  mapClientToPortalFormDetailDto,
   normalizeRouteCity,
   paginateClientsList,
   parsePricePerClientWholeUnits,
   pickPassportUpdateFields,
+  pickPortalFormUpdateFields,
   resolveAgentDisplayName,
   sortClientsList,
   throwClientNotFound,
@@ -203,7 +211,10 @@ export class ClientsService implements IClientsService {
     });
   }
 
-  async getById(clientId: string, actor: User): Promise<ClientDetailDto> {
+  async getById(
+    clientId: string,
+    actor: User,
+  ): Promise<ClientDetailWithPortalFormDto> {
     const client = assertCanAccessClient(
       await this.clients.findOne({ where: { id: clientId } }),
       actor,
@@ -216,12 +227,15 @@ export class ClientsService implements IClientsService {
       action: PASSPORT_READ_AUDIT_ACTION,
       clientId: client.id,
     });
-    return mapClientToDetailDto({
-      client,
-      applicationId: application.id,
-      applicationStatus: application.status,
-      plaintext,
-    });
+    return {
+      ...mapClientToDetailDto({
+        client,
+        applicationId: application.id,
+        applicationStatus: application.status,
+        plaintext,
+      }),
+      ...mapClientToPortalFormDetailDto(client),
+    };
   }
 
   async getPassport(
@@ -264,6 +278,28 @@ export class ClientsService implements IClientsService {
     const applicationId = await this.requireApplicationId(client.id);
     // Keep ClientDto on passport update for minimal churn (Decision 2A note).
     return mapClientToDto(client, applicationId);
+  }
+
+  /**
+   * Persist portal-form Client columns (REQ-004).
+   * No passport unlock / debit ledger gate (DEC-002 vs FR-6).
+   */
+  async updatePortalForm(
+    clientId: string,
+    body: ClientPortalFormUpdateDto,
+    actor: User,
+  ): Promise<ClientPortalFormDetailDto> {
+    const client = assertCanAccessClient(
+      await this.clients.findOne({ where: { id: clientId } }),
+      actor,
+    );
+
+    const fields = pickPortalFormUpdateFields(body);
+    applyPortalFormFields(client, fields);
+    client.updatedAt = new Date();
+    await this.clients.save(client);
+
+    return mapClientToPortalFormDetailDto(client);
   }
 
   async remove(clientId: string, actor: User): Promise<{ ok: true }> {

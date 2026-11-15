@@ -18,3 +18,4 @@ export type {
   CaptchaProviderSolveInput,
   CaptchaProviderSolveResult,
 } from '../../portal-fill/types/captcha-provider.types';
+export type { MapBlsStatusClientFailureInput } from './map-bls-status-client-failure.types';

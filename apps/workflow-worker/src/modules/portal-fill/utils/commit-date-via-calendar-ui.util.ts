@@ -11,9 +11,13 @@ import {
   PORTAL_DATEPICKER_SERVER_FIELD_IDS,
   PORTAL_DATEPICKER_STALE_DEFAULT_YMD,
   PORTAL_DATEPICKER_WIDGET_HOST_SELECTOR,
-  PORTAL_REGISTER_USER_SELECTORS,
 } from '../constants';
-import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
+import type {
+  PortalWidgetFieldName,
+  PortalWidgetSurface,
+  WidgetOpResult,
+} from '../types';
+import { resolvePortalFieldSelector } from './resolve-portal-field-selector.util';
 
 /**
  * Calendar UI fallback for RegisterUser datepickers (DEC-017 / REQ-014).
@@ -22,12 +26,12 @@ import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
  * `widget.value()` + Server* (DEC-014/015). Preserves civil YYYY-MM-DD (CON-008).
  */
 export const commitDateViaCalendarUi = async (
-  page: PortalPage,
-  name: PortalFieldName,
+  surface: PortalWidgetSurface,
+  name: PortalWidgetFieldName,
   intendedYmd: string,
 ): Promise<WidgetOpResult> => {
-  const selector = PORTAL_REGISTER_USER_SELECTORS.fields[name];
-  return page.evaluate(
+  const selector = resolvePortalFieldSelector(name);
+  return surface.evaluate(
     ({
       selector,
       name,

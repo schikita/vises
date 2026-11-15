@@ -8,7 +8,12 @@ import { isBlsWorkflowTaskDoneStatus } from './is-bls-workflow-task-done-status.
 
 /**
  * Pure plan: after `completedTaskId` is COMPLETED, pick next READY cursor
- * or BOOK success terminal (DEC-010).
+ * or BOOK success terminal (DEC-010 / DEC-004).
+ *
+ * `bookSuccessTerminal` → `AWAITING_STAFF_BOOKING` only when the BOOK step
+ * itself completed. Callers must not complete BOOK on open-UI-only; materials-
+ * covered UNKNOWN_NEXT / staff handoff is the BOOK success path (OQ-007).
+ * Do not invent `COMPLETED` calendar booking status.
  */
 export const planBlsWorkflowAdvance = (input: {
   steps: BlsWorkflowStepCursorRow[];

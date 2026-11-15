@@ -31,6 +31,11 @@ export interface TemporaryEmailProvider {
   extractPortalPassword(
     input: ExtractTemporaryEmailPortalPasswordInput,
   ): ExtractTemporaryEmailPortalPasswordResult;
+  /**
+   * Green data-protection consent CTA href from HTML body, or null.
+   * Never returns the disagree CTA href. Never log body / href secrets.
+   */
+  extractDataProtectionConsentHref(body: string): string | null;
   deleteAccount(
     input: DeleteTemporaryMailboxInput,
   ): Promise<DeleteTemporaryMailboxResult>;

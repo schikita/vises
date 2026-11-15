@@ -13,6 +13,9 @@ export { extractPassportCiphertextFields } from './extract-passport-ciphertext-f
 export { applyEncryptedPassportFields } from './apply-encrypted-passport-fields.util';
 export { buildPassportPlainOut } from './build-passport-plain-out.util';
 export { pickPassportUpdateFields } from './pick-passport-update-fields.util';
+export { pickPortalFormUpdateFields } from './pick-portal-form-update-fields.util';
+export { applyPortalFormFields } from './apply-portal-form-fields.util';
+export { mapClientToPortalFormDetailDto } from './map-client-to-portal-form-detail-dto.util';
 export { parsePricePerClientWholeUnits } from './parse-price-per-client-whole-units.util';
 export { parseClientsListQuery } from './parse-clients-list-query.util';
 export { filterClientsListBySearch } from './filter-clients-list-by-search.util';

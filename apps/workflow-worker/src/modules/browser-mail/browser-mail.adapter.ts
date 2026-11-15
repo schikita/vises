@@ -1,7 +1,9 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import {
+  extractDataProtectionConsentHref as extractDataProtectionConsentHrefFromBody,
   extractTemporaryEmailOtp,
   extractTemporaryEmailPortalPassword,
+  temporaryEmailSubjectIncludes,
 } from '../temporary-email';
 import type { TemporaryEmailProvider } from '../temporary-email';
 import type {
@@ -78,6 +80,7 @@ export class BrowserMailAdapter implements TemporaryEmailProvider {
     return this.sessions.withLock(contextKey, async () => {
       // DEC-003: reuse live Map session for contextKey; dispose only for
       // intentional replace (dead handle) or via deleteAccount / disposeSession.
+      const restoreAddress = input.restoreAddress?.trim() || undefined;
       const existing = this.sessions.get(contextKey);
       if (existing) {
         if (isBrowserMailSessionUsable(existing)) {
@@ -85,10 +88,11 @@ export class BrowserMailAdapter implements TemporaryEmailProvider {
             `browser_mail_create reuse contextKey=${contextKey}`,
           );
           // REQ-010: restore local+domain on live page without reload.
-          await restoreBrowserMailIdentity(existing.page, existing.address);
+          const identity = restoreAddress ?? existing.address;
+          await restoreBrowserMailIdentity(existing.page, identity);
           return {
             id: `browser:${contextKey}`,
-            address: existing.address,
+            address: identity.trim().toLowerCase(),
             token: '',
             password: '',
           };
@@ -97,12 +101,12 @@ export class BrowserMailAdapter implements TemporaryEmailProvider {
           `browser_mail_create replace_dead_session contextKey=${contextKey}`,
         );
         // Preserve address before dispose for recreate+identity (DEC-003).
-        const priorAddress = existing.address;
+        const priorAddress = restoreAddress ?? existing.address;
         await this.sessions.dispose(contextKey);
         return this.launchNewSession(contextKey, priorAddress);
       }
 
-      return this.launchNewSession(contextKey);
+      return this.launchNewSession(contextKey, restoreAddress);
     });
   }
 
@@ -130,6 +134,7 @@ export class BrowserMailAdapter implements TemporaryEmailProvider {
       );
 
       // DEC-004: baseline only at each waitLatestMessage entry.
+      // includeExisting + subjectIncludes: also match pre-baseline rows (BOOK DP).
       let baselineRows;
       try {
         baselineRows = await listBrowserMailInboxRows(session.page);
@@ -140,6 +145,9 @@ export class BrowserMailAdapter implements TemporaryEmailProvider {
         throw err;
       }
       const baselineIds = new Set(baselineRows.map((row) => row.rowId));
+      const includeExisting =
+        input.includeExisting === true &&
+        (input.subjectIncludes?.trim() ?? '').length > 0;
       const started = Date.now();
 
       while (Date.now() - started < input.timeoutMs) {
@@ -151,7 +159,12 @@ export class BrowserMailAdapter implements TemporaryEmailProvider {
           const rows = await listBrowserMailInboxRows(session.page);
           const eligible = rows.filter(
             (row) =>
-              !baselineIds.has(row.rowId) && !excludeIds.has(row.rowId),
+              !excludeIds.has(row.rowId) &&
+              temporaryEmailSubjectIncludes(
+                row.subjectPreview,
+                input.subjectIncludes,
+              ) &&
+              (includeExisting || !baselineIds.has(row.rowId)),
           );
 
           if (eligible.length > 0) {
@@ -211,6 +224,9 @@ export class BrowserMailAdapter implements TemporaryEmailProvider {
     return extractTemporaryEmailPortalPassword(input);
   }
 
+  extractDataProtectionConsentHref(body: string): string | null {
+    return extractDataProtectionConsentHrefFromBody(body);
+  }
 
   /**
    * Soft-skip HTTP delete; dispose browser session so failure paths free Chrome

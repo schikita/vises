@@ -12,8 +12,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type {
-  ClientDetailDto,
   ClientDto,
+  ClientPortalFormDetailDto,
   ClientsListDto,
 } from '@vises/contracts';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
@@ -29,8 +29,12 @@ import { User } from '../database/entities/user.entity';
 import { ClientsService } from './clients.service';
 import { ClientCreateDto } from './dto/client-create.dto';
 import { ClientPassportUpdateDto } from './dto/client-passport-update.dto';
+import { ClientPortalFormUpdateDto } from './dto/client-portal-form-update.dto';
 import { ClientsListQueryDto } from './dto/clients-list-query.dto';
-import type { ClientPassportPlainOut } from './types';
+import type {
+  ClientDetailWithPortalFormDto,
+  ClientPassportPlainOut,
+} from './types';
 import { parseClientsListQuery } from './utils';
 
 @Controller('clients')
@@ -89,14 +93,30 @@ export class ClientsController {
   }
 
   /**
+   * Portal-form plaintext write (REQ-004 / DEC-002).
+   * Dedicated route — not conflated with FR-6 passport unlock gate.
+   * Declared before `:clientId` so Nest matches the static suffix first.
+   */
+  @Patch(':clientId/portal-form')
+  @Roles(ADMIN_ROLE, SUPERADMIN_ROLE, AGENT_ROLE)
+  updatePortalForm(
+    @Param('clientId') clientId: string,
+    @Body() body: ClientPortalFormUpdateDto,
+    @CurrentUser() actor: User,
+  ): Promise<ClientPortalFormDetailDto> {
+    return this.clients.updatePortalForm(clientId, body, actor);
+  }
+
+  /**
    * Decision 2A detail: decrypted FR-6 plaintext + Winston PII audit every read.
+   * Includes portal-form fields for future FE (DEC-004).
    */
   @Get(':clientId')
   @Roles(ADMIN_ROLE, SUPERADMIN_ROLE, AGENT_ROLE)
   getById(
     @Param('clientId') clientId: string,
     @CurrentUser() actor: User,
-  ): Promise<ClientDetailDto> {
+  ): Promise<ClientDetailWithPortalFormDto> {
     return this.clients.getById(clientId, actor);
   }
 

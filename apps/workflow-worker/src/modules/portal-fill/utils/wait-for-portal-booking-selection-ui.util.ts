@@ -6,27 +6,22 @@ import type { PortalPage } from '../types';
 import { isPortalBookingSelectionUiVisible } from './is-portal-booking-selection-ui-visible.util';
 
 type CueArg = {
-  modalId: string;
-  modalTitleText: string;
   pageHeading: string;
   formActionSubstring: string;
-  locationLabelText: string;
-  visaTypeLabelText: string;
 };
 
 /**
- * Wait until booking location/visa selection UI is reachable (CON-006 stop).
+ * Wait until full-page Visa Type Selection is reachable (CON-008).
+ * Prefers heading `Book New Appointment - Visa Type Selection` and form
+ * action containing `/Global/Appointment/VisaType` — not Manage
+ * `#visaTypeModal`.
  */
 export const waitForPortalBookingSelectionUi = async (
   page: PortalPage,
 ): Promise<{ ok: true } | { ok: false; error: string }> => {
   const arg: CueArg = {
-    modalId: PORTAL_BOOKING_SELECTORS.locationVisaModalId,
-    modalTitleText: PORTAL_BOOKING_SELECTORS.locationVisaModalTitleText,
     pageHeading: PORTAL_BOOKING_SELECTORS.visaTypeSelectionHeading,
     formActionSubstring: PORTAL_BOOKING_SELECTORS.visaTypeFormActionSubstring,
-    locationLabelText: PORTAL_BOOKING_SELECTORS.locationLabelText,
-    visaTypeLabelText: PORTAL_BOOKING_SELECTORS.visaTypeLabelText,
   };
 
   try {
@@ -35,49 +30,13 @@ export const waitForPortalBookingSelectionUi = async (
         const collapse = (text: string): string =>
           text.replace(/\s+/g, ' ').trim().toLowerCase();
 
-        const isDisplayed = (el: Element | null): boolean => {
-          if (!(el instanceof HTMLElement)) return false;
-          const style = window.getComputedStyle(el);
-          if (style.display === 'none' || style.visibility === 'hidden') {
-            return false;
-          }
-          if (Number(style.opacity) === 0) return false;
-          const rect = el.getBoundingClientRect();
-          return rect.width > 0 && rect.height > 0;
-        };
-
-        const modal = document.getElementById(a.modalId);
-        if (modal && isDisplayed(modal)) return true;
-
         const body = collapse(document.body?.textContent ?? '');
-        if (body.includes(collapse(a.modalTitleText))) return true;
         if (body.includes(collapse(a.pageHeading))) return true;
 
         const forms = Array.from(document.querySelectorAll('form'));
-        if (
-          forms.some((f) =>
-            (f.getAttribute('action') ?? '').includes(a.formActionSubstring),
-          )
-        ) {
-          return true;
-        }
-
-        const labels = Array.from(document.querySelectorAll('label'));
-        const hasLocation = labels.some(
-          (lab) =>
-            isDisplayed(lab) &&
-            collapse(lab.textContent ?? '').includes(
-              collapse(a.locationLabelText),
-            ),
+        return forms.some((f) =>
+          (f.getAttribute('action') ?? '').includes(a.formActionSubstring),
         );
-        const hasVisa = labels.some(
-          (lab) =>
-            isDisplayed(lab) &&
-            collapse(lab.textContent ?? '').includes(
-              collapse(a.visaTypeLabelText),
-            ),
-        );
-        return hasLocation && hasVisa;
       },
       arg,
       { timeout: PORTAL_BOOKING_PAGE_WAIT_MS },

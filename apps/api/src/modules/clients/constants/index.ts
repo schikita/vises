@@ -12,3 +12,4 @@ export {
   DEFAULT_CLIENTS_LIST_SORT_BY,
   DEFAULT_CLIENTS_LIST_SORT_DIR,
 } from './clients-list-sort.constants';
+export { CLIENT_PORTAL_FORM_STRING_FIELD_KEYS } from './client-portal-form-field-keys.constants';

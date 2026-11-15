@@ -1,25 +1,26 @@
 {
-  "name": "vises",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Vises monorepo (root Turborepo)",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "dev:api": "pnpm run start:dev -w @vises/api",
-    "dev:worker": "pnpm run start:dev -w @vises/workflow-worker",
-    "dev:web": "pnpm run dev -w @vises/web"
-  },
-  "devDependencies": {
-    "turbo": "^2.11.10",
-    "typescript": "^7.0.2"
-  },
-  "engines": {
-    "node": ">=24"
-  },
-  "packageManager": "pnpm@12.16.1"
+	"name": "vises",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Vises monorepo (root Turborepo)",
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"build": "turbo run build",
+		"lint": "turbo run lint",
+		"dev": "pnpm run \"/^dev:(api|worker|web)$/\"",
+		"dev:api": "pnpm --filter @vises/api run start:dev",
+		"dev:worker": "pnpm --filter @vises/workflow-worker run start:dev",
+		"dev:web": "pnpm --filter @vises/web run dev"
+	},
+	"devDependencies": {
+		"turbo": "2.11.10",
+		"typescript": "7.0.2"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"packageManager": "pnpm@12.16.1"
 }

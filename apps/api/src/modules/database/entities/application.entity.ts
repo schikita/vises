@@ -40,6 +40,15 @@ export class Application {
   @Column({ name: 'visa_type', type: 'varchar', length: 80, default: '' })
   visaType!: string;
 
+  /** Portal Visa Sub Type label/text; null = not collected (APF-TASK-002). */
+  @Column({
+    name: 'visa_sub_type',
+    type: 'varchar',
+    length: 120,
+    nullable: true,
+  })
+  visaSubType!: string | null;
+
   @Column({ name: 'submit_country', type: 'varchar', length: 80, default: '' })
   submitCountry!: string;
 

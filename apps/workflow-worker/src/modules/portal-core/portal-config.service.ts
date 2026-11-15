@@ -6,6 +6,7 @@ import { PORTAL_EMAIL_PROVIDER } from '../browser-mail/constants/portal-email-pr
 import { DEFAULT_MANAGE_APPLICANTS_PATH } from './constants/portal-config.defaults.constants';
 import type { IPortalAutofillConfig } from './interfaces/portal-autofill-config.interface';
 import type { AutofillConfig } from './types/portal-config.types';
+import { resolveHomePath } from './utils/resolve-home-path.util';
 import { resolveRegisterPath } from './utils/resolve-register-path.util';
 import { resolveLoginPath } from './utils/resolve-login-path.util';
 import { trimOrUndefined } from './utils/trim-or-undefined.util';
@@ -108,6 +109,22 @@ export class PortalConfigService implements IPortalAutofillConfig {
     const path = DEFAULT_MANAGE_APPLICANTS_PATH.startsWith('/')
       ? DEFAULT_MANAGE_APPLICANTS_PATH
       : `/${DEFAULT_MANAGE_APPLICANTS_PATH}`;
+    return `${base}${path}`;
+  }
+
+  /**
+   * Resolve absolute authenticated Global home URL (successful-enter FR-4).
+   * Uses fixture path `/Global/home/index`.
+   */
+  resolvePortalHomeUrl(config: AutofillConfig): string {
+    if (!config.portalBaseUrl?.trim()) {
+      throw new Error(
+        'VISES_PORTAL_BASE_URL is required for portal home navigation',
+      );
+    }
+    const base = config.portalBaseUrl.replace(/\/+$/, '');
+    const homePath = resolveHomePath();
+    const path = homePath.startsWith('/') ? homePath : `/${homePath}`;
     return `${base}${path}`;
   }
 }

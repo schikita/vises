@@ -1,6 +1,6 @@
 /**
- * Patchright navigation + login + booking safe-stop facade
- * (REQ-020 / CON-006 / TASK-012).
+ * Patchright navigation + login + booking continue facade
+ * (REQ-002…012 / CON-004 / CON-005 / DEC-001 / VT-TASK-007).
  * Lazy-loads patchright only when invoked — never at API boot.
  */
 import { Inject, Injectable, Logger } from '@nestjs/common';
@@ -13,12 +13,16 @@ import {
 } from '../portal-core/constants/portal-config.defaults.constants';
 import { formatPortalLogContext } from '../portal-core/utils/format-portal-log-context.util';
 import { normalizeTargetUrl } from '../portal-core/utils/normalize-target-url.util';
+import {
+  TEMPORARY_EMAIL_PROVIDER,
+  type TemporaryEmailProvider,
+} from '../temporary-email';
 import { PORTAL_FILL_ABORTED_ERROR } from './constants/portal-fill-abort.constants';
 import { CAPTCHA_PROVIDER } from './constants/portal-fill-di.tokens';
 import type { CaptchaProvider } from './interfaces/captcha-provider.interface';
 import type {
-  FillPortalBookingSafeStopOptions,
-  FillPortalBookingSafeStopResult,
+  FillPortalBookingContinueOptions,
+  FillPortalBookingContinueResult,
 } from './types/portal-booking.types';
 import type {
   PortalBrowser,
@@ -26,7 +30,7 @@ import type {
 } from './types/patchright-surface.types';
 import { invokePortalFillBrowserLaunched } from './utils/invoke-portal-fill-browser-launched.util';
 import { isPortalFillAbortRequested } from './utils/is-portal-fill-abort-requested.util';
-import { runPortalBookingSafeStopPipeline } from './utils/run-portal-booking-safe-stop-pipeline.util';
+import { runPortalBookingContinuePipeline } from './utils/run-portal-booking-continue-pipeline.util';
 
 @Injectable()
 export class PortalBookingFillService {
@@ -35,18 +39,24 @@ export class PortalBookingFillService {
   constructor(
     @Inject(CAPTCHA_PROVIDER)
     private readonly captchaProvider: CaptchaProvider,
+    @Inject(TEMPORARY_EMAIL_PROVIDER)
+    private readonly mailProvider: TemporaryEmailProvider,
     private readonly sessionBudget: BrowserSessionBudgetService,
   ) {}
 
   /**
-   * Navigate to login, authenticate, open Book New Appointment, optional
-   * unambiguous prefill, then stop before VisaType submit / payment / Premium
-   * Lounge Accept (CON-006). Never logs password values.
+   * Navigate to login, authenticate, complete email DP consent, open Book New
+   * Appointment, optional unambiguous prefill, VisaType Submit, captcha probe,
+   * then slots SAFE_TO_REPEAT or UNKNOWN_NEXT staff terminal (DEC-001 /
+   * DEC-004 / DEC-008 / CON-005 / OQ-007 / REQ-013…017 / VT-TASK-007…010).
+   * Never Premium Accept / payment. Never logs password / mail secrets /
+   * captcha answers.
    */
-  async fillBookingSafeStop(
-    options: FillPortalBookingSafeStopOptions,
-  ): Promise<FillPortalBookingSafeStopResult> {
+  async fillBookingContinue(
+    options: FillPortalBookingContinueOptions,
+  ): Promise<FillPortalBookingContinueResult> {
     const loginUrl = normalizeTargetUrl(options.loginUrl);
+    const homeUrl = normalizeTargetUrl(options.homeUrl);
     const manageApplicantsUrl = normalizeTargetUrl(options.manageApplicantsUrl);
     let browser: PortalBrowser | undefined;
     let sessionSlotHeld = false;
@@ -56,7 +66,7 @@ export class PortalBookingFillService {
     });
     const emptyNotes: string[] = [];
 
-    const abortedResult = (): FillPortalBookingSafeStopResult => ({
+    const abortedResult = (): FillPortalBookingContinueResult => ({
       navigationOk: false,
       aborted: true,
       error: PORTAL_FILL_ABORTED_ERROR,
@@ -161,15 +171,20 @@ export class PortalBookingFillService {
         return abortedResult();
       }
 
-      this.logger.log(`${logPrefix} phase=booking_safe_stop_pipeline start`);
-      const pipeline = await runPortalBookingSafeStopPipeline({
+      this.logger.log(`${logPrefix} phase=booking_continue_pipeline start`);
+      const pipeline = await runPortalBookingContinuePipeline({
         page,
         portalFormEmail: options.portalFormEmail,
         portalPassword: options.portalPassword,
+        homeUrl,
         manageApplicantsUrl,
         prefill: options.prefill,
         captchaServiceApiKey: options.captchaServiceApiKey,
         captchaProvider: this.captchaProvider,
+        mailProvider: this.mailProvider,
+        mailbox: options.mailbox,
+        priorCheckpoint: options.priorCheckpoint,
+        onCheckpoint: options.onCheckpoint,
         logPrefix,
         abortSignal: options.abortSignal,
       });
@@ -188,11 +203,16 @@ export class PortalBookingFillService {
 
       if (!pipeline.ok) {
         this.logger.error(
-          `${logPrefix} phase=booking_safe_stop_pipeline hard_failure ${pipeline.error ?? 'unknown'}`,
+          `${logPrefix} phase=booking_continue_pipeline hard_failure ${pipeline.error ?? 'unknown'}`,
         );
         return {
           navigationOk: false,
           bookingSelectionUiOpen: pipeline.bookingSelectionUiOpen,
+          visaTypeSubmitted: pipeline.visaTypeSubmitted,
+          captchaPresent: pipeline.captchaPresent,
+          captchaOk: pipeline.captchaOk,
+          slotsUnavailable: pipeline.slotsUnavailable,
+          unknownNext: pipeline.unknownNext,
           prefill: pipeline.prefill,
           notSafeToRepeat: pipeline.notSafeToRepeat,
           error: pipeline.error,
@@ -204,11 +224,16 @@ export class PortalBookingFillService {
       }
 
       this.logger.log(
-        `${logPrefix} phase=booking_safe_stop_pipeline success bookingUiOpen=${pipeline.bookingSelectionUiOpen === true}`,
+        `${logPrefix} phase=booking_continue_pipeline success bookingUiOpen=${pipeline.bookingSelectionUiOpen === true} submitted=${pipeline.visaTypeSubmitted === true} unknownNext=${pipeline.unknownNext === true} captchaPresent=${pipeline.captchaPresent === true} captchaOk=${pipeline.captchaOk === true}`,
       );
       return {
         navigationOk: true,
         bookingSelectionUiOpen: pipeline.bookingSelectionUiOpen === true,
+        visaTypeSubmitted: pipeline.visaTypeSubmitted === true,
+        captchaPresent: pipeline.captchaPresent,
+        captchaOk: pipeline.captchaOk,
+        slotsUnavailable: pipeline.slotsUnavailable,
+        unknownNext: pipeline.unknownNext === true,
         prefill: pipeline.prefill,
         notSafeToRepeat: pipeline.notSafeToRepeat,
         notes: pipeline.notes,
@@ -219,7 +244,7 @@ export class PortalBookingFillService {
       }
       const error = err instanceof Error ? err.message : String(err);
       this.logger.error(
-        `${logPrefix} phase=booking_safe_stop_pipeline unexpected ${error}`,
+        `${logPrefix} phase=booking_continue_pipeline unexpected ${error}`,
       );
       return { navigationOk: false, error, notes: emptyNotes };
     } finally {

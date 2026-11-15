@@ -35,7 +35,10 @@ export type BlsWorkflowAdvancePlan = {
   nextTaskId: string | null;
   nextStepKey: string | null;
   nextTaskKey: string | null;
-  /** When true, workflow → AWAITING_STAFF_BOOKING (BOOK done). */
+  /**
+   * When true, workflow → AWAITING_STAFF_BOOKING (BOOK materials-covered /
+   * unknown-next staff handoff — DEC-004 / OQ-007; not open-UI-only).
+   */
   bookSuccessTerminal: boolean;
 };
 

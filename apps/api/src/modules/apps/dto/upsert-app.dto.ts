@@ -54,6 +54,14 @@ export class UpsertAppDto {
   @IsString()
   visaType?: string;
 
+  /**
+   * Portal Visa Sub Type label/text (REQ-003 / DEC-003).
+   * Maps to `applications.visa_sub_type`.
+   */
+  @IsOptional()
+  @IsString()
+  visaSubType?: string;
+
   @IsOptional()
   @IsString()
   submitCountry?: string;

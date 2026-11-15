@@ -854,6 +854,38 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
       email: null,
       phone: null,
       address: null,
+      homeAddressLine2: null,
+      homeCountry: null,
+      homeCity: 'Cairo',
+      homePostalCode: null,
+      employerName: 'Acme Corp',
+      employerPhone: null,
+      employerAddress: null,
+      occupation: null,
+      previousFingerPrintStatus: null,
+      previousFingerPrintDate: null,
+      blsInvitingAuthority: null,
+      invitingAuthorityName: null,
+      invitingCountry: null,
+      invitingCity: null,
+      invitingZipCode: null,
+      invitingAddress: null,
+      invitingEmail: null,
+      invitingContactNo: null,
+      invitingFaxNo: null,
+      invitingContactName: null,
+      invitingContactSurname: null,
+      invitingContactCountry: null,
+      invitingContactCity: null,
+      invitingContactZipCode: null,
+      invitingContactAddress: null,
+      invitingContactContactNo: null,
+      invitingContactEmail: null,
+      invitingContactFaxNo: null,
+      costCoveredBy: null,
+      meansOfSupport: null,
+      memberStateSecondDestination: null,
+      portalFormConditionals: null,
       purpose: null,
       firstEntry: null,
       entries: null,
@@ -908,8 +940,47 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     expect(detail.lastName).toBe('Lovelace');
     expect(detail.applicationId).toBe('app-1');
     expect(detail.applicationStatus).toBe('drafting');
+    expect(detail).toHaveProperty('employerName', 'Acme Corp');
+    expect(detail).toHaveProperty('homeCity', 'Cairo');
+    expect(detail.address).toBeNull();
+    expect(detail.occupation).toBeNull();
+    expect(detail.portalFormConditionals).toBeNull();
     expect(detail).not.toHaveProperty('passport');
     expect(detail).not.toHaveProperty('maskedPassport');
+  });
+
+  it('updatePortalForm persists fields without passport unlock gate (APF-TASK-003)', async (): Promise<void> => {
+    const service = await createService();
+    const client = Object.assign(new Client(), {
+      id: 'cli-1',
+      agentId: 'agent-1',
+      address: null,
+      homeCity: null,
+      employerName: null,
+      portalFormConditionals: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    clientsFindOne.mockResolvedValue(client);
+    clientsSave.mockImplementation(async (row: Client): Promise<Client> => row);
+
+    const out = await service.updatePortalForm(
+      'cli-1',
+      {
+        address: 'Street 1',
+        employerName: 'Acme',
+        portalFormConditionals: { isMinor: false },
+      },
+      agent,
+    );
+
+    expect(ledgerFindOne).not.toHaveBeenCalled();
+    expect(encryptFields).not.toHaveBeenCalled();
+    expect(clientsSave).toHaveBeenCalled();
+    expect(out.address).toBe('Street 1');
+    expect(out.employerName).toBe('Acme');
+    expect(out.portalFormConditionals).toEqual({ isMinor: false });
+    expect(out.homeCity).toBeNull();
   });
 
   it('getById cross-tenant agent → forbidden_role', async (): Promise<void> => {

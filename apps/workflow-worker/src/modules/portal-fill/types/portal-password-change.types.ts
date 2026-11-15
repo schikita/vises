@@ -12,6 +12,8 @@ export type RunPortalPasswordChangePipelineOptions = {
   currentPassword: string;
   /** Newly generated compliant password (in-memory only; never logged). */
   newPassword: string;
+  /** Absolute authenticated Global home URL (successful-enter gate). */
+  homeUrl: string;
   captchaServiceApiKey?: string;
   captchaProvider?: Pick<CaptchaProvider, 'solveBls3x3'>;
   logPrefix?: string;
@@ -40,6 +42,8 @@ export type RunPortalPasswordChangePipelineResult = {
 /** Browser launch + login + conditional change fill façade options. */
 export type FillPortalPasswordChangeOptions = PortalFillAbortCooperation & {
   targetUrl: string;
+  /** Absolute authenticated Global home URL (successful-enter gate). */
+  homeUrl: string;
   portalFormEmail: string;
   currentPassword: string;
   newPassword: string;

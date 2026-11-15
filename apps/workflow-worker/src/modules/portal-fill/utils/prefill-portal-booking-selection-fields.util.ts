@@ -1,349 +1,303 @@
-import { PORTAL_BOOKING_SELECTORS } from '../constants';
+import {
+  PORTAL_BOOKING_FIELD_ID,
+  PORTAL_BOOKING_FIELD_PROGRESS_STATUS,
+  PORTAL_BOOKING_MEMBERS_COUNT,
+  PORTAL_BOOKING_SELECTORS,
+} from '../constants';
 import type {
+  PortalBookingFieldProgress,
   PortalBookingPrefillHint,
   PortalBookingPrefillOutcome,
   PortalPage,
 } from '../types';
-
-type PrefillArg = {
-  locationLabelText: string;
-  visaTypeLabelText: string;
-  appointmentForLabelText: string;
-  individualValue: string;
-  familyValue: string;
-  modalLocationId: string;
-  modalVisaTypeId: string;
-  submitCity: string;
-  visaType: string;
-  applicantCount: number;
-};
-
-type PrefillEvalResult = {
-  locationPrefillAttempted: boolean;
-  locationPrefillApplied: boolean;
-  visaTypePrefillAttempted: boolean;
-  visaTypePrefillApplied: boolean;
-  appointmentForPrefillAttempted: boolean;
-  appointmentForPrefillApplied: boolean;
-  ambiguous: boolean;
-  notes: string[];
-};
+import { acceptPortalFamilyDisclaimerModal } from './accept-portal-family-disclaimer-modal.util';
+import { commitBookingDropdownByLabel } from './commit-booking-dropdown-by-label.util';
+import { formatPortalBookingMembersOption } from './format-portal-booking-members-option.util';
+import { resolvePortalBookingCategoryOption } from './resolve-portal-booking-category-option.util';
+import { selectPortalBookingAppointmentFor } from './select-portal-booking-appointment-for.util';
+import { waitForPortalBookingMembersLabel } from './wait-for-portal-booking-members-label.util';
+import { waitForPortalOverlaysClear } from './wait-for-portal-overlays-clear.util';
 
 /**
- * Optionally prefill Location / Visa Type / Appointment For when CRM maps
- * unambiguously onto visible portal options (REQ-030 / DEC-011).
+ * Prefill Visa Type Selection fields via labels / listbox UI when CRM maps
+ * unambiguously (REQ-010 / REQ-011 / REQ-020 / DEC-006 / DEC-007).
+ * Family → Accept `#familyDisclaimer` then Number Of Members.
+ * Prefer Normal category; Premium CRM → staff stop (never Accept Premium).
  * Never guesses; never clicks Submit / Premium Lounge Accept.
  */
 export const prefillPortalBookingSelectionFields = async (
   page: PortalPage,
   hint: PortalBookingPrefillHint,
 ): Promise<PortalBookingPrefillOutcome> => {
-  const arg: PrefillArg = {
-    locationLabelText: PORTAL_BOOKING_SELECTORS.locationLabelText,
-    visaTypeLabelText: PORTAL_BOOKING_SELECTORS.visaTypeLabelText,
-    appointmentForLabelText: PORTAL_BOOKING_SELECTORS.appointmentForLabelText,
-    individualValue: PORTAL_BOOKING_SELECTORS.individualRadioValue,
-    familyValue: PORTAL_BOOKING_SELECTORS.familyRadioValue,
-    modalLocationId: PORTAL_BOOKING_SELECTORS.modalLocationInputId,
-    modalVisaTypeId: PORTAL_BOOKING_SELECTORS.modalVisaTypeInputId,
-    submitCity: hint.submitCity?.trim() ?? '',
-    visaType: hint.visaType?.trim() ?? '',
-    applicantCount:
-      typeof hint.applicantCount === 'number' &&
-      Number.isFinite(hint.applicantCount)
-        ? Math.max(0, Math.floor(hint.applicantCount))
-        : 0,
+  const notes: string[] = [];
+  const fieldProgress: PortalBookingFieldProgress = {};
+
+  let locationPrefillAttempted = false;
+  let locationPrefillApplied = false;
+  let visaTypePrefillAttempted = false;
+  let visaTypePrefillApplied = false;
+  let visaSubTypePrefillAttempted = false;
+  let visaSubTypePrefillApplied = false;
+  let appointmentForPrefillAttempted = false;
+  let appointmentForPrefillApplied = false;
+  let numberOfMembersPrefillAttempted = false;
+  let numberOfMembersPrefillApplied = false;
+  let categoryPrefillAttempted = false;
+  let categoryPrefillApplied = false;
+  let familyDisclaimerAccepted = false;
+  let premiumRequiredStaffStop = false;
+  let ambiguous = false;
+
+  const submitCity = hint.submitCity?.trim() ?? '';
+  const visaType = hint.visaType?.trim() ?? '';
+  const visaSubType = hint.visaSubType?.trim() ?? '';
+  const applicantCount =
+    typeof hint.applicantCount === 'number' &&
+    Number.isFinite(hint.applicantCount)
+      ? Math.max(0, Math.floor(hint.applicantCount))
+      : 0;
+
+  const settleOverlays = async (): Promise<void> => {
+    await waitForPortalOverlaysClear(page);
   };
 
-  return page.evaluate((a: PrefillArg): PrefillEvalResult => {
-    const notes: string[] = [];
-    const collapse = (text: string): string =>
-      text.replace(/\s+/g, ' ').trim().toLowerCase();
-
-    const isDisplayed = (el: Element | null): boolean => {
-      if (!(el instanceof HTMLElement)) return false;
-      const style = window.getComputedStyle(el);
-      if (style.display === 'none' || style.visibility === 'hidden') {
-        return false;
-      }
-      if (Number(style.opacity) === 0) return false;
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    };
-
-    type OptionRow = { value: string; text: string };
-
-    const readOptions = (input: HTMLElement): OptionRow[] => {
-      const w = window as unknown as {
-        jQuery?: (el: Element) => {
-          data: (key: string) =>
-            | {
-                dataSource?: { data: () => Array<{ Name?: string; Id?: string; Value?: string }> };
-                text: (t?: string) => string | void;
-                value: (v?: string) => string | void;
-              }
-            | undefined;
-        };
-      };
-
-      if (w.jQuery) {
-        const widget = w.jQuery(input).data('kendoDropDownList');
-        if (widget?.dataSource?.data) {
-          try {
-            const rows = widget.dataSource.data() ?? [];
-            return rows
-              .map((row) => ({
-                value: String(row.Id ?? row.Value ?? ''),
-                text: String(row.Name ?? ''),
-              }))
-              .filter((o) => o.text.trim().length > 0);
-          } catch {
-            /* fall through */
-          }
-        }
-      }
-
-      if (input instanceof HTMLSelectElement) {
-        return Array.from(input.options)
-          .map((o) => ({ value: o.value, text: o.text }))
-          .filter((o) => o.text.trim().length > 0 && !collapse(o.text).includes('select'));
-      }
-
-      return [];
-    };
-
-    const setDropdown = (
-      input: HTMLElement,
-      matchText: string,
-    ): boolean => {
-      const w = window as unknown as {
-        jQuery?: (el: Element) => {
-          data: (key: string) =>
-            | {
-                text: (t?: string) => string | void;
-                value: (v?: string) => string | void;
-                dataSource?: {
-                  data: () => Array<{ Name?: string; Id?: string; Value?: string }>;
-                };
-              }
-            | undefined;
-        };
-      };
-
-      const options = readOptions(input);
-      const needle = collapse(matchText);
-      const matches = options.filter((o) => collapse(o.text) === needle);
-      if (matches.length !== 1) {
-        return false;
-      }
-      const chosen = matches[0];
-
-      if (w.jQuery) {
-        const widget = w.jQuery(input).data('kendoDropDownList');
-        if (widget) {
-          try {
-            widget.text(chosen.text);
-          } catch {
-            try {
-              widget.value(chosen.value);
-            } catch {
-              return false;
-            }
-          }
-          const after =
-            typeof widget.text === 'function'
-              ? String(widget.text() ?? '')
-              : '';
-          return collapse(after) === needle;
-        }
-      }
-
-      if (input instanceof HTMLSelectElement) {
-        for (let i = 0; i < input.options.length; i++) {
-          if (collapse(input.options[i].text) === needle) {
-            input.selectedIndex = i;
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-            return true;
-          }
-        }
-      }
-
-      if (input instanceof HTMLInputElement) {
-        input.value = chosen.value || chosen.text;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-        return true;
-      }
-
-      return false;
-    };
-
-    const discoverVisibleInputs = (labelText: string): HTMLElement[] => {
-      const needle = collapse(labelText);
-      const labels = Array.from(document.querySelectorAll('label'));
-      const inputs: HTMLElement[] = [];
-
-      for (const lab of labels) {
-        if (!isDisplayed(lab)) continue;
-        if (!collapse(lab.textContent ?? '').includes(needle)) continue;
-
-        const forId = lab.getAttribute('for')?.trim();
-        if (forId) {
-          const byFor = document.getElementById(forId);
-          if (byFor instanceof HTMLElement) {
-            const wrap = byFor.closest('.mb-3, .col-12, div') ?? byFor.parentElement;
-            if (wrap && isDisplayed(wrap)) {
-              inputs.push(byFor);
-              continue;
-            }
-          }
-        }
-
-        const wrap = lab.closest('.mb-3, .col-12, div');
-        const candidate =
-          wrap?.querySelector(
-            'input[data-role="dropdownlist"], select, input[type="text"]',
-          ) ?? null;
-        if (candidate instanceof HTMLElement) {
-          const parent = candidate.closest('.mb-3, .col-12, div');
-          if (parent && isDisplayed(parent)) {
-            inputs.push(candidate);
-          }
-        }
-      }
-
-      return inputs;
-    };
-
-    let ambiguous = false;
-    let locationPrefillAttempted = false;
-    let locationPrefillApplied = false;
-    let visaTypePrefillAttempted = false;
-    let visaTypePrefillApplied = false;
-    let appointmentForPrefillAttempted = false;
-    let appointmentForPrefillApplied = false;
-
-    const tryPrefillField = (
-      labelText: string,
-      crmValue: string,
-      modalFallbackId: string,
-    ): { attempted: boolean; applied: boolean } => {
-      if (!crmValue) {
-        notes.push(`prefill_skip_empty_${collapse(labelText)}`);
-        return { attempted: false, applied: false };
-      }
-
-      let inputs = discoverVisibleInputs(labelText);
-      const modalEl = document.getElementById(modalFallbackId);
-      if (modalEl instanceof HTMLElement && inputs.length === 0) {
-        inputs = [modalEl];
-      }
-
-      if (inputs.length === 0) {
-        notes.push(`prefill_no_control_${collapse(labelText)}`);
-        ambiguous = true;
-        return { attempted: true, applied: false };
-      }
-
-      // Prefer a single visible control; multiple decoys → try each until
-      // exactly one option match applies on a control.
-      let applied = false;
-      let anyExactOption = false;
-      for (const input of inputs) {
-        const options = readOptions(input);
-        const matches = options.filter(
-          (o) => collapse(o.text) === collapse(crmValue),
-        );
-        if (matches.length === 1) {
-          anyExactOption = true;
-          if (setDropdown(input, crmValue)) {
-            applied = true;
-            break;
-          }
-        } else if (matches.length > 1) {
-          ambiguous = true;
-          notes.push(`prefill_ambiguous_options_${collapse(labelText)}`);
-          return { attempted: true, applied: false };
-        }
-      }
-
-      if (!anyExactOption) {
-        notes.push(`prefill_no_exact_option_${collapse(labelText)}`);
-        ambiguous = true;
-        return { attempted: true, applied: false };
-      }
-
-      if (!applied) {
-        notes.push(`prefill_set_failed_${collapse(labelText)}`);
-        ambiguous = true;
-      } else {
-        notes.push(`prefill_applied_${collapse(labelText)}`);
-      }
-      return { attempted: true, applied };
-    };
-
-    const loc = tryPrefillField(
-      a.locationLabelText,
-      a.submitCity,
-      a.modalLocationId,
+  // Location
+  if (submitCity) {
+    locationPrefillAttempted = true;
+    await settleOverlays();
+    const loc = await commitBookingDropdownByLabel(
+      page,
+      PORTAL_BOOKING_SELECTORS.locationLabelText,
+      submitCity,
     );
-    locationPrefillAttempted = loc.attempted;
-    locationPrefillApplied = loc.applied;
-
-    const visa = tryPrefillField(
-      a.visaTypeLabelText,
-      a.visaType,
-      a.modalVisaTypeId,
-    );
-    visaTypePrefillAttempted = visa.attempted;
-    visaTypePrefillApplied = visa.applied;
-
-    // Appointment For: only Individual when exactly one applicant (unambiguous).
-    if (a.applicantCount === 1) {
-      appointmentForPrefillAttempted = true;
-      const radios = Array.from(
-        document.querySelectorAll('input[type="radio"]'),
-      ) as HTMLInputElement[];
-      const individual = radios.filter(
-        (r) =>
-          collapse(r.value) === collapse(a.individualValue) &&
-          isDisplayed(r.closest('.form-check, div') ?? r),
-      );
-      if (individual.length === 0) {
-        notes.push('prefill_appointment_for_no_individual');
-        ambiguous = true;
-      } else if (individual.length > 1) {
-        // Multiple decoy radios with same value — leave default; still ok if
-        // one is already checked.
-        const already = individual.filter((r) => r.checked);
-        if (already.length === 1) {
-          appointmentForPrefillApplied = true;
-          notes.push('prefill_appointment_for_already_individual');
-        } else {
-          notes.push('prefill_appointment_for_decoy_ambiguous');
-          ambiguous = true;
-        }
-      } else {
-        individual[0].checked = true;
-        individual[0].dispatchEvent(new Event('change', { bubbles: true }));
-        appointmentForPrefillApplied = true;
-        notes.push('prefill_appointment_for_individual');
-      }
-    } else if (a.applicantCount > 1) {
-      appointmentForPrefillAttempted = true;
-      notes.push('prefill_appointment_for_family_ambiguous_skip');
+    if (loc.ok) {
+      locationPrefillApplied = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.location] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FILLED;
+      notes.push('prefill_applied_location');
+    } else {
       ambiguous = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.location] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+      notes.push(`prefill_location_failed:${loc.reason ?? 'unknown'}`);
     }
+  } else {
+    notes.push('prefill_skip_empty_location');
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.location] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.SKIPPED;
+  }
 
-    return {
-      locationPrefillAttempted,
-      locationPrefillApplied,
-      visaTypePrefillAttempted,
-      visaTypePrefillApplied,
-      appointmentForPrefillAttempted,
-      appointmentForPrefillApplied,
-      ambiguous,
-      notes,
-    };
-  }, arg);
+  // Visa Type
+  if (visaType) {
+    visaTypePrefillAttempted = true;
+    await settleOverlays();
+    const visa = await commitBookingDropdownByLabel(
+      page,
+      PORTAL_BOOKING_SELECTORS.visaTypeLabelText,
+      visaType,
+    );
+    if (visa.ok) {
+      visaTypePrefillApplied = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.visaType] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FILLED;
+      notes.push('prefill_applied_visa_type');
+    } else {
+      ambiguous = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.visaType] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+      notes.push(`prefill_visa_type_failed:${visa.reason ?? 'unknown'}`);
+    }
+  } else {
+    notes.push('prefill_skip_empty_visa_type');
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.visaType] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.SKIPPED;
+  }
+
+  // Visa Sub Type (after Visa Type so datasource can populate)
+  if (visaSubType) {
+    visaSubTypePrefillAttempted = true;
+    await settleOverlays();
+    const sub = await commitBookingDropdownByLabel(
+      page,
+      PORTAL_BOOKING_SELECTORS.visaSubTypeLabelText,
+      visaSubType,
+    );
+    if (sub.ok) {
+      visaSubTypePrefillApplied = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.visaSubType] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FILLED;
+      notes.push('prefill_applied_visa_sub_type');
+    } else {
+      ambiguous = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.visaSubType] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+      notes.push(`prefill_visa_sub_type_failed:${sub.reason ?? 'unknown'}`);
+    }
+  } else {
+    notes.push('prefill_skip_empty_visa_sub_type');
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.visaSubType] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.SKIPPED;
+  }
+
+  // Appointment For + Family Accept + Number Of Members
+  if (applicantCount === 1) {
+    appointmentForPrefillAttempted = true;
+    await settleOverlays();
+    const appt = await selectPortalBookingAppointmentFor(page, 'Individual');
+    if (appt.ok && appt.applied) {
+      appointmentForPrefillApplied = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.appointmentFor] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FILLED;
+      notes.push(`prefill_appointment_for_individual via=${appt.via}`);
+    } else {
+      ambiguous = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.appointmentFor] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+      notes.push(
+        `prefill_appointment_for_individual_failed:${!appt.ok ? appt.error : 'not_applied'}`,
+      );
+    }
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.numberOfMembers] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.SKIPPED;
+    notes.push('prefill_number_of_members_skipped_individual');
+  } else if (
+    applicantCount >= PORTAL_BOOKING_MEMBERS_COUNT.MIN &&
+    applicantCount <= PORTAL_BOOKING_MEMBERS_COUNT.MAX
+  ) {
+    appointmentForPrefillAttempted = true;
+    await settleOverlays();
+    const appt = await selectPortalBookingAppointmentFor(page, 'Family');
+    if (!appt.ok || !appt.applied) {
+      ambiguous = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.appointmentFor] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.numberOfMembers] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+      notes.push(
+        `prefill_appointment_for_family_failed:${!appt.ok ? appt.error : 'not_applied'}`,
+      );
+    } else {
+      appointmentForPrefillApplied = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.appointmentFor] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FILLED;
+      notes.push(`prefill_appointment_for_family via=${appt.via}`);
+
+      const family = await acceptPortalFamilyDisclaimerModal(page);
+      if (!family.ok) {
+        ambiguous = true;
+        fieldProgress[PORTAL_BOOKING_FIELD_ID.numberOfMembers] =
+          PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+        notes.push(`prefill_family_disclaimer_failed:${family.error}`);
+      } else {
+        if (family.accepted) {
+          familyDisclaimerAccepted = true;
+          notes.push(
+            `prefill_family_disclaimer_accepted via=${family.via ?? 'Accept'}`,
+          );
+        } else {
+          notes.push('prefill_family_disclaimer_not_presented');
+        }
+
+        numberOfMembersPrefillAttempted = true;
+        const membersVisible = await waitForPortalBookingMembersLabel(page);
+        if (!membersVisible) {
+          ambiguous = true;
+          fieldProgress[PORTAL_BOOKING_FIELD_ID.numberOfMembers] =
+            PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+          notes.push('prefill_number_of_members_not_visible');
+        } else {
+          await settleOverlays();
+          const membersLabel = formatPortalBookingMembersOption(applicantCount);
+          const members = await commitBookingDropdownByLabel(
+            page,
+            PORTAL_BOOKING_SELECTORS.numberOfMembersLabelText,
+            membersLabel,
+          );
+          if (members.ok) {
+            numberOfMembersPrefillApplied = true;
+            fieldProgress[PORTAL_BOOKING_FIELD_ID.numberOfMembers] =
+              PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FILLED;
+            notes.push('prefill_applied_number_of_members');
+          } else {
+            ambiguous = true;
+            fieldProgress[PORTAL_BOOKING_FIELD_ID.numberOfMembers] =
+              PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+            notes.push(
+              `prefill_number_of_members_failed:${members.reason ?? 'unknown'}`,
+            );
+          }
+        }
+      }
+    }
+  } else if (applicantCount > PORTAL_BOOKING_MEMBERS_COUNT.MAX) {
+    appointmentForPrefillAttempted = true;
+    ambiguous = true;
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.appointmentFor] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.numberOfMembers] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+    notes.push('prefill_appointment_for_members_out_of_range');
+  } else {
+    notes.push('prefill_skip_appointment_for_no_count');
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.appointmentFor] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.SKIPPED;
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.numberOfMembers] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.SKIPPED;
+  }
+
+  // Category — Prefer Normal; Premium CRM → staff stop (DEC-006)
+  categoryPrefillAttempted = true;
+  const categoryPlan = resolvePortalBookingCategoryOption(hint.category);
+  if (categoryPlan.kind === 'premium_staff_stop') {
+    premiumRequiredStaffStop = true;
+    ambiguous = true;
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.category] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+    notes.push('prefill_category_premium_staff_stop');
+  } else if (categoryPlan.kind === 'ambiguous') {
+    ambiguous = true;
+    fieldProgress[PORTAL_BOOKING_FIELD_ID.category] =
+      PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+    notes.push('prefill_category_ambiguous');
+  } else {
+    await settleOverlays();
+    const cat = await commitBookingDropdownByLabel(
+      page,
+      PORTAL_BOOKING_SELECTORS.categoryLabelText,
+      categoryPlan.text,
+    );
+    if (cat.ok) {
+      categoryPrefillApplied = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.category] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FILLED;
+      notes.push(
+        `prefill_applied_category_${categoryPlan.text.toLowerCase().replace(/\s+/g, '_')}`,
+      );
+    } else {
+      ambiguous = true;
+      fieldProgress[PORTAL_BOOKING_FIELD_ID.category] =
+        PORTAL_BOOKING_FIELD_PROGRESS_STATUS.FAILED;
+      notes.push(`prefill_category_failed:${cat.reason ?? 'unknown'}`);
+    }
+  }
+
+  return {
+    locationPrefillAttempted,
+    locationPrefillApplied,
+    visaTypePrefillAttempted,
+    visaTypePrefillApplied,
+    visaSubTypePrefillAttempted,
+    visaSubTypePrefillApplied,
+    appointmentForPrefillAttempted,
+    appointmentForPrefillApplied,
+    numberOfMembersPrefillAttempted,
+    numberOfMembersPrefillApplied,
+    categoryPrefillAttempted,
+    categoryPrefillApplied,
+    familyDisclaimerAccepted,
+    premiumRequiredStaffStop,
+    ambiguous,
+    fieldProgress,
+    notes,
+  };
 };

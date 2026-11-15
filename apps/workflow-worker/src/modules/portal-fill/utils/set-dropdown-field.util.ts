@@ -1,10 +1,12 @@
 /// <reference lib="dom" />
-import {
-  PORTAL_DROPDOWN_UNSELECTED_LABELS,
-  PORTAL_REGISTER_USER_SELECTORS,
-} from '../constants';
-import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
+import { PORTAL_DROPDOWN_UNSELECTED_LABELS } from '../constants';
+import type {
+  PortalWidgetFieldName,
+  PortalWidgetSurface,
+  WidgetOpResult,
+} from '../types';
 import { commitDropdownViaListboxUi } from './commit-dropdown-via-listbox-ui.util';
+import { resolvePortalFieldSelector } from './resolve-portal-field-selector.util';
 
 /**
  * Set a portal Kendo/DOM dropdown by exact option text.
@@ -13,15 +15,15 @@ import { commitDropdownViaListboxUi } from './commit-dropdown-via-listbox-ui.uti
  * when chrome/listbox UI cannot commit (harness or missing popup).
  */
 export const setDropdownField = async (
-  page: PortalPage,
-  name: PortalFieldName,
+  surface: PortalWidgetSurface,
+  name: PortalWidgetFieldName,
   text: string,
 ): Promise<WidgetOpResult> => {
-  const uiResult = await commitDropdownViaListboxUi(page, name, text);
+  const uiResult = await commitDropdownViaListboxUi(surface, name, text);
   if (uiResult.ok) return uiResult;
 
-  const selector = PORTAL_REGISTER_USER_SELECTORS.fields[name];
-  const apiResult = await page.evaluate(
+  const selector = resolvePortalFieldSelector(name);
+  const apiResult = await surface.evaluate(
     ({
       selector,
       name,

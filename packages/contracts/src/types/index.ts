@@ -46,10 +46,16 @@ export type { ClientsListDto } from './clients-list.types';
 export type { ClientsListQuery } from './clients-list-query.types';
 export type { ClientsListSortBy } from './clients-list-sort-by.types';
 export type { ClientsListSortDir } from './clients-list-sort-dir.types';
+export type { ClientPortalFormConditionals } from './client-portal-form-conditionals.types';
+export type {
+  ClientPortalFormDetailDto,
+  ClientPortalFormUpdateDto,
+} from './client-portal-form.types';
 export type {
   ApplicationDto,
   ApplicationStatusChangeDto,
 } from './application.types';
+export type { ApplicationUpsertDto } from './application-upsert.types';
 export type {
   ApplicationStatusHistoryActorRole,
   ApplicationStatusHistoryDto,
