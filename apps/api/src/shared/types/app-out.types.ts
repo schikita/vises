@@ -6,6 +6,8 @@
 export type AppOut = {
   id: string;
   code: string;
+  /** Client id for staff portal-form / passport HTTP routes (1:N per DEC-PF-011). */
+  clientId: string;
   clientEmail: string;
   /** Portal RegisterUser / login email; null when unset (REQ-001 / DEC-001). */
   portalFormEmail: string | null;

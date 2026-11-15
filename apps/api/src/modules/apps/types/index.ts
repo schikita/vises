@@ -24,3 +24,7 @@ export type { VisitsPaginatedList } from './visits-paginated-list.types';
 export type { PaymentsListQuery } from './payments-list-query.types';
 export type { PaymentsSummary } from './payments-summary.types';
 export type { PaymentsPaginatedList } from './payments-paginated-list.types';
+export type {
+  ResolveUpsertCreateClientIdInput,
+  ResolveUpsertCreateClientIdResult,
+} from './resolve-upsert-create-client-id.types';

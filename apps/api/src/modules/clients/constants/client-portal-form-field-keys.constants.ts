@@ -40,4 +40,9 @@ export const CLIENT_PORTAL_FORM_STRING_FIELD_KEYS = [
   'costCoveredBy',
   'meansOfSupport',
   'memberStateSecondDestination',
+  'phone',
+  'purpose',
+  'firstEntry',
+  'entries',
+  'durationDays',
 ] as const;

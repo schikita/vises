@@ -4,6 +4,8 @@ import type { ClientPortalFormConditionals } from './client-portal-form-conditio
  * Dedicated portal-form write body (REQ-002 / REQ-004).
  * Prefer this PATCH over stuffing non-passport keys into ClientPassportUpdateDto (DEC-002).
  * All fields optional (partial update). CamelCase matches EditMemberCrmApplicantSource.
+ * Journey/contact (`phone`, `purpose`, `firstEntry`, `entries`, `durationDays`) —
+ * OQ-PF-001 / portal-form-data-collection (additive; existing Client columns; no migration).
  */
 export type ClientPortalFormUpdateDto = {
   /** Home Line1 freeform — existing `clients.address`; included for portal PATCH. */
@@ -46,12 +48,24 @@ export type ClientPortalFormUpdateDto = {
   costCoveredBy?: string;
   meansOfSupport?: string;
   memberStateSecondDestination?: string;
+  /** Contact Number (home) — existing `clients.phone` (OQ-PF-001). */
+  phone?: string;
+  /** Purpose of journey — existing `clients.purpose` (OQ-PF-001). */
+  purpose?: string;
+  /** Member state first entry — existing `clients.first_entry` (OQ-PF-001). */
+  firstEntry?: string;
+  /** Number of entries — existing `clients.entries` (OQ-PF-001). */
+  entries?: string;
+  /** Intended stay duration — existing `clients.duration_days` (OQ-PF-001). */
+  durationDays?: string;
   portalFormConditionals?: ClientPortalFormConditionals;
 };
 
 /**
  * Portal-form read/detail fields (REQ-002 / REQ-004).
  * Null = not yet collected. Separate from ClientDetailDto FR-6 passport plaintext.
+ * Journey/contact (`phone`, `purpose`, `firstEntry`, `entries`, `durationDays`) —
+ * OQ-PF-001 / portal-form-data-collection (additive; existing Client columns; no migration).
  */
 export type ClientPortalFormDetailDto = {
   address: string | null;
@@ -93,5 +107,15 @@ export type ClientPortalFormDetailDto = {
   costCoveredBy: string | null;
   meansOfSupport: string | null;
   memberStateSecondDestination: string | null;
+  /** Contact Number (home) — existing `clients.phone` (OQ-PF-001). */
+  phone: string | null;
+  /** Purpose of journey — existing `clients.purpose` (OQ-PF-001). */
+  purpose: string | null;
+  /** Member state first entry — existing `clients.first_entry` (OQ-PF-001). */
+  firstEntry: string | null;
+  /** Number of entries — existing `clients.entries` (OQ-PF-001). */
+  entries: string | null;
+  /** Intended stay duration — existing `clients.duration_days` (OQ-PF-001). */
+  durationDays: string | null;
   portalFormConditionals: ClientPortalFormConditionals | null;
 };

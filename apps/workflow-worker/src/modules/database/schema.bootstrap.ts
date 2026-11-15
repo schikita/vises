@@ -8,8 +8,8 @@ import { DataSource } from 'typeorm';
  * - durable-bls-workflow DEC-012 / DEC-020: ensure BLS indexes + partial unique
  *   for one active workflow per application. Does **not** drop `portal_autofill_runs`.
  * - roles-and-applications T12: drop legacy `applications.applicants` jsonb;
- *   unique partial index for at most one `superadmin`; ensure unique
- *   `applications.client_id`; ensure `users.balance` (AC-1 / AC-6 / AC-9).
+ *   unique partial index for at most one `superadmin`; ensure non-unique
+ *   `applications.client_id` (DEC-PF-011 1:N); ensure `users.balance`.
  *   No applicants passport backfill (column removed).
  * - APF-TASK-002 / DEC-005: additive portal-form columns on clients +
  *   applications (nullable; null = not collected).
@@ -62,12 +62,24 @@ export class SchemaBootstrap implements OnModuleInit {
       'Schema ensure: users at-most-one-superadmin partial unique OK',
     );
 
+    // DEC-PF-011: 1 Client : N Applications. Initial migration creates
+    // non-unique IDX_19b187…; DROP+CREATE heals local DBs that still have
+    // the old unique index under either name.
     await this.dataSource.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS uq_applications_client_id
+      DROP INDEX IF EXISTS uq_applications_client_id
+    `);
+    await this.dataSource.query(`
+      DROP INDEX IF EXISTS idx_applications_client_id
+    `);
+    await this.dataSource.query(`
+      DROP INDEX IF EXISTS "IDX_19b187ccdbeb753c44a3a0be30"
+    `);
+    await this.dataSource.query(`
+      CREATE INDEX IF NOT EXISTS "IDX_19b187ccdbeb753c44a3a0be30"
       ON applications (client_id)
     `);
     this.logger.log(
-      'Schema ensure: applications.client_id unique index OK',
+      'Schema ensure: applications.client_id non-unique index OK (DEC-PF-011)',
     );
 
     await this.dataSource.query(`

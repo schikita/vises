@@ -156,6 +156,31 @@ export class ClientPortalFormUpdateDto {
   @IsString()
   memberStateSecondDestination?: string;
 
+  /** Contact Number (home) — existing `clients.phone` (OQ-PF-001). */
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  /** Purpose of journey — existing `clients.purpose` (OQ-PF-001). */
+  @IsOptional()
+  @IsString()
+  purpose?: string;
+
+  /** Member state first entry — existing `clients.first_entry` (OQ-PF-001). */
+  @IsOptional()
+  @IsString()
+  firstEntry?: string;
+
+  /** Number of entries — existing `clients.entries` (OQ-PF-001). */
+  @IsOptional()
+  @IsString()
+  entries?: string;
+
+  /** Intended stay duration — existing `clients.duration_days` (OQ-PF-001). */
+  @IsOptional()
+  @IsString()
+  durationDays?: string;
+
   @IsOptional()
   @IsObject()
   portalFormConditionals?: ClientPortalFormConditionals;

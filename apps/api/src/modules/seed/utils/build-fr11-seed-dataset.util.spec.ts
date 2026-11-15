@@ -91,7 +91,6 @@ describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
       plan.clientCount >= SEED_CLIENTS_PER_AGENT_MIN &&
       plan.clientCount <= SEED_CLIENTS_PER_AGENT_MAX,
     )).toBe(true);
-
     const clientIds = new Set(dataset.clients.map((c) => c.id));
     const appClientIds = dataset.applications.map((a) => a.clientId);
     expect(new Set(appClientIds).size).toBe(expectedClientCount);

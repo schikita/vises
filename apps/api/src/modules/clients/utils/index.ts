@@ -23,3 +23,5 @@ export { sortClientsList } from './sort-clients-list.util';
 export { paginateClientsList } from './paginate-clients-list.util';
 export { resolveAgentDisplayName } from './resolve-agent-display-name.util';
 export { normalizeRouteCity } from './normalize-route-city.util';
+export { buildNewClientRow } from './build-new-client-row.util';
+export { pickMostRecentlyUpdatedApplication } from './pick-most-recently-updated-application.util';

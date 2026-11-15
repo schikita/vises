@@ -24,3 +24,7 @@ export { applyVisitsListSort } from './apply-visits-list-sort.util';
 export { joinVisitsRelatedUser } from './join-visits-related-user.util';
 export { parsePaymentsListQuery } from './parse-payments-list-query.util';
 export { applyApplicationNeedsFixesStatus } from './apply-application-needs-fixes-status.util';
+export {
+  normalizeOptionalClientId,
+  resolveUpsertCreateClientId,
+} from './resolve-upsert-create-client-id.util';

@@ -28,12 +28,14 @@ import type {
   ClientDetailWithPortalFormDto,
   ClientPassportPlainOut,
   ClientsListQueryParsed,
+  CreateClientWithDebitInput,
 } from './types';
 import {
   applyEncryptedPassportFields,
   applyPortalFormFields,
   assertAgentCreate,
   assertCanAccessClient,
+  buildNewClientRow,
   buildPassportPlainOut,
   extractPassportCiphertextFields,
   filterClientsListBySearch,
@@ -45,6 +47,7 @@ import {
   normalizeRouteCity,
   paginateClientsList,
   parsePricePerClientWholeUnits,
+  pickMostRecentlyUpdatedApplication,
   pickPassportUpdateFields,
   pickPortalFormUpdateFields,
   resolveAgentDisplayName,
@@ -77,47 +80,18 @@ export class ClientsService implements IClientsService {
 
     return this.dataSource.transaction(
       async (manager: EntityManager): Promise<ClientDto> => {
-        const now = new Date();
-        const clientId = uid('cli');
+        const client = await this.insertClientAndDebit(
+          manager,
+          actor,
+          body,
+          pricePerClient,
+        );
+        const now = client.createdAt;
         const applicationId = uid('app');
-
-        const client = manager.create(Client, {
-          id: clientId,
-          agentId: actor.id,
-          email: body.email ?? null,
-          phone: body.phone ?? null,
-          address: body.address ?? null,
-          purpose: body.purpose ?? null,
-          firstEntry: body.firstEntry ?? null,
-          entries: body.entries ?? null,
-          durationDays: body.durationDays ?? null,
-          relationship: body.relationship ?? null,
-          passportNumber: null,
-          passportIssued: null,
-          passportExpires: null,
-          passportType: null,
-          passportIssueCountry: null,
-          passportIssuedBy: null,
-          firstName: null,
-          lastName: null,
-          lastNameAtBirth: null,
-          dob: null,
-          placeOfBirth: null,
-          countryOfBirth: null,
-          nationality: null,
-          nationalityAtBirth: null,
-          nationalId: null,
-          otherNames: null,
-          gender: null,
-          maritalStatus: null,
-          createdAt: now,
-          updatedAt: now,
-        });
-        await manager.save(Client, client);
 
         const application = manager.create(Application, {
           id: applicationId,
-          clientId,
+          clientId: client.id,
           code: generateClientAppCode(),
           clientEmail: body.email ?? '',
           portalFormEmail: null,
@@ -129,18 +103,31 @@ export class ClientsService implements IClientsService {
         });
         await manager.save(Application, application);
 
-        await this.balance.debitWithLock(manager, {
-          agentId: actor.id,
-          actorId: actor.id,
-          amount: pricePerClient,
-          clientId,
-          reason: CLIENT_CREATION_DEBIT_REASON,
-        });
-
         // Keep ClientDto on create for minimal churn (Decision 2A note).
         return mapClientToDto(client, applicationId);
       },
     );
+  }
+
+  /**
+   * Create CRM Client + ledger debit only (no Application).
+   * Used by staff apps upsert when `clientId` is absent (DEC-PF-011).
+   */
+  async createClientWithDebit(
+    actor: User,
+    fields: CreateClientWithDebitInput = {},
+  ): Promise<Client> {
+    const settingsOut = await this.settings.get();
+    const pricePerClient = settingsOut.price_per_client;
+
+    return this.dataSource.transaction(
+      async (manager: EntityManager): Promise<Client> =>
+        this.insertClientAndDebit(manager, actor, fields, pricePerClient),
+    );
+  }
+
+  async findClientById(clientId: string): Promise<Client | null> {
+    return this.clients.findOne({ where: { id: clientId } });
   }
 
   async list(
@@ -312,10 +299,10 @@ export class ClientsService implements IClientsService {
 
     await this.dataSource.transaction(
       async (manager: EntityManager): Promise<void> => {
-        const application = await manager.findOne(Application, {
+        const applications = await manager.find(Application, {
           where: { clientId: client.id },
         });
-        if (application) {
+        for (const application of applications) {
           await manager.delete(ApplicationStatusHistory, {
             applicationId: application.id,
           });
@@ -326,6 +313,40 @@ export class ClientsService implements IClientsService {
     );
 
     return { ok: true };
+  }
+
+  private async insertClientAndDebit(
+    manager: EntityManager,
+    actor: User,
+    fields: CreateClientWithDebitInput,
+    pricePerClient: string,
+  ): Promise<Client> {
+    const now = new Date();
+    const clientId = uid('cli');
+    const client = buildNewClientRow({
+      id: clientId,
+      agentId: actor.id,
+      email: fields.email ?? null,
+      phone: fields.phone ?? null,
+      address: fields.address ?? null,
+      purpose: fields.purpose ?? null,
+      firstEntry: fields.firstEntry ?? null,
+      entries: fields.entries ?? null,
+      durationDays: fields.durationDays ?? null,
+      relationship: fields.relationship ?? null,
+      now,
+    });
+    await manager.save(Client, client);
+
+    await this.balance.debitWithLock(manager, {
+      agentId: actor.id,
+      actorId: actor.id,
+      amount: pricePerClient,
+      clientId,
+      reason: CLIENT_CREATION_DEBIT_REASON,
+    });
+
+    return client;
   }
 
   private async assertPassportUnlocked(clientId: string): Promise<void> {
@@ -345,9 +366,11 @@ export class ClientsService implements IClientsService {
     return application.id;
   }
 
+  /** Prefer most recently updated Application when Client has many (DEC-PF-011). */
   private async requireApplication(clientId: string): Promise<Application> {
     const application = await this.applications.findOne({
       where: { clientId },
+      order: { updatedAt: 'DESC' },
     });
     if (!application) {
       return throwClientNotFound();
@@ -361,10 +384,14 @@ export class ClientsService implements IClientsService {
     const apps = await this.applications
       .createQueryBuilder('a')
       .where('a.client_id IN (:...clientIds)', { clientIds })
+      .orderBy('a.updated_at', 'DESC')
       .getMany();
     const map = new Map<string, Application>();
     for (const app of apps) {
-      map.set(app.clientId, app);
+      map.set(
+        app.clientId,
+        pickMostRecentlyUpdatedApplication(map.get(app.clientId), app),
+      );
     }
     return map;
   }
