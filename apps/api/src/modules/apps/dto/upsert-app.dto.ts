@@ -27,6 +27,19 @@ export class UpsertAppDto {
   clientEmail?: string;
 
   /**
+   * CRM Client id (DEC-PF-011).
+   * - **Create + non-empty + Client exists:** authoritative — Application attaches
+   *   to that Client (no new Client, no debit).
+   * - **Create + empty/missing (staff):** server creates CRM Client + debit, then
+   *   sets Application.clientId to the new id.
+   * - **Create + non-empty + Client missing:** 404 — never invents an orphan id.
+   * - **Update:** ignored on write — existing row.clientId is kept.
+   */
+  @IsOptional()
+  @IsString()
+  clientId?: string;
+
+  /**
    * Accepted so SPA full-object upserts pass `forbidNonWhitelisted`.
    * Ignored on write — portal-form email is set by autofill/seed only (DEC-001/005).
    */

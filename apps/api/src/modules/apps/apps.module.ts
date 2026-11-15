@@ -4,6 +4,7 @@ import { Application } from '../database/entities/application.entity';
 import { User } from '../database/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { BlsWorkflowModule } from '../bls-workflow';
+import { ClientsModule } from '../clients/clients.module';
 import { PortalScrapeModule } from '../portal-scrape';
 import { UsersModule } from '../users/users.module';
 import { APPS_SERVICE } from './constants';
@@ -17,6 +18,8 @@ import { VisitsController } from './visits.controller';
     TypeOrmModule.forFeature([Application, User]),
     AuthModule,
     UsersModule,
+    /** DEC-PF-011: staff upsert may create CRM Client + debit when clientId absent. */
+    ClientsModule,
     BlsWorkflowModule,
     /** Client-safe portalProgress embed on app read (DEC-007 / A-API-1). */
     PortalScrapeModule,

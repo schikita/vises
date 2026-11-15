@@ -2,7 +2,7 @@ import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 import type { ApplicationStatus } from '@vises/contracts';
 
 /**
- * Application is 1:1 with Client via unique `clientId` (FR-5 / AC-6).
+ * Application is 1:N with Client via non-unique `clientId` (DEC-PF-011).
  * Passport PII lives on Client — `applicants` jsonb removed (FR-6 / AC-9).
  * Mutable `status` stays in sync with ApplicationStatusHistory (FR-7 / AC-12).
  */
@@ -11,8 +11,8 @@ export class Application {
   @PrimaryColumn({ type: 'varchar', length: 40 })
   id!: string;
 
-  /** Unique 1:1 link to `clients.id` (AC-6). */
-  @Index({ unique: true })
+  /** Non-unique link to `clients.id` — one Client may own many Applications (DEC-PF-011). */
+  @Index()
   @Column({ name: 'client_id', type: 'varchar', length: 40 })
   clientId!: string;
 

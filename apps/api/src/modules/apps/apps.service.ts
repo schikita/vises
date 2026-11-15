@@ -20,6 +20,7 @@ import {
   utcNow,
 } from '../../shared/utils';
 import { BlsWorkflowService } from '../bls-workflow';
+import { ClientsService } from '../clients/clients.service';
 import { WorkflowBusPublisherService } from '../messaging';
 import { PortalAutofillService } from '../portal-scrape';
 import { UsersService } from '../users/users.service';
@@ -58,8 +59,10 @@ import {
   generateAppCode,
   joinVisitsRelatedUser,
   mergeDocuments,
+  normalizeOptionalClientId,
   openAppDocumentStream,
   resolveAppDocumentPath,
+  resolveUpsertCreateClientId,
   resolveUploadDir,
   writeAppDocumentFile,
 } from './utils';
@@ -72,6 +75,7 @@ export class AppsService implements IAppsService {
     @InjectRepository(Application)
     private readonly apps: Repository<Application>,
     private readonly usersService: UsersService,
+    private readonly clientsService: ClientsService,
     private readonly portalAutofill: PortalAutofillService,
     private readonly workflows: BlsWorkflowService,
     private readonly workflowBus: WorkflowBusPublisherService,
@@ -282,6 +286,10 @@ export class AppsService implements IAppsService {
       } as Application);
     }
 
+    const clientId = isCreate
+      ? await this.resolveClientIdForCreate(body, user, isStaff, clientEmail)
+      : row!.clientId;
+
     const privileged = isClient
       ? applyClientPrivilegedCoerce(body, row)
       : {
@@ -300,7 +308,7 @@ export class AppsService implements IAppsService {
 
     const payload: Partial<Application> = {
       code: body.code || generateAppCode(),
-      clientId: row?.clientId ?? uid('cli'),
+      clientId,
       clientEmail,
       status: privileged.status as ApplicationStatus,
       destination: body.destination ?? '',
@@ -486,6 +494,37 @@ export class AppsService implements IAppsService {
       stream: openAppDocumentStream(path),
       filename: doc.name || stored,
     };
+  }
+
+  /**
+   * DEC-PF-011: on create, attach to existing Client or create Client+debit.
+   * Never mint orphan `uid('cli')` without a `clients` row.
+   */
+  private async resolveClientIdForCreate(
+    body: UpsertAppDto,
+    user: User,
+    isStaff: boolean,
+    clientEmail: string,
+  ): Promise<string> {
+    const requestedClientId = normalizeOptionalClientId(body.clientId);
+    const existing = requestedClientId
+      ? await this.clientsService.findClientById(requestedClientId)
+      : null;
+
+    const decision = resolveUpsertCreateClientId({
+      requestedClientId,
+      clientExists: existing !== null,
+      isStaff,
+    });
+
+    if (decision.action === 'use_existing') {
+      return decision.clientId;
+    }
+
+    const created = await this.clientsService.createClientWithDebit(user, {
+      email: clientEmail || null,
+    });
+    return created.id;
   }
 
   private async withPortalProgress(

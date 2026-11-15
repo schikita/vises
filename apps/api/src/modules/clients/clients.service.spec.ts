@@ -63,6 +63,7 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     create: jest.Mock;
     save: jest.Mock;
     findOne: jest.Mock;
+    find: jest.Mock;
     delete: jest.Mock;
   };
 
@@ -106,6 +107,18 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
             );
           }
           return null;
+        },
+      ),
+      find: jest.fn(
+        async (...args: unknown[]): Promise<Application[]> => {
+          const EntityClass = args[0];
+          const opts = args[1] as { where?: { clientId?: string } };
+          if (EntityClass === Application) {
+            return savedApplications.filter(
+              (a) => a.clientId === opts?.where?.clientId,
+            );
+          }
+          return [];
         },
       ),
       delete: jest.fn(
@@ -243,6 +256,38 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     expect(dto.email).toBe('c@example.com');
     expect(dto.applicationId).toBe(savedApplications[0]?.id);
     expect(dto.passport.passportNumber).toBeNull();
+  });
+
+  it('createClientWithDebit creates Client + debit without Application (DEC-PF-011)', async (): Promise<void> => {
+    const service = await createService();
+    const client = await service.createClientWithDebit(agent, {
+      email: 'c@example.com',
+    });
+
+    expect(savedClients).toHaveLength(1);
+    expect(savedClients[0]?.id).toBe(client.id);
+    expect(savedClients[0]?.email).toBe('c@example.com');
+    expect(savedApplications).toHaveLength(0);
+    expect(debitWithLock).toHaveBeenCalledTimes(1);
+    expect(debitWithLock).toHaveBeenCalledWith(
+      txnManager,
+      expect.objectContaining({
+        agentId: 'agent-1',
+        clientId: client.id,
+        reason: 'client_creation',
+      }),
+    );
+  });
+
+  it('createClientWithDebit allows staff actor without assertAgentCreate', async (): Promise<void> => {
+    const service = await createService();
+    const client = await service.createClientWithDebit(admin, {
+      email: 'staff-created@example.com',
+    });
+
+    expect(client.agentId).toBe('admin-1');
+    expect(savedApplications).toHaveLength(0);
+    expect(debitWithLock).toHaveBeenCalledTimes(1);
   });
 
   it('create with insufficient balance surfaces insufficient_balance (AC-5)', async (): Promise<void> => {
@@ -536,12 +581,14 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     clientsCreateQueryBuilder.mockReturnValue(qb);
     applicationsCreateQueryBuilder.mockReturnValue({
       where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn(
         async (): Promise<Application[]> => [
           Object.assign(new Application(), {
             id: 'app-1',
             clientId: 'cli-1',
             status: 'drafting',
+            updatedAt: new Date('2026-01-01T00:00:00.000Z'),
           }),
         ],
       ),
@@ -618,12 +665,14 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     });
     applicationsCreateQueryBuilder.mockReturnValue({
       where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn(
         async (): Promise<Application[]> => [
           Object.assign(new Application(), {
             id: 'app-empty',
             clientId: 'cli-empty',
             status: 'pending',
+            updatedAt: new Date('2026-01-01T00:00:00.000Z'),
           }),
         ],
       ),

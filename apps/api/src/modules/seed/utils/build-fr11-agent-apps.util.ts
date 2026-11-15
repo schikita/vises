@@ -29,7 +29,7 @@ import { pickSeedDateString } from './pick-seed-date-string.util';
 import { pickSeedInt } from './pick-seed-int.util';
 import { pickSeedItem } from './pick-seed-item.util';
 
-/** Build 1:1 client↔application rows + status history for one FR-11 agent. */
+/** Build client↔application rows + status history for one FR-11 agent (seed stays 1 app per client). */
 export const buildFr11AgentApps = (
   input: BuildFr11AgentAppsInput,
 ): BuildFr11AgentAppsResult => {

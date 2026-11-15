@@ -1,18 +1,21 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { Application } from '../database/entities/application.entity';
+import { Client } from '../database/entities/client.entity';
 import { User } from '../database/entities/user.entity';
 import { BlsWorkflowService } from '../bls-workflow';
+import { ClientsService } from '../clients/clients.service';
 import { WorkflowBusPublisherService } from '../messaging';
 import { PortalAutofillService } from '../portal-scrape';
 import { UsersService } from '../users/users.service';
 import { AppsService } from './apps.service';
 import type { UpsertAppDto } from './dto/upsert-app.dto';
 
-describe('AppsService visaSubType (APF-TASK-003 / REQ-003)', (): void => {
+describe('AppsService (PF-TASK-007 / DEC-PF-011 + visaSubType)', (): void => {
   const admin: User = Object.assign(new User(), {
     id: 'admin-1',
     name: 'Admin',
@@ -32,12 +35,18 @@ describe('AppsService visaSubType (APF-TASK-003 / REQ-003)', (): void => {
   const appsSave = jest.fn();
   const appsCreate = jest.fn();
   const getClientPortalProgressForApps = jest.fn();
+  const ensureClientForIdentity = jest.fn();
+  const createClientWithDebit = jest.fn();
+  const findClientById = jest.fn();
 
   const createService = async (): Promise<AppsService> => {
     appsFindOne.mockReset();
     appsSave.mockReset();
     appsCreate.mockReset();
     getClientPortalProgressForApps.mockReset();
+    ensureClientForIdentity.mockReset();
+    createClientWithDebit.mockReset();
+    findClientById.mockReset();
 
     appsSave.mockImplementation(async (row: Application): Promise<Application> => row);
     appsCreate.mockImplementation(
@@ -55,6 +64,16 @@ describe('AppsService visaSubType (APF-TASK-003 / REQ-003)', (): void => {
         return map;
       },
     );
+    ensureClientForIdentity.mockResolvedValue({
+      user: Object.assign(new User(), {
+        id: 'usr-cli',
+        email: 'c@example.com',
+        login: 'c@example.com',
+        name: 'Client',
+        role: 'client',
+      }),
+      created: false,
+    });
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
@@ -69,7 +88,11 @@ describe('AppsService visaSubType (APF-TASK-003 / REQ-003)', (): void => {
         },
         {
           provide: UsersService,
-          useValue: { ensureClientForIdentity: jest.fn() },
+          useValue: { ensureClientForIdentity },
+        },
+        {
+          provide: ClientsService,
+          useValue: { createClientWithDebit, findClientById },
         },
         {
           provide: PortalAutofillService,
@@ -167,5 +190,97 @@ describe('AppsService visaSubType (APF-TASK-003 / REQ-003)', (): void => {
     expect(saved.visaSubType).toBe('Existing Sub Type');
     expect(result.application.visaSubType).toBe('Existing Sub Type');
     expect(result.application.destination).toBe('ES');
+  });
+
+  it('upsert update ignores body.clientId and keeps server row clientId', async (): Promise<void> => {
+    const service = await createService();
+    const row = existingRow(null);
+    appsFindOne.mockResolvedValue(row);
+
+    const body: UpsertAppDto = {
+      id: 'app-1',
+      clientId: 'cli-spoofed',
+      portalWorkflowAction: 'none',
+    };
+
+    const result = await service.upsert(body, admin);
+
+    expect(appsSave).toHaveBeenCalled();
+    const saved = appsSave.mock.calls[0][0] as Application;
+    expect(saved.clientId).toBe('cli-1');
+    expect(result.application.clientId).toBe('cli-1');
+    expect(createClientWithDebit).not.toHaveBeenCalled();
+    expect(findClientById).not.toHaveBeenCalled();
+  });
+
+  it('upsert create without clientId creates CRM Client + debit and attaches id', async (): Promise<void> => {
+    const service = await createService();
+    appsFindOne.mockResolvedValue(null);
+    createClientWithDebit.mockResolvedValue(
+      Object.assign(new Client(), { id: 'cli-new' }),
+    );
+
+    const body: UpsertAppDto = {
+      clientEmail: 'c@example.com',
+      portalWorkflowAction: 'none',
+    };
+
+    const result = await service.upsert(body, admin);
+
+    expect(createClientWithDebit).toHaveBeenCalledTimes(1);
+    expect(createClientWithDebit).toHaveBeenCalledWith(
+      admin,
+      expect.objectContaining({ email: 'c@example.com' }),
+    );
+    expect(findClientById).not.toHaveBeenCalled();
+    const saved = appsSave.mock.calls[0][0] as Application;
+    expect(saved.clientId).toBe('cli-new');
+    expect(result.application.clientId).toBe('cli-new');
+  });
+
+  it('upsert create with existing clientId attaches without debit', async (): Promise<void> => {
+    const service = await createService();
+    appsFindOne.mockResolvedValue(null);
+    findClientById.mockResolvedValue(
+      Object.assign(new Client(), { id: 'cli-existing' }),
+    );
+
+    const body: UpsertAppDto = {
+      clientEmail: 'c@example.com',
+      clientId: 'cli-existing',
+      portalWorkflowAction: 'none',
+    };
+
+    const result = await service.upsert(body, admin);
+
+    expect(findClientById).toHaveBeenCalledWith('cli-existing');
+    expect(createClientWithDebit).not.toHaveBeenCalled();
+    const saved = appsSave.mock.calls[0][0] as Application;
+    expect(saved.clientId).toBe('cli-existing');
+    expect(result.application.clientId).toBe('cli-existing');
+  });
+
+  it('upsert create with unknown clientId returns 404 and does not invent', async (): Promise<void> => {
+    const service = await createService();
+    appsFindOne.mockResolvedValue(null);
+    findClientById.mockResolvedValue(null);
+
+    const body: UpsertAppDto = {
+      clientEmail: 'c@example.com',
+      clientId: 'cli-missing',
+      portalWorkflowAction: 'none',
+    };
+
+    expect.assertions(4);
+    try {
+      await service.upsert(body, admin);
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(HttpException);
+      if (error instanceof HttpException) {
+        expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+      }
+    }
+    expect(createClientWithDebit).not.toHaveBeenCalled();
+    expect(appsSave).not.toHaveBeenCalled();
   });
 });
