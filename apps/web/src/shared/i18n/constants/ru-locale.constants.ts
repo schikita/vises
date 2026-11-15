@@ -339,6 +339,7 @@ export const RU_LOCALE = {
       unknown: 'Клиент',
       applicationId: 'Заявка: {{id}}',
       openApplication: 'Открыть заявку',
+      openPortalForm: 'Редактировать портальную форму',
       loadingTitle: 'Загрузка…',
       loadingText: 'Получаем карточку клиента.',
       delete: 'Удалить клиента',
@@ -352,6 +353,22 @@ export const RU_LOCALE = {
       submit: 'Сохранить паспорт',
       submitting: 'Сохранение…',
       saved: 'Паспорт сохранён',
+    },
+    portalForm: {
+      title: 'Портальная форма',
+      subtitle:
+        'Сбор полей Edit Member и Location / Visa Type для автозаполнения портала.',
+      back: 'К карточке клиента',
+      loadingTitle: 'Загрузка…',
+      loadingText: 'Получаем данные портальной формы.',
+      submit: 'Сохранить портальную форму',
+      submitting: 'Сохранение…',
+      saved: 'Портальная форма сохранена',
+      tripDisabled:
+        'Поля поездки (Location / Visa Type / Visa Sub Type / Category) недоступны, пока клиент не связан с заявкой.',
+      passportError: 'Ошибка сохранения паспорта: {{message}}',
+      portalFormError: 'Ошибка сохранения portal-form: {{message}}',
+      tripError: 'Ошибка сохранения поездки: {{message}}',
     },
     status: {
       drafting: 'Черновик',

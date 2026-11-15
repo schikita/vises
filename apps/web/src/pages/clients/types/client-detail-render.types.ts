@@ -4,6 +4,7 @@ import type { ClientDetailDto } from '@vises/contracts'
 export type ClientDetailRenderProps = {
   listPath: string
   applicationPath: string | null
+  portalFormPath: string | null
   loading: boolean
   loadError: string
   detail: ClientDetailDto | null

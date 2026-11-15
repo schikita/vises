@@ -1,6 +1,13 @@
-import type { ClientDetailDto } from '@vises/contracts'
 import { apiRequest } from '@/shared/api'
+import type { ClientDetailWithPortalForm } from '../types/client-detail-with-portal-form.types'
 
-/** GET /clients/:clientId → Decision 2A `ClientDetailDto` (plaintext FR-6). */
-export const fetchClientDetail = (clientId: string): Promise<ClientDetailDto> =>
-  apiRequest<ClientDetailDto>(`/clients/${encodeURIComponent(clientId)}`)
+/**
+ * GET /clients/:clientId → FR-6 plaintext + portal-form detail fields
+ * (`ClientDetailDto` ∩ `ClientPortalFormDetailDto`).
+ */
+export const fetchClientDetail = (
+  clientId: string,
+): Promise<ClientDetailWithPortalForm> =>
+  apiRequest<ClientDetailWithPortalForm>(
+    `/clients/${encodeURIComponent(clientId)}`,
+  )

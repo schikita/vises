@@ -11,6 +11,7 @@ export const emptyApplication = (email: string): Application => {
     status: 'new',
     destination: 'Испания',
     visaType: 'Туристическая',
+    visaSubType: null,
     category: 'Normal',
     submitCountry: 'Belarus',
     submitCity: 'Minsk',

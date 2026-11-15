@@ -149,10 +149,15 @@ export const ClientDetailPage = (): React.ReactElement => {
       ? `${appsBase}/${detailQuery.data.applicationId}`
       : null
 
+  const portalFormPath = clientId
+    ? `${listPath}/${clientId}/portal-form`
+    : null
+
   return (
     <ClientDetailRender
       listPath={listPath}
       applicationPath={applicationPath}
+      portalFormPath={portalFormPath}
       loading={detailQuery.isLoading}
       loadError={loadError}
       detail={detailQuery.data ?? null}

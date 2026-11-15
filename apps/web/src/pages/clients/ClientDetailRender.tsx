@@ -6,6 +6,7 @@ import type { ClientDetailRenderProps } from './types'
 export const ClientDetailRender = ({
   listPath,
   applicationPath,
+  portalFormPath,
   loading,
   loadError,
   detail,
@@ -88,6 +89,17 @@ export const ClientDetailRender = ({
           title={t('clients.detail.loadingTitle')}
           text={t('clients.detail.loadingText')}
         />
+      ) : null}
+
+      {!loading && detail && portalFormPath ? (
+        <div>
+          <Link
+            to={portalFormPath}
+            className="text-sm font-medium text-forest no-underline hover:underline"
+          >
+            {t('clients.detail.openPortalForm')}
+          </Link>
+        </div>
       ) : null}
 
       {!loading && detail ? (

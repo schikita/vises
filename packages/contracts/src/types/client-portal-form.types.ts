@@ -8,6 +8,8 @@ import type { ClientPortalFormConditionals } from './client-portal-form-conditio
 export type ClientPortalFormUpdateDto = {
   /** Home Line1 freeform — existing `clients.address`; included for portal PATCH. */
   address?: string;
+  /** Home contact — existing `clients.phone` (DEC-FE-008). */
+  phone?: string;
   homeAddressLine2?: string;
   homeCountry?: string;
   homeCity?: string;
@@ -16,6 +18,11 @@ export type ClientPortalFormUpdateDto = {
   employerPhone?: string;
   employerAddress?: string;
   occupation?: string;
+  /** Journey — existing Client columns (DEC-FE-008). */
+  purpose?: string;
+  firstEntry?: string;
+  entries?: string;
+  durationDays?: string;
   previousFingerPrintStatus?: string;
   previousFingerPrintDate?: string;
   blsInvitingAuthority?: string;
@@ -48,6 +55,8 @@ export type ClientPortalFormUpdateDto = {
  */
 export type ClientPortalFormDetailDto = {
   address: string | null;
+  /** Home contact — existing `clients.phone` (DEC-FE-008). */
+  phone: string | null;
   homeAddressLine2: string | null;
   homeCountry: string | null;
   homeCity: string | null;
@@ -56,6 +65,11 @@ export type ClientPortalFormDetailDto = {
   employerPhone: string | null;
   employerAddress: string | null;
   occupation: string | null;
+  /** Journey — existing Client columns (DEC-FE-008). */
+  purpose: string | null;
+  firstEntry: string | null;
+  entries: string | null;
+  durationDays: string | null;
   previousFingerPrintStatus: string | null;
   previousFingerPrintDate: string | null;
   blsInvitingAuthority: string | null;

@@ -4,7 +4,11 @@ import { Shell } from '@/widgets/shell'
 import { Landing } from '@/pages/landing'
 import { RegisterPage } from '@/pages/register'
 import { AnalyticsPage } from '@/pages/analytics'
-import { ClientDetailPage, ClientsPage } from '@/pages/clients'
+import {
+  ClientDetailPage,
+  ClientPortalFormPage,
+  ClientsPage,
+} from '@/pages/clients'
 import { AgentBalancePage, AgentsPage } from '@/pages/agents'
 import { BalancePage } from '@/pages/balance'
 import { Applications } from '@/pages/applications'
@@ -31,6 +35,10 @@ export const App = (): React.ReactElement => (
       <Route index element={<AnalyticsPage />} />
       <Route path="clients" element={<ClientsPage />} />
       <Route path="clients/:clientId" element={<ClientDetailPage />} />
+      <Route
+        path="clients/:clientId/portal-form"
+        element={<ClientPortalFormPage />}
+      />
       <Route path="apps" element={<Applications />} />
       <Route path="apps/:id" element={<ApplicationDetail />} />
       <Route path="balance" element={<BalancePage />} />
@@ -49,6 +57,10 @@ export const App = (): React.ReactElement => (
       <Route path="agents/:agentId" element={<AgentBalancePage />} />
       <Route path="clients" element={<ClientsPage />} />
       <Route path="clients/:clientId" element={<ClientDetailPage />} />
+      <Route
+        path="clients/:clientId/portal-form"
+        element={<ClientPortalFormPage />}
+      />
       <Route path="apps" element={<Applications />} />
       <Route path="apps/:id" element={<ApplicationDetail />} />
       <Route path="settings" element={<SettingsPage />} />

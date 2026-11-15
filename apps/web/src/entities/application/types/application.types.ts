@@ -74,6 +74,8 @@ export type Application = {
   status: Status
   destination: string
   visaType: string
+  /** Portal Visa Sub Type label/text; null/omit when unset. */
+  visaSubType?: string | null
   category?: string
   submitCountry: string
   submitCity: string

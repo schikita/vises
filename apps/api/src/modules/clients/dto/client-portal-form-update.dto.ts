@@ -14,6 +14,10 @@ export class ClientPortalFormUpdateDto {
 
   @IsOptional()
   @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
   homeAddressLine2?: string;
 
   @IsOptional()
@@ -43,6 +47,22 @@ export class ClientPortalFormUpdateDto {
   @IsOptional()
   @IsString()
   occupation?: string;
+
+  @IsOptional()
+  @IsString()
+  purpose?: string;
+
+  @IsOptional()
+  @IsString()
+  firstEntry?: string;
+
+  @IsOptional()
+  @IsString()
+  entries?: string;
+
+  @IsOptional()
+  @IsString()
+  durationDays?: string;
 
   @IsOptional()
   @IsString()

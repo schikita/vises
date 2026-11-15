@@ -7,6 +7,7 @@ describe('mapClientToPortalFormDetailDto (APF-TASK-003 / REQ-004)', (): void => 
       id: 'cli-1',
       agentId: 'agent-1',
       address: null,
+      phone: null,
       homeAddressLine2: null,
       homeCountry: null,
       homeCity: null,
@@ -15,6 +16,10 @@ describe('mapClientToPortalFormDetailDto (APF-TASK-003 / REQ-004)', (): void => 
       employerPhone: null,
       employerAddress: null,
       occupation: null,
+      purpose: null,
+      firstEntry: null,
+      entries: null,
+      durationDays: null,
       previousFingerPrintStatus: null,
       previousFingerPrintDate: null,
       blsInvitingAuthority: null,
@@ -43,6 +48,11 @@ describe('mapClientToPortalFormDetailDto (APF-TASK-003 / REQ-004)', (): void => 
 
     const dto = mapClientToPortalFormDetailDto(client);
     expect(dto.address).toBeNull();
+    expect(dto.phone).toBeNull();
+    expect(dto.purpose).toBeNull();
+    expect(dto.firstEntry).toBeNull();
+    expect(dto.entries).toBeNull();
+    expect(dto.durationDays).toBeNull();
     expect(dto.employerName).toBeNull();
     expect(dto.portalFormConditionals).toBeNull();
   });
@@ -50,8 +60,13 @@ describe('mapClientToPortalFormDetailDto (APF-TASK-003 / REQ-004)', (): void => 
   it('maps stored portal values without inventing missing ones', (): void => {
     const client = Object.assign(new Client(), {
       address: 'Street 1',
+      phone: '+201000000000',
       homeCity: 'Giza',
       employerName: 'Acme',
+      purpose: 'Tourism',
+      firstEntry: 'FR',
+      entries: 'Multiple',
+      durationDays: '15',
       portalFormConditionals: { isVisaIssuedBefore: true },
       homeAddressLine2: null,
       homeCountry: null,
@@ -86,8 +101,13 @@ describe('mapClientToPortalFormDetailDto (APF-TASK-003 / REQ-004)', (): void => 
 
     const dto = mapClientToPortalFormDetailDto(client);
     expect(dto.address).toBe('Street 1');
+    expect(dto.phone).toBe('+201000000000');
     expect(dto.homeCity).toBe('Giza');
     expect(dto.employerName).toBe('Acme');
+    expect(dto.purpose).toBe('Tourism');
+    expect(dto.firstEntry).toBe('FR');
+    expect(dto.entries).toBe('Multiple');
+    expect(dto.durationDays).toBe('15');
     expect(dto.portalFormConditionals).toEqual({ isVisaIssuedBefore: true });
     expect(dto.occupation).toBeNull();
   });

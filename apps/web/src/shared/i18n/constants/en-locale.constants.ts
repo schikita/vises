@@ -340,6 +340,7 @@ export const EN_LOCALE = {
       unknown: 'Client',
       applicationId: 'Application: {{id}}',
       openApplication: 'Open application',
+      openPortalForm: 'Edit portal form',
       loadingTitle: 'Loading…',
       loadingText: 'Fetching client detail.',
       delete: 'Delete client',
@@ -353,6 +354,22 @@ export const EN_LOCALE = {
       submit: 'Save passport',
       submitting: 'Saving…',
       saved: 'Passport saved',
+    },
+    portalForm: {
+      title: 'Portal form',
+      subtitle:
+        'Collect Edit Member and booking location / visa type fields for portal autofill.',
+      back: 'Back to client',
+      loadingTitle: 'Loading…',
+      loadingText: 'Fetching portal form data.',
+      submit: 'Save portal form',
+      submitting: 'Saving…',
+      saved: 'Portal form saved',
+      tripDisabled:
+        'Trip fields (Location / Visa Type / Visa Sub Type / Category) are disabled until this client is linked to an application.',
+      passportError: 'Passport save failed: {{message}}',
+      portalFormError: 'Portal-form save failed: {{message}}',
+      tripError: 'Trip save failed: {{message}}',
     },
     status: {
       drafting: 'Drafting',
