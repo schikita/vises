@@ -96,12 +96,13 @@ describe('ClientsController ACL metadata (T8 / §6.5 / FR-5 / FR-8)', (): void =
     }
   });
 
-  it('allows staff roles on list and passport paths', (): void => {
+  it('allows staff roles on list, passport, and portal-form paths', (): void => {
     for (const handler of [
       ClientsController.prototype.list,
       ClientsController.prototype.getById,
       ClientsController.prototype.getPassport,
       ClientsController.prototype.updatePassport,
+      ClientsController.prototype.updatePortalForm,
     ]) {
       const roles = reflector.getAllAndOverride<StaffRole[]>(ROLES_KEY, [
         handler,

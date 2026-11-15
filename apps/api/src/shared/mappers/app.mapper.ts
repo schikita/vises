@@ -12,6 +12,7 @@ export const appOut = (app: Application): AppOut => ({
   status: app.status,
   destination: app.destination,
   visaType: app.visaType,
+  visaSubType: app.visaSubType ?? null,
   submitCountry: app.submitCountry,
   submitCity: app.submitCity,
   travelDate: app.travelDate,

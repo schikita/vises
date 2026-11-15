@@ -82,7 +82,8 @@ import { BlsWorkflowRepository } from './bls-workflow.repository';
 /**
  * Durable BLS workflow state machine: create / load / advance / skip / fail / abandon.
  * One active workflow per application (REQ-001 / DEC-013).
- * BOOK success → AWAITING_STAFF_BOOKING (DEC-010). COMPLETED requires verify (REQ-007).
+ * BOOK success → AWAITING_STAFF_BOOKING (DEC-010 / DEC-004 materials-covered
+ * unknown-next — not open-UI-only). COMPLETED requires verify (REQ-007).
  * Portal credentials reveal: intentional secrets exception (DEC-001); snapshot/events stay clean.
  */
 @Injectable()
@@ -807,7 +808,9 @@ export class BlsWorkflowService {
 
   /**
    * Mark task COMPLETED only when `verifiedExternalState` is true, then advance cursor.
-   * BOOK full completion → workflow AWAITING_STAFF_BOOKING (DEC-010).
+   * BOOK full completion → workflow AWAITING_STAFF_BOOKING (DEC-010 / DEC-004 /
+   * OQ-007). Terminal mailbox cleanup runs here only — not on mid-booking
+   * SAFE_TO_REPEAT slots retries or WAITING_STAFF staff gates.
    */
   async advance(input: AdvanceBlsWorkflowInput): Promise<BlsWorkflowGraph> {
     try {

@@ -11,6 +11,8 @@ import { DataSource } from 'typeorm';
  *   unique partial index for at most one `superadmin`; ensure unique
  *   `applications.client_id`; ensure `users.balance` (AC-1 / AC-6 / AC-9).
  *   No applicants passport backfill (column removed).
+ * - APF-TASK-002 / DEC-005: additive portal-form columns on clients +
+ *   applications (nullable; null = not collected).
  */
 @Injectable()
 export class SchemaBootstrap implements OnModuleInit {
@@ -35,6 +37,7 @@ export class SchemaBootstrap implements OnModuleInit {
     );
 
     await this.ensureRolesAndApplicationsSchema();
+    await this.ensureApplicantPortalFormSchema();
     await this.ensureBlsWorkflowIndexes();
   }
 
@@ -72,6 +75,150 @@ export class SchemaBootstrap implements OnModuleInit {
       ADD COLUMN IF NOT EXISTS balance NUMERIC(14, 2) DEFAULT 0
     `);
     this.logger.log('Schema ensure: users.balance column OK');
+  }
+
+  /**
+   * APF-TASK-002 / DEC-005: portal-form happy-path + conditionals jsonb.
+   * Additive nullable only — no invented defaults. Mirrors API SchemaBootstrap.
+   */
+  private async ensureApplicantPortalFormSchema(): Promise<void> {
+    await this.dataSource.query(`
+      ALTER TABLE applications
+      ADD COLUMN IF NOT EXISTS visa_sub_type VARCHAR(120) NULL
+    `);
+
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS home_address_line2 TEXT NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS home_country VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS home_city VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS home_postal_code VARCHAR(40) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS employer_name VARCHAR(200) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS employer_phone VARCHAR(80) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS employer_address TEXT NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS occupation VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS previous_finger_print_status VARCHAR(40) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS previous_finger_print_date VARCHAR(20) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS bls_inviting_authority VARCHAR(40) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_authority_name VARCHAR(200) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_country VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_city VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_zip_code VARCHAR(40) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_address TEXT NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_email VARCHAR(200) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_no VARCHAR(80) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_fax_no VARCHAR(80) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_name VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_surname VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_country VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_city VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_zip_code VARCHAR(40) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_address TEXT NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_contact_no VARCHAR(80) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_email VARCHAR(200) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS inviting_contact_fax_no VARCHAR(80) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS cost_covered_by VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS means_of_support VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS member_state_second_destination VARCHAR(120) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE clients
+      ADD COLUMN IF NOT EXISTS portal_form_conditionals_json JSONB NULL
+    `);
+
+    this.logger.log(
+      'Schema ensure: applications.visa_sub_type + clients portal-form columns OK',
+    );
   }
 
   /**
@@ -133,6 +280,18 @@ export class SchemaBootstrap implements OnModuleInit {
       CREATE UNIQUE INDEX IF NOT EXISTS uq_bls_workflow_tasks_step_ordinal
       ON bls_workflow_tasks (step_id, ordinal)
     `);
+
+    await this.dataSource.query(`
+      ALTER TABLE bls_workflow_tasks
+      ADD COLUMN IF NOT EXISTS portal_status VARCHAR(64) NULL
+    `);
+    await this.dataSource.query(`
+      ALTER TABLE bls_workflow_tasks
+      ADD COLUMN IF NOT EXISTS portal_checkpoint_json JSONB NULL
+    `);
+    this.logger.log(
+      'Schema ensure: bls_workflow_tasks portal_status + portal_checkpoint_json OK',
+    );
 
     await this.dataSource.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS uq_bls_workflow_attempts_task_attempt_no

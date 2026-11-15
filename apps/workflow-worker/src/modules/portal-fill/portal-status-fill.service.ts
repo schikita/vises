@@ -46,6 +46,7 @@ export class PortalStatusFillService {
     options: FillPortalStatusValidateOptions,
   ): Promise<FillPortalStatusValidateResult> {
     const loginUrl = normalizeTargetUrl(options.loginUrl);
+    const homeUrl = normalizeTargetUrl(options.homeUrl);
     const manageApplicantsUrl = normalizeTargetUrl(options.manageApplicantsUrl);
     let browser: PortalBrowser | undefined;
     let sessionSlotHeld = false;
@@ -165,6 +166,7 @@ export class PortalStatusFillService {
         page,
         portalFormEmail: options.portalFormEmail,
         portalPassword: options.portalPassword,
+        homeUrl,
         manageApplicantsUrl,
         applicant: options.applicant,
         editFill: options.editFill,
@@ -172,6 +174,10 @@ export class PortalStatusFillService {
         captchaProvider: this.captchaProvider,
         logPrefix,
         abortSignal: options.abortSignal,
+        priorCheckpoint: options.priorCheckpoint,
+        onCheckpoint: options.onCheckpoint,
+        crmApplicantIds: options.crmApplicantIds,
+        shouldAddFamilyMembers: options.shouldAddFamilyMembers,
       });
 
       if (isPortalFillAbortRequested(options.abortSignal)) {

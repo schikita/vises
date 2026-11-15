@@ -1,5 +1,8 @@
 ﻿export { extractTemporaryEmailOtp } from './extract-temporary-email-otp.util';
 export { extractTemporaryEmailPortalPassword } from './extract-temporary-email-portal-password.util';
+export { extractDataProtectionConsentHref } from './extract-data-protection-consent-href.util';
+export { normalizeTemporaryEmailHtmlText } from './normalize-temporary-email-html-text.util';
+export { temporaryEmailSubjectIncludes } from './temporary-email-subject-includes.util';
 export { classifyTemporaryEmailFailure } from './classify-temporary-email-failure.util';
 export { createTemporaryEmailClientError } from './create-temporary-email-client-error.util';
 export { isTemporaryEmailClientError } from './is-temporary-email-client-error.util';

@@ -27,11 +27,31 @@ export type {
   PortalBrowser,
   PortalBrowserContext,
   PortalChromium,
+  PortalDialog,
+  PortalDialogHandler,
   PortalFrame,
   PortalLocator,
   PortalPage,
   PortalPatchrightModule,
 } from './patchright-surface.types';
+
+export type { PortalDomContext } from './portal-dom-context.types';
+export type { PortalWidgetSurface } from './portal-widget-surface.types';
+export type {
+  FillPortalApplicantEditFormOptions,
+  FillPortalApplicantEditFormResult,
+  FillPortalApplicantEditFormSuccess,
+  FillPortalApplicantEditFormFailure,
+} from './fill-portal-applicant-edit-form.types';
+export type {
+  ApplyEditMemberPlanFieldOptions,
+  ApplyEditMemberPlanFieldResult,
+} from './apply-edit-member-plan-field.types';
+export type { EditMemberFieldCurrentValue } from './edit-member-field-current-value.types';
+export type {
+  FillEditMemberSectionOptions,
+  FillEditMemberSectionResult,
+} from './fill-edit-member-section.types';
 
 export type {
   ConsentModalStepId,
@@ -116,6 +136,20 @@ export type {
 export type { BlsApplicantPortalStatus } from './bls-applicant-portal-status.types';
 export type { PortalStatusSelectors } from './portal-status-selectors.types';
 export type {
+  PortalStatusCheckpointStep,
+  PortalStatusMemberBranch,
+  PortalStatusFieldSkipReason,
+  PortalStatusFieldFailReason,
+  PortalStatusFieldProgressFailedEntry,
+  PortalStatusFieldProgress,
+  PortalStatusFieldProgressCounts,
+  PortalStatusCheckpoint,
+  PortalStatusCheckpointPatch,
+  PortalStatusCheckpointCallbacks,
+  LoadPortalStatusCheckpointResult,
+  SavePortalStatusCheckpointInput,
+} from './portal-status-checkpoint.types';
+export type {
   PortalApplicantStatusRow,
   PortalStatusApplicantMatchHint,
   RunPortalStatusValidatePipelineOptions,
@@ -123,16 +157,107 @@ export type {
   FillPortalStatusValidateOptions,
   FillPortalStatusValidateResult,
 } from './portal-status.types';
+export type { PortalStatusMaErrorCode } from './portal-status-ma-error.types';
+export type {
+  PortalEditSubmitDialogOutcome,
+  RegisterPortalEditSubmitDialogListenerResult,
+} from './portal-edit-submit-dialog.types';
+export type { SubmitPortalApplicantEditFormResult } from './portal-edit-submit.types';
+export type { IsPortalApplicantEditValidationSummaryClearResult } from './is-portal-applicant-edit-validation-summary-clear.types';
+export type { AssertPortalManageApplicantsReadyForBookResult } from './assert-portal-manage-applicants-ready-for-book.types';
+export type {
+  ResolvePortalStatusAddFamilyMemberGateInput,
+  ResolvePortalStatusAddFamilyMemberGateResult,
+} from './resolve-portal-status-add-family-member-gate.types';
+export type {
+  PortalStatusMemberOpenMode,
+  ResolvePortalStatusMemberOpenPathInput,
+  ResolvePortalStatusMemberOpenPathResult,
+} from './resolve-portal-status-member-open-path.types';
+export type {
+  ResolvePortalStatusAddResumeSkipInput,
+  ResolvePortalStatusAddResumeSkipResult,
+} from './resolve-portal-status-add-resume-skip.types';
+export type { ProbePortalStatusMemberFormPathOpenResult } from './probe-portal-status-member-form-path-open.types';
+export type { EditMemberPortalFieldId } from './edit-member-portal-field.types';
+export type { PortalWidgetFieldName } from './portal-widget-field.types';
+export type {
+  EditMemberFieldPlanAction,
+  EditMemberFieldPlanReasonCode,
+  EditMemberFieldPlanEntry,
+  EditMemberFillInput,
+  EditMemberCrmApplicantSource,
+  EditMemberCrmApplicationSource,
+  EditMemberCrmSource,
+} from './edit-member-fill-input.types';
+export type { EditMemberLegacyTextFill } from './edit-member-legacy-text-fill.types';
 
 export type { PortalBookingSelectors } from './portal-booking-selectors.types';
 export type {
   PortalBookingPrefillHint,
   PortalBookingPrefillOutcome,
-  RunPortalBookingSafeStopPipelineOptions,
-  RunPortalBookingSafeStopPipelineResult,
-  FillPortalBookingSafeStopOptions,
-  FillPortalBookingSafeStopResult,
+  RunPortalBookingContinuePipelineOptions,
+  RunPortalBookingContinuePipelineResult,
+  FillPortalBookingContinueOptions,
+  FillPortalBookingContinueResult,
 } from './portal-booking.types';
+export type { PortalBookingPremiumOrPaymentSurface } from './portal-booking-premium-or-payment-surface.types';
+export type { ResolvePortalBookingCategoryOptionResult } from './resolve-portal-booking-category-option.types';
+export type {
+  ResolvePortalStatusResumeEntryInput,
+  ResolvePortalStatusResumeEntryResult,
+} from './resolve-portal-status-resume-entry.types';
+export type { SelectPortalBookingAppointmentForResult } from './select-portal-booking-appointment-for.types';
+export type {
+  PortalBookingCheckpointStep,
+  PortalBookingCheckpointOutcome,
+  PortalBookingCheckpointStuckCode,
+  PortalBookingFieldProgressStatus,
+  PortalBookingFieldProgress,
+  PortalBookingCheckpoint,
+  PortalBookingCheckpointPatch,
+  PortalBookingCheckpointCallbacks,
+  LoadPortalBookingCheckpointResult,
+  SavePortalBookingCheckpointInput,
+} from './portal-booking-checkpoint.types';
+export type {
+  PortalBookingEmailConsentMailbox,
+  CompletePortalBookingEmailConsentOptions,
+  CompletePortalBookingEmailConsentResult,
+} from './portal-booking-email-consent.types';
+export type {
+  RunPortalBookingCaptchaPhaseOptions,
+  RunPortalBookingCaptchaPhaseResult,
+} from './portal-booking-captcha.types';
+export type {
+  RunPortalBookingSlotsUnavailablePhaseOptions,
+  RunPortalBookingSlotsUnavailablePhaseResult,
+} from './portal-booking-slots-unavailable.types';
+
+export type {
+  PortalStuckEvidenceBag,
+  PortalEnterStuckPoint,
+  PortalSiteHttpResumeHint,
+  PortalEnterResumeHint,
+  PortalStuckResumeHint,
+} from './portal-stuck-evidence.types';
+export type { PortalEnterErrorCode } from './portal-enter-error.types';
+export type {
+  PortalSiteHttpErrorCode,
+  ClassifyPortalSiteHttpErrorFromTextInput,
+  ClassifyPortalSiteHttpErrorFromTextResult,
+  DetectPortalSiteHttpErrorResult,
+} from './portal-site-http-error.types';
+export type {
+  CheckPortalAuthenticatedHomeCuesInput,
+  PortalAuthenticatedHomeCueFlags,
+  PortalAuthenticatedHomeCueCheckResult,
+  IsPortalAuthenticatedHomeRecognizedResult,
+  ResolvePortalHomeNewappointmentCtaResult,
+  EnsurePortalAuthenticatedHomeOptions,
+  EnsurePortalAuthenticatedHomeResult,
+} from './portal-home.types';
+export type { WaitForPortalOverlaysClearResult } from './portal-overlay.types';
 
 export type {
   FillPortalLoginPrepOptions,
@@ -146,7 +271,6 @@ export type {
   EnsurePortalLoginCredentialFieldOutcome,
   EnsurePortalLoginCredentialsForCaptchaResult,
 } from './portal-login-credentials-ensure.types';
-
 
 /** Shared portal-core types used by fill pipelines / field widgets. */
 export type {

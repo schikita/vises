@@ -66,4 +66,28 @@ export class BlsWorkflowTask {
     nullable: true,
   })
   nextRunAt!: Date | null;
+
+  /**
+   * Scraped/normalized Manage Applicants status (DEC-003).
+   * Values: FORM_FILLING_IN_PROGRESS | READY_TO_BOOK | UNKNOWN.
+   * Null = resume-from-scrape (compatible with pre-checkpoint rows).
+   */
+  @Column({
+    name: 'portal_status',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
+  portalStatus!: string | null;
+
+  /**
+   * Checkpoint bag without raw field values or secrets (DEC-003 / NFR-007).
+   * Null = resume-from-scrape.
+   */
+  @Column({
+    name: 'portal_checkpoint_json',
+    type: 'jsonb',
+    nullable: true,
+  })
+  portalCheckpointJson!: Record<string, unknown> | null;
 }

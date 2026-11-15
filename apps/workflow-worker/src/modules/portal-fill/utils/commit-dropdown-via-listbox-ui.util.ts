@@ -7,9 +7,13 @@ import {
   PORTAL_DROPDOWN_LIST_OPTION_SELECTOR,
   PORTAL_DROPDOWN_UNSELECTED_LABELS,
   PORTAL_DROPDOWN_WIDGET_HOST_SELECTOR,
-  PORTAL_REGISTER_USER_SELECTORS,
 } from '../constants';
-import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
+import type {
+  PortalWidgetFieldName,
+  PortalWidgetSurface,
+  WidgetOpResult,
+} from '../types';
+import { resolvePortalFieldSelector } from './resolve-portal-field-selector.util';
 
 /**
  * Listbox UI commit for RegisterUser Kendo DropDownList/ComboBox.
@@ -17,12 +21,12 @@ import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
  * the option GUID (not display-only text paint).
  */
 export const commitDropdownViaListboxUi = async (
-  page: PortalPage,
-  name: PortalFieldName,
+  surface: PortalWidgetSurface,
+  name: PortalWidgetFieldName,
   text: string,
 ): Promise<WidgetOpResult> => {
-  const selector = PORTAL_REGISTER_USER_SELECTORS.fields[name];
-  return page.evaluate(
+  const selector = resolvePortalFieldSelector(name);
+  return surface.evaluate(
     ({
       selector,
       name,

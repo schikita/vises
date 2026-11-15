@@ -2,13 +2,22 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from '../../database/entities/application.entity';
+import { BlsWorkflowTask } from '../../database/entities/bls-workflow-task.entity';
 import { BLS_SECRET_PURPOSE, BlsSecretVaultService } from '../../bls-secrets';
 import { BLS_WORKFLOW_ERROR_CLASS } from '../../bls-workflow/constants/bls-workflow.constants';
 import {
   listApplicationClientApplicantIds,
   PortalConfigService,
 } from '../../portal-core';
-import { PortalBookingFillService } from '../../portal-fill';
+import {
+  createInitialPortalBookingCheckpoint,
+  loadPortalBookingCheckpoint,
+  mergePortalBookingCheckpoint,
+  PortalBookingFillService,
+  savePortalBookingCheckpoint,
+  type PortalBookingCheckpoint,
+  type PortalBookingCheckpointPatch,
+} from '../../portal-fill';
 import {
   BLS_BOOKING_MISSING_EMAIL_ERROR_MESSAGE,
   BLS_BOOKING_MISSING_PASSWORD_ERROR_MESSAGE,
@@ -23,12 +32,15 @@ import type { BlsBookingClient, ProxyProvider } from '../interfaces';
 import type { BlsClientResult, BlsClientTaskContext } from '../types';
 import type { ProxyProviderLease } from '../types';
 import { buildBlsClientAbortResult } from '../utils/build-bls-client-abort-result.util';
+import { buildPortalBookingPrefillHint } from '../utils/build-portal-booking-prefill-hint.util';
 
 /**
- * BOOK domain client (REQ-020 / REQ-030 / CON-006 / DEC-010 / DEC-011 / TASK-012).
- * Opens booking selection UI, optional unambiguous CRM prefill, then stops for
- * staff. Never clicks VisaType `#btnSubmit` / OnSubmitVisaType, Premium Lounge
- * Accept, or payment. Runner advance → AWAITING_STAFF_BOOKING.
+ * BOOK domain client (REQ-001…017 / DEC-001 / DEC-002 / DEC-004 / DEC-008 /
+ * OQ-007 / VT-TASK-007…010).
+ * Email DP consent → booking UI → Attention → extended fill → VisaType
+ * Submit → captcha → slots SAFE_TO_REPEAT or UNKNOWN_NEXT →
+ * AWAITING_STAFF_BOOKING. Never open-UI-only BOOK success (DEC-004). Never
+ * Premium Accept / payment (CON-004). Domain client ≠ orchestrator (NFR-004).
  */
 @Injectable()
 export class BlsBookingClientService implements BlsBookingClient {
@@ -42,6 +54,8 @@ export class BlsBookingClientService implements BlsBookingClient {
     private readonly proxyProvider: ProxyProvider,
     @InjectRepository(Application)
     private readonly appsRepo: Repository<Application>,
+    @InjectRepository(BlsWorkflowTask)
+    private readonly tasksRepo: Repository<BlsWorkflowTask>,
   ) {}
 
   async execute(context: BlsClientTaskContext): Promise<BlsClientResult> {
@@ -52,6 +66,7 @@ export class BlsBookingClientService implements BlsBookingClient {
 
     let lease: ProxyProviderLease | undefined;
     let portalPasswordPlain: string | undefined;
+    let mailboxTokenPlain: string | undefined;
 
     try {
       if (context.abortSignal?.aborted) {
@@ -97,9 +112,11 @@ export class BlsBookingClientService implements BlsBookingClient {
       }
 
       let loginUrl: string;
+      let homeUrl: string;
       let manageApplicantsUrl: string;
       try {
         loginUrl = this.configService.resolvePortalLoginUrl(config);
+        homeUrl = this.configService.resolvePortalHomeUrl(config);
         manageApplicantsUrl =
           this.configService.resolvePortalManageApplicantsUrl(config);
       } catch (err) {
@@ -124,57 +141,97 @@ export class BlsBookingClientService implements BlsBookingClient {
         return buildBlsClientAbortResult();
       }
 
+      const loadedCheckpoint = await loadPortalBookingCheckpoint(
+        this.tasksRepo,
+        context.taskId,
+      );
+      let checkpointState: PortalBookingCheckpoint =
+        loadedCheckpoint.checkpoint ?? createInitialPortalBookingCheckpoint();
+
+      const onCheckpoint = async (
+        patch: PortalBookingCheckpointPatch,
+      ): Promise<void> => {
+        checkpointState = mergePortalBookingCheckpoint(checkpointState, patch);
+        await savePortalBookingCheckpoint(this.tasksRepo, {
+          taskId: context.taskId,
+          checkpoint: checkpointState,
+        });
+      };
+
+      // Vaulted MAILBOX_TOKEN when present (HTTP retain); empty for browser-mail.
+      const loadedMailboxToken = await this.secretVault.loadSecretPlain({
+        workflowId,
+        purpose: BLS_SECRET_PURPOSE.MAILBOX_TOKEN,
+      });
+      mailboxTokenPlain = loadedMailboxToken ?? '';
+
       const applicantIds = listApplicationClientApplicantIds(app.clientId);
       const headed = this.configService.resolveHeaded();
-      const fill = await this.fillService.fillBookingSafeStop({
+      const fill = await this.fillService.fillBookingContinue({
         loginUrl,
+        homeUrl,
         manageApplicantsUrl,
         portalFormEmail,
         portalPassword: portalPasswordPlain,
-        prefill: {
-          submitCity: app.submitCity?.trim() || undefined,
-          visaType: app.visaType?.trim() || undefined,
-          applicantCount: applicantIds.length,
-        },
+        prefill: buildPortalBookingPrefillHint(app, applicantIds.length),
         headed,
         captchaServiceApiKey: config.captchaServiceApiKey,
         browserProxy: lease?.browserProxy,
         applicationId,
         abortSignal: context.abortSignal,
+        mailbox: {
+          contextKey: workflowId,
+          token: mailboxTokenPlain,
+          restoreAddress: portalFormEmail,
+        },
+        priorCheckpoint: checkpointState,
+        onCheckpoint,
         onBrowserLaunched: context.registerCloseHook
-          ? (close) => context.registerCloseHook!(close)
+          ? (close): void => {
+              const registerCloseHook = context.registerCloseHook;
+              if (registerCloseHook) {
+                registerCloseHook(close);
+              }
+            }
           : undefined,
       });
 
       portalPasswordPlain = undefined;
+      mailboxTokenPlain = undefined;
 
       if (fill.aborted === true || context.abortSignal?.aborted) {
         return buildBlsClientAbortResult();
       }
 
-      if (fill.errorCode?.trim()) {
-        return this.safeFail(
-          fill.errorCode.trim(),
-          fill.error?.slice(0, 500) ?? 'Booking safe-stop fill failed',
-        );
-      }
-
       if (fill.notSafeToRepeat === true) {
+        // Mid-booking staff gate (Premium/payment/ambiguous) → WAITING_STAFF.
+        // Do not complete BOOK / schedule terminal mailbox cleanup (DEC-004).
         this.logger.warn(
-          `bls_booking_client not_safe workflowId=${workflowId} (CON-006)`,
+          `bls_booking_client not_safe workflowId=${workflowId} (CON-004/DEC-001/DEC-004)`,
         );
         return {
           ok: false,
           errorClass: BLS_WORKFLOW_ERROR_CLASS.NOT_SAFE_TO_REPEAT,
-          errorCode: BLS_BOOKING_NOT_SAFE_ERROR_CODE,
+          errorCode:
+            fill.errorCode?.trim() || BLS_BOOKING_NOT_SAFE_ERROR_CODE,
           errorMessage:
             fill.error?.slice(0, 500) ?? BLS_BOOKING_NOT_SAFE_ERROR_MESSAGE,
         };
       }
 
-      if (fill.navigationOk && fill.bookingSelectionUiOpen === true) {
+      if (fill.errorCode?.trim()) {
+        // Includes slots-unavailable SAFE_TO_REPEAT — no terminal cleanup.
+        return this.safeFail(
+          fill.errorCode.trim(),
+          fill.error?.slice(0, 500) ?? 'Booking continue fill failed',
+        );
+      }
+
+      // DEC-004 / OQ-007: only materials-covered unknown-next completes BOOK →
+      // AWAITING_STAFF_BOOKING (SPA handoff). Not open-UI / prefill-only.
+      if (fill.navigationOk && fill.unknownNext === true) {
         this.logger.log(
-          `bls_booking_client success workflowId=${workflowId} bookingSelectionUiOpen=true ambiguousPrefill=${fill.prefill?.ambiguous === true}`,
+          `bls_booking_client success workflowId=${workflowId} unknownNext=true staff_terminal`,
         );
         return { ok: true, verifiedExternalState: true };
       }
@@ -191,7 +248,7 @@ export class BlsBookingClientService implements BlsBookingClient {
 
       return this.safeFail(
         BLS_BOOKING_PIPELINE_ERROR_CODE,
-        fill.error?.slice(0, 500) ?? 'Booking safe-stop fill failed',
+        fill.error?.slice(0, 500) ?? 'Booking continue fill failed',
       );
     } catch (err) {
       if (context.abortSignal?.aborted) {
@@ -207,6 +264,7 @@ export class BlsBookingClientService implements BlsBookingClient {
       );
     } finally {
       portalPasswordPlain = undefined;
+      mailboxTokenPlain = undefined;
       if (lease) {
         await lease.release().catch(() => undefined);
       }

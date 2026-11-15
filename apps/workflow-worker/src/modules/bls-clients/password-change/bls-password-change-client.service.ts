@@ -94,8 +94,10 @@ export class BlsPasswordChangeClientService implements BlsPasswordChangeClient {
       }
 
       let loginUrl: string;
+      let homeUrl: string;
       try {
         loginUrl = this.configService.resolvePortalLoginUrl(config);
+        homeUrl = this.configService.resolvePortalHomeUrl(config);
       } catch (err) {
         return this.safeFail(
           BLS_PASSWORD_CHANGE_PIPELINE_ERROR_CODE,
@@ -122,6 +124,7 @@ export class BlsPasswordChangeClientService implements BlsPasswordChangeClient {
       const headed = this.configService.resolveHeaded();
       const fill = await this.fillService.fillPasswordChange({
         targetUrl: loginUrl,
+        homeUrl,
         portalFormEmail,
         currentPassword: currentPasswordPlain,
         newPassword: newPasswordPlain,
@@ -154,7 +157,9 @@ export class BlsPasswordChangeClientService implements BlsPasswordChangeClient {
         };
       }
 
-      if (fill.navigationOk && fill.passwordChanged === true) {
+      // Vault must rotate whenever portal applied the new password — including
+      // home-gate SITE_*/ENTER_* failures after verified change (navigationOk false).
+      if (fill.passwordChanged === true && newPasswordPlain) {
         await this.secretVault.persistSecret({
           workflowId,
           applicationId,
@@ -163,9 +168,25 @@ export class BlsPasswordChangeClientService implements BlsPasswordChangeClient {
         });
         newPasswordPlain = undefined;
         this.logger.log(
-          `bls_password_change_client success workflowId=${workflowId} vault_rotated=true`,
+          `bls_password_change_client vault_rotated=true workflowId=${workflowId} navigationOk=${fill.navigationOk === true}`,
         );
-        return { ok: true, verifiedExternalState: true };
+        if (fill.navigationOk === true) {
+          this.logger.log(
+            `bls_password_change_client success workflowId=${workflowId}`,
+          );
+          return { ok: true, verifiedExternalState: true };
+        }
+        // Password applied; home gate (or later) failed — keep SITE_*/ENTER_* codes.
+        if (fill.errorCode?.trim()) {
+          return this.safeFail(
+            fill.errorCode.trim(),
+            fill.error?.slice(0, 500) ?? 'Password change fill failed',
+          );
+        }
+        return this.safeFail(
+          BLS_PASSWORD_CHANGE_PIPELINE_ERROR_CODE,
+          fill.error?.slice(0, 500) ?? 'Password change fill failed',
+        );
       }
 
       newPasswordPlain = undefined;

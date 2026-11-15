@@ -1,8 +1,13 @@
 import type { CaptchaProvider } from '../interfaces';
 import type { PatchrightProxyConfig } from '../../proxy6/types/proxy6-lease.types';
 import type { BlsApplicantPortalStatus } from './bls-applicant-portal-status.types';
+import type { EditMemberFillInput } from './edit-member-fill-input.types';
 import type { PortalFillAbortCooperation } from './portal-fill-abort.types';
 import type { PortalPage } from './patchright-surface.types';
+import type {
+  PortalStatusCheckpoint,
+  PortalStatusCheckpointCallbacks,
+} from './portal-status-checkpoint.types';
 
 /** One scraped Manage Applicants row (fixture-aligned). */
 export type PortalApplicantStatusRow = {
@@ -29,20 +34,33 @@ export type RunPortalStatusValidatePipelineOptions = {
   page: PortalPage;
   portalFormEmail: string;
   portalPassword: string;
+  /** Absolute authenticated Global home URL (successful-enter gate). */
+  homeUrl: string;
   manageApplicantsUrl: string;
   applicant: PortalStatusApplicantMatchHint;
-  /** Optional plain field values for edit path when form fields are empty. */
-  editFill?: {
-    firstName?: string;
-    lastName?: string;
-    placeOfBirth?: string;
-    passportNumber?: string;
-  };
+  /**
+   * CRM → Edit Member fill plan (MA-TASK-004/005). Values stay in memory only.
+   */
+  editFill?: EditMemberFillInput;
   captchaServiceApiKey?: string;
   captchaProvider?: Pick<CaptchaProvider, 'solveBls3x3'>;
   logPrefix?: string;
   /** Forwarded into login-prep Verified-loop abort-aware waits (DEC-012). */
   abortSignal?: AbortSignal;
+  /** Prior durable checkpoint for resume (REQ-017); null = scrape-first. */
+  priorCheckpoint?: PortalStatusCheckpoint | null;
+  /** Persist step / portalStatus / fieldProgress without values (REQ-015). */
+  onCheckpoint?: PortalStatusCheckpointCallbacks['onCheckpoint'];
+  /**
+   * CRM applicant ids present before workflow start (OQ-005).
+   * Used to resolve `shouldAddFamilyMembers` and application primary.
+   */
+  crmApplicantIds?: ReadonlyArray<string>;
+  /**
+   * Pre-resolved Add Family Member gate from status client.
+   * When omitted, pipeline resolves from `crmApplicantIds` + primary.
+   */
+  shouldAddFamilyMembers?: boolean;
 };
 
 /** Pipeline outcome for one STATUS_APPLICANT task. */
@@ -68,6 +86,8 @@ export type RunPortalStatusValidatePipelineResult = {
 /** Browser launch + login + status validate fill façade options. */
 export type FillPortalStatusValidateOptions = PortalFillAbortCooperation & {
   loginUrl: string;
+  /** Absolute authenticated Global home URL (successful-enter gate). */
+  homeUrl: string;
   manageApplicantsUrl: string;
   portalFormEmail: string;
   portalPassword: string;
@@ -77,6 +97,19 @@ export type FillPortalStatusValidateOptions = PortalFillAbortCooperation & {
   captchaServiceApiKey?: string;
   browserProxy?: PatchrightProxyConfig;
   applicationId?: string;
+  /** Prior durable checkpoint for resume (REQ-017); null = scrape-first. */
+  priorCheckpoint?: PortalStatusCheckpoint | null;
+  /** Persist step / portalStatus / fieldProgress without values (REQ-015). */
+  onCheckpoint?: PortalStatusCheckpointCallbacks['onCheckpoint'];
+  /**
+   * CRM applicant ids present before workflow start (OQ-005 / MA-TASK-008).
+   */
+  crmApplicantIds?: ReadonlyArray<string>;
+  /**
+   * Pre-resolved Add Family Member gate (OQ-005).
+   * Pipeline must not click Add unless this is true AND Phase B enabled.
+   */
+  shouldAddFamilyMembers?: boolean;
 };
 
 export type FillPortalStatusValidateResult = {

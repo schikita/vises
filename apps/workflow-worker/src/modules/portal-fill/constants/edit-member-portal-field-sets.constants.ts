@@ -1,0 +1,73 @@
+import {
+  EDIT_MEMBER_CONDITIONAL_TOGGLE_FIELD_ID,
+  EDIT_MEMBER_FINGERPRINT_DATE_FIELD_ID,
+  EDIT_MEMBER_OPTIONAL_FIELD_ID,
+  EDIT_MEMBER_OTHER_RESIDENCE_FIELD_ID,
+  EDIT_MEMBER_PREVIOUS_VISA_FIELD_ID,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID,
+  EDIT_MEMBER_VISA_MODAL_FIELD_ID,
+} from './edit-member-portal-field.constants';
+
+/** Kendo datepicker ids on Edit Member (shared calendar path with RegisterUser). */
+export const EDIT_MEMBER_DATE_FIELD_IDS = new Set<string>([
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.DateOfBirth,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.IssueDate,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.ExpiryDate,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.TravelDate,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.IntendedDateOfArrival,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.IntendedDateOfDeparture,
+  EDIT_MEMBER_OTHER_RESIDENCE_FIELD_ID.OtherResidenceshipPermitValidUntill,
+  EDIT_MEMBER_PREVIOUS_VISA_FIELD_ID.PreviousVisaValidFrom,
+  EDIT_MEMBER_PREVIOUS_VISA_FIELD_ID.PreviousVisaValidTo,
+  EDIT_MEMBER_FINGERPRINT_DATE_FIELD_ID.PreviousFingerPrintDate,
+  EDIT_MEMBER_OPTIONAL_FIELD_ID.FinalDestinationValidFromDate,
+  EDIT_MEMBER_OPTIONAL_FIELD_ID.FinalDestinationValidToDate,
+  EDIT_MEMBER_OPTIONAL_FIELD_ID.OtherCitizenDateOfBirth,
+]);
+
+/** Kendo dropdown / listbox ids on Edit Member. */
+export const EDIT_MEMBER_DROPDOWN_FIELD_IDS = new Set<string>([
+  EDIT_MEMBER_VISA_MODAL_FIELD_ID.LocationId,
+  EDIT_MEMBER_VISA_MODAL_FIELD_ID.VisaType,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.CountryOfBirthId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.NationalityId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.NationalityAtBirthId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.GenderId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.MaritalStatusId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.PassportType,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.IssueCountryId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.HomeAddressCountryId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.CurrentOccupationId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.PurposeOfJourneyId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.MemberStateDestinationId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.MemberStateFirstEntryId,
+  EDIT_MEMBER_OPTIONAL_FIELD_ID.MemberStateSecondDestinationId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.NumberOfEntriesRequested,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.InvitingCountryId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.InvitingContactCountryId,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.CostCoveredById,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.MeansOfSupportId,
+  EDIT_MEMBER_OPTIONAL_FIELD_ID.FinalDestinationIssuedByCountryId,
+  EDIT_MEMBER_OPTIONAL_FIELD_ID.OtherCitizenNationalityId,
+  EDIT_MEMBER_OPTIONAL_FIELD_ID.OtherCitizenFamilyRelationshipId,
+]);
+
+/** Ordered happy-path required ids for plan builders / MA-TASK-005. */
+export const EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_IDS: readonly string[] =
+  Object.values(EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID);
+
+/** Optional field ids (skip when CRM empty — OQ-007). */
+export const EDIT_MEMBER_OPTIONAL_FIELD_IDS: readonly string[] = Object.values(
+  EDIT_MEMBER_OPTIONAL_FIELD_ID,
+);
+
+/** Radios that must use `name`+`value` (duplicate ids — REQ-012). */
+export const EDIT_MEMBER_RADIO_FIELD_IDS = new Set<string>([
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.PreviousFingerPrintStatus,
+  EDIT_MEMBER_REQUIRED_HAPPY_PATH_FIELD_ID.BlsInvitingAuthority,
+]);
+
+/** Section toggle checkboxes. */
+export const EDIT_MEMBER_CHECKBOX_FIELD_IDS = new Set<string>(
+  Object.values(EDIT_MEMBER_CONDITIONAL_TOGGLE_FIELD_ID),
+);

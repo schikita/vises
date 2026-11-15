@@ -1,25 +1,27 @@
-import { PORTAL_BOOKING_SELECTORS } from '../../portal-fill/constants/portal-booking.constants';
 import { BLS_WORKFLOW_ERROR_CLASS } from '../constants';
 import type { BlsWorkflowErrorClass } from '../types';
 
 /**
- * Classify a forbidden booking automation action as NOT_SAFE_TO_REPEAT
- * (CON-006). Callers must not click — return this class instead.
+ * Classify a forbidden booking automation action as NOT_SAFE_TO_REPEAT.
+ *
+ * Finalized VT-TASK-010 / REQ-019 (keep api mirror in sync):
+ * - DEC-001 / CON-005: VisaType Submit (`#btnSubmit` / `OnSubmitVisaType`) is
+ *   allowlisted — not in this unsafe set. Prior durable-bls TASK-012 / CON-006
+ *   forbade Submit; that Submit ban is superseded here only. Do not rewrite
+ *   the closed TASK-012 DONE doc.
+ * - Premium Lounge Accept + payment confirm remain forbidden (CON-004 /
+ *   this feature’s CON-006) → NOT_SAFE_TO_REPEAT.
+ * - Slots unavailable / consent pending remain SAFE_TO_REPEAT at the booking
+ *   client (not classified here).
  */
 export const classifyPortalBookingUnsafeAction = (
-  action:
-    | 'visa_type_submit'
-    | 'on_submit_visa_type'
-    | 'premium_lounge_accept'
-    | 'payment_confirm',
+  action: 'premium_lounge_accept' | 'payment_confirm',
 ): {
   errorClass: BlsWorkflowErrorClass;
   errorCode: string;
   errorMessage: string;
 } => {
   const messages: Record<typeof action, string> = {
-    visa_type_submit: `CON-006: must not click #${PORTAL_BOOKING_SELECTORS.visaTypeSubmitButtonId}`,
-    on_submit_visa_type: `CON-006: must not invoke ${PORTAL_BOOKING_SELECTORS.onSubmitVisaTypeFn}`,
     premium_lounge_accept:
       'CON-006: must not Accept Premium Lounge / payConfirmModal',
     payment_confirm: 'CON-006: must not confirm payment',

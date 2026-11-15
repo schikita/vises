@@ -1,17 +1,21 @@
-import { PORTAL_REGISTER_USER_SELECTORS } from '../constants';
-import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
+import type {
+  PortalWidgetFieldName,
+  PortalWidgetSurface,
+  WidgetOpResult,
+} from '../types';
+import { resolvePortalFieldSelector } from './resolve-portal-field-selector.util';
 
 export const setTextField = async (
-  page: PortalPage,
-  name: PortalFieldName,
+  surface: PortalWidgetSurface,
+  name: PortalWidgetFieldName,
   value: string,
 ): Promise<WidgetOpResult> => {
-  const selector = PORTAL_REGISTER_USER_SELECTORS.fields[name];
-  const count = await page.locator(selector).count();
+  const selector = resolvePortalFieldSelector(name);
+  const count = await surface.locator(selector).count();
   if (count === 0) {
     return { ok: false, reason: `${selector} not found` };
   }
-  const loc = page.locator(selector).first();
+  const loc = surface.locator(selector).first();
   await loc.fill(value);
   const read = await loc.inputValue();
   return {

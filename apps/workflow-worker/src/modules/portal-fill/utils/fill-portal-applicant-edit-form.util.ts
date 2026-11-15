@@ -1,86 +1,207 @@
-import { PORTAL_STATUS_SELECTORS } from '../constants';
-import type { PortalPage } from '../types';
+import { Logger } from '@nestjs/common';
+import {
+  EDIT_MEMBER_FILL_SECTION_ORDER,
+  PORTAL_STATUS_CHECKPOINT_STEP,
+  PORTAL_STATUS_EDIT_FILL_NOT_SAFE_ERROR_CODE,
+  PORTAL_STATUS_FIELD_FAIL_REASON,
+  PORTAL_STATUS_MA_ERROR_CODE,
+} from '../constants';
+import type {
+  FillPortalApplicantEditFormOptions,
+  FillPortalApplicantEditFormResult,
+  PortalWidgetSurface,
+} from '../types';
+import { fillEditMemberAddressSection } from './fill-edit-member-address-section.util';
+import { fillEditMemberCostSection } from './fill-edit-member-cost-section.util';
+import { fillEditMemberEmployerSection } from './fill-edit-member-employer-section.util';
+import { fillEditMemberFingerprintInvitingSection } from './fill-edit-member-fingerprint-inviting-section.util';
+import { fillEditMemberPassportSection } from './fill-edit-member-passport-section.util';
+import { fillEditMemberPersonalSection } from './fill-edit-member-personal-section.util';
+import { fillEditMemberTravelSection } from './fill-edit-member-travel-section.util';
+import { isEditMemberSectionCompleteForResume } from './is-edit-member-section-complete-for-resume.util';
+import { seedEditMemberFieldProgress } from './record-edit-member-field-progress.util';
+import { verifyEditMemberLiveFormSections } from './verify-edit-member-live-form-sections.util';
 
-type FillArg = {
-  editFormId: string;
-  editFormActionSubstring: string;
-  firstNameName: string;
-  lastNameName: string;
-  surNameName: string;
-  placeOfBirthName: string;
-  passportNoName: string;
-  firstName?: string;
-  lastName?: string;
-  placeOfBirth?: string;
-  passportNumber?: string;
-};
+const logger = new Logger('fillPortalApplicantEditForm');
+
+const SECTION_FILLERS = {
+  personal: fillEditMemberPersonalSection,
+  passport: fillEditMemberPassportSection,
+  address: fillEditMemberAddressSection,
+  employer: fillEditMemberEmployerSection,
+  travel: fillEditMemberTravelSection,
+  fingerprint_inviting: fillEditMemberFingerprintInvitingSection,
+  cost: fillEditMemberCostSection,
+} as const;
 
 /**
- * Fill empty simple text fields on the edit form from CRM applicant values
- * (`edit_app.html`). Does not touch Kendo dropdowns.
+ * Full Schengen required Edit Member fill inside iframe (REQ-007–012 / REQ-017).
+ * Extends STATUS edit pipeline only — no parallel orchestrator (REQ-027).
  */
 export const fillPortalApplicantEditForm = async (
-  page: PortalPage,
-  fill: {
-    firstName?: string;
-    lastName?: string;
-    placeOfBirth?: string;
-    passportNumber?: string;
-  },
-): Promise<{ ok: true; filled: string[] } | { ok: false; reason: string }> => {
-  const arg: FillArg = {
-    editFormId: PORTAL_STATUS_SELECTORS.editFormId,
-    editFormActionSubstring: PORTAL_STATUS_SELECTORS.editFormActionSubstring,
-    firstNameName: PORTAL_STATUS_SELECTORS.firstNameName,
-    lastNameName: PORTAL_STATUS_SELECTORS.lastNameName,
-    surNameName: PORTAL_STATUS_SELECTORS.surNameName,
-    placeOfBirthName: PORTAL_STATUS_SELECTORS.placeOfBirthName,
-    passportNoName: PORTAL_STATUS_SELECTORS.passportNoName,
-    firstName: fill.firstName?.trim() || undefined,
-    lastName: fill.lastName?.trim() || undefined,
-    placeOfBirth: fill.placeOfBirth?.trim() || undefined,
-    passportNumber: fill.passportNumber?.trim() || undefined,
+  surface: PortalWidgetSurface,
+  options: FillPortalApplicantEditFormOptions,
+): Promise<FillPortalApplicantEditFormResult> => {
+  const logPrefix = options.logPrefix ?? 'portal-edit-fill';
+  const editFill = options.editFill;
+  let fieldProgress = seedEditMemberFieldProgress(options.priorFieldProgress);
+  const priorFilledIds = new Set(fieldProgress.filled);
+  const filledAll: string[] = [];
+  const skippedAll: string[] = [];
+
+  const persistProgress = async (): Promise<
+    { ok: true } | { ok: false; reason: string }
+  > => {
+    if (!options.onCheckpoint) {
+      return { ok: true };
+    }
+    try {
+      await options.onCheckpoint({
+        lastCompletedStep: PORTAL_STATUS_CHECKPOINT_STEP.FORM_FILLING,
+        fieldProgress: {
+          filled: [...fieldProgress.filled],
+          skipped: [...fieldProgress.skipped],
+          failed: fieldProgress.failed.map((entry) => ({
+            fieldId: entry.fieldId,
+            reasonCode: entry.reasonCode,
+          })),
+        },
+      });
+      return { ok: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error(
+        `${logPrefix} fieldProgress checkpoint hard-failed ${message.slice(0, 200)}`,
+      );
+      return {
+        ok: false,
+        reason: 'fieldProgress checkpoint persist failed',
+      };
+    }
   };
 
-  const result = await page.evaluate((a: FillArg) => {
-    const form =
-      (document.getElementById(a.editFormId) as HTMLFormElement | null) ??
-      (Array.from(document.querySelectorAll('form')).find((f) =>
-        (f.getAttribute('action') ?? '').includes(a.editFormActionSubstring),
-      ) as HTMLFormElement | undefined);
-    if (!form) {
-      return { ok: false as const, reason: 'edit-form-missing' };
+  if (editFill.nationalVisaVerifyFirst) {
+    logger.log(
+      `${logPrefix} nationalVisaVerifyFirst=true — verifying live form before Schengen ids`,
+    );
+    const live = await verifyEditMemberLiveFormSections(surface);
+    if (!live.ok) {
+      logger.warn(`${logPrefix} ${live.reason}`);
+      for (const id of live.missingIds) {
+        fieldProgress = {
+          ...fieldProgress,
+          failed: [
+            ...fieldProgress.failed.filter((f) => f.fieldId !== id),
+            {
+              fieldId: id,
+              reasonCode: PORTAL_STATUS_FIELD_FAIL_REASON.LIVE_FORM_MISMATCH,
+            },
+          ],
+        };
+      }
+      const livePersist = await persistProgress();
+      if (!livePersist.ok) {
+        return {
+          ok: false,
+          reason: livePersist.reason,
+          fieldProgress,
+        };
+      }
+      return {
+        ok: false,
+        reason: live.reason,
+        fieldProgress,
+        notSafe: true,
+        errorCode: PORTAL_STATUS_EDIT_FILL_NOT_SAFE_ERROR_CODE,
+      };
+    }
+  }
+
+  for (const sectionId of EDIT_MEMBER_FILL_SECTION_ORDER) {
+    if (
+      isEditMemberSectionCompleteForResume(
+        sectionId,
+        editFill.fields,
+        fieldProgress,
+        priorFilledIds,
+      )
+    ) {
+      logger.log(
+        `${logPrefix} section=${sectionId} skipped_complete resume_fieldProgress`,
+      );
+      continue;
     }
 
-    const filled: string[] = [];
-    const setIfEmpty = (
-      name: string,
-      value: string | undefined,
-      label: string,
-    ): void => {
-      if (!value) return;
-      const input = form.querySelector(
-        `input[name="${name}"]`,
-      ) as HTMLInputElement | null;
-      if (!input) return;
-      if ((input.value ?? '').trim().length > 0) return;
-      input.value = value;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      filled.push(label);
-    };
+    const filler = SECTION_FILLERS[sectionId];
+    const sectionResult = await filler({
+      surface,
+      fields: editFill.fields,
+      fieldProgress,
+      priorFilledIds,
+    });
+    fieldProgress = sectionResult.fieldProgress;
 
-    setIfEmpty(a.firstNameName, a.firstName, a.firstNameName);
-    setIfEmpty(a.lastNameName, a.lastName, a.lastNameName);
-    setIfEmpty(a.surNameName, a.lastName, a.surNameName);
-    setIfEmpty(a.placeOfBirthName, a.placeOfBirth, a.placeOfBirthName);
-    setIfEmpty(a.passportNoName, a.passportNumber, a.passportNoName);
+    if (!sectionResult.ok) {
+      const failPersist = await persistProgress();
+      if (!failPersist.ok) {
+        return {
+          ok: false,
+          reason: failPersist.reason,
+          fieldProgress,
+          ...(sectionResult.failedFieldId
+            ? { failedFieldId: sectionResult.failedFieldId }
+            : {}),
+        };
+      }
+      logger.warn(
+        `${logPrefix} section=${sectionId} failed field=${sectionResult.failedFieldId ?? 'unknown'}`,
+      );
+      const datepickerFail =
+        sectionResult.reasonCode ===
+        PORTAL_STATUS_FIELD_FAIL_REASON.STALE_DATEPICKER;
+      const validationFail =
+        sectionResult.reasonCode ===
+        PORTAL_STATUS_FIELD_FAIL_REASON.VALIDATION_SUMMARY;
+      return {
+        ok: false,
+        reason: sectionResult.reason,
+        fieldProgress,
+        ...(sectionResult.notSafe ? { notSafe: true } : {}),
+        ...(sectionResult.notSafe
+          ? { errorCode: PORTAL_STATUS_EDIT_FILL_NOT_SAFE_ERROR_CODE }
+          : datepickerFail
+            ? { errorCode: PORTAL_STATUS_MA_ERROR_CODE.MA_DATEPICKER_FAIL }
+            : validationFail
+              ? {
+                  errorCode:
+                    PORTAL_STATUS_MA_ERROR_CODE.MA_VALIDATION_SUMMARY,
+                }
+              : {}),
+        ...(sectionResult.failedFieldId
+          ? { failedFieldId: sectionResult.failedFieldId }
+          : {}),
+      };
+    }
 
-    return { ok: true as const, filled };
-  }, arg);
-
-  if (!result.ok) {
-    return { ok: false, reason: result.reason };
+    filledAll.push(...sectionResult.filled);
+    skippedAll.push(...sectionResult.skipped);
+    const sectionPersist = await persistProgress();
+    if (!sectionPersist.ok) {
+      return {
+        ok: false,
+        reason: sectionPersist.reason,
+        fieldProgress,
+      };
+    }
+    logger.log(
+      `${logPrefix} section=${sectionId} filled=${sectionResult.filled.length} skipped=${sectionResult.skipped.length}`,
+    );
   }
-  return { ok: true, filled: result.filled };
+
+  return {
+    ok: true,
+    fieldProgress,
+    filled: filledAll,
+    skipped: skippedAll,
+  };
 };

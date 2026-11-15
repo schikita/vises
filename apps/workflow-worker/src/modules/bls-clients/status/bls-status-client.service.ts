@@ -2,9 +2,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from '../../database/entities/application.entity';
+import { BlsWorkflowTask } from '../../database/entities/bls-workflow-task.entity';
 import { Client } from '../../database/entities/client.entity';
 import { BLS_SECRET_PURPOSE, BlsSecretVaultService } from '../../bls-secrets';
-import { BLS_WORKFLOW_ERROR_CLASS } from '../../bls-workflow/constants/bls-workflow.constants';
 import {
   ClientPiiDecryptService,
   findApplicant,
@@ -14,7 +14,18 @@ import {
 } from '../../portal-core';
 import {
   BLS_APPLICANT_PORTAL_STATUS,
+  buildEditMemberFillInput,
+  createInitialPortalStatusCheckpoint,
+  EDIT_MEMBER_FIELD_PLAN_ACTION,
+  loadPortalStatusCheckpoint,
+  mapApplicantInputToEditMemberCrmApplicant,
+  mergePortalStatusCheckpoint,
   PortalStatusFillService,
+  resolvePortalStatusAddFamilyMemberGate,
+  savePortalStatusCheckpoint,
+  type BlsApplicantPortalStatus,
+  type PortalStatusCheckpoint,
+  type PortalStatusCheckpointPatch,
 } from '../../portal-fill';
 import {
   BLS_STATUS_MISSING_APPLICANT_ERROR_CODE,
@@ -34,6 +45,8 @@ import type { BlsStatusClient, ProxyProvider } from '../interfaces';
 import type { BlsClientResult, BlsClientTaskContext } from '../types';
 import type { ProxyProviderLease } from '../types';
 import { buildBlsClientAbortResult } from '../utils/build-bls-client-abort-result.util';
+import { mapBlsStatusClientFailure } from '../utils/map-bls-status-client-failure.util';
+import { sanitizeBlsStatusClientErrorMessage } from '../utils/sanitize-bls-status-client-error-message.util';
 
 /**
  * STATUS_VALIDATE domain client (REQ-018 / REQ-019 / REQ-021 / TASK-011).
@@ -55,6 +68,8 @@ export class BlsStatusClientService implements BlsStatusClient {
     private readonly appsRepo: Repository<Application>,
     @InjectRepository(Client)
     private readonly clientsRepo: Repository<Client>,
+    @InjectRepository(BlsWorkflowTask)
+    private readonly tasksRepo: Repository<BlsWorkflowTask>,
     private readonly clientPii: ClientPiiDecryptService,
   ) {}
 
@@ -121,6 +136,19 @@ export class BlsStatusClientService implements BlsStatusClient {
         applicantIds.findIndex((id) => id === applicantId),
       );
 
+      const crmApplicantIds = applicants
+        .map((row) => row.id.trim())
+        .filter((id) => id.length > 0);
+      const applicationPrimaryApplicantId =
+        crmApplicantIds[0] ?? applicantIds[0] ?? applicantId;
+      const familyGate = resolvePortalStatusAddFamilyMemberGate({
+        crmApplicantIds,
+        primaryApplicantId: applicationPrimaryApplicantId,
+      });
+      this.logger.log(
+        `bls_status_client add_family_gate workflowId=${workflowId} applicantId=${applicantId} shouldAdd=${familyGate.shouldAddFamilyMembers} additional=${familyGate.preStartAdditionalMemberCount}`,
+      );
+
       const loadedPassword = await this.secretVault.loadSecretPlain({
         workflowId,
         purpose: BLS_SECRET_PURPOSE.PORTAL_PASSWORD,
@@ -142,9 +170,11 @@ export class BlsStatusClientService implements BlsStatusClient {
       }
 
       let loginUrl: string;
+      let homeUrl: string;
       let manageApplicantsUrl: string;
       try {
         loginUrl = this.configService.resolvePortalLoginUrl(config);
+        homeUrl = this.configService.resolvePortalHomeUrl(config);
         manageApplicantsUrl =
           this.configService.resolvePortalManageApplicantsUrl(config);
       } catch (err) {
@@ -170,8 +200,66 @@ export class BlsStatusClientService implements BlsStatusClient {
       }
 
       const headed = this.configService.resolveHeaded();
+      const loadedCheckpoint = await loadPortalStatusCheckpoint(
+        this.tasksRepo,
+        context.taskId,
+      );
+      let checkpointState: PortalStatusCheckpoint =
+        loadedCheckpoint.checkpoint ??
+        createInitialPortalStatusCheckpoint({ applicantId });
+      let portalStatusState: BlsApplicantPortalStatus | null =
+        loadedCheckpoint.portalStatus;
+
+      const onCheckpoint = async (
+        patch: PortalStatusCheckpointPatch,
+      ): Promise<void> => {
+        checkpointState = {
+          ...mergePortalStatusCheckpoint(checkpointState, patch),
+          applicantId,
+        };
+        if (patch.portalStatus !== undefined) {
+          portalStatusState = patch.portalStatus;
+        }
+        await savePortalStatusCheckpoint(this.tasksRepo, {
+          taskId: context.taskId,
+          checkpoint: checkpointState,
+          ...(portalStatusState != null
+            ? { portalStatus: portalStatusState }
+            : {}),
+        });
+      };
+
+      const editFill = buildEditMemberFillInput({
+        applicant: mapApplicantInputToEditMemberCrmApplicant(applicant),
+        application: {
+          submitCity: app.submitCity,
+          visaType: app.visaType,
+          destination: app.destination,
+          travelDate: app.travelDate,
+          returnDate: app.returnDate,
+        },
+      });
+
+      if (editFill.hasUnskippableGaps) {
+        this.logger.warn(
+          `bls_status_client editFill hasUnskippableGaps=true workflowId=${workflowId} applicantId=${applicantId} gapFieldIds=${editFill.fields
+            .filter(
+              (entry) =>
+                entry.action === EDIT_MEMBER_FIELD_PLAN_ACTION.UNSKIPPABLE_GAP,
+            )
+            .map((entry) => entry.fieldId)
+            .join(',')}`,
+        );
+      }
+      if (editFill.nationalVisaVerifyFirst) {
+        this.logger.log(
+          `bls_status_client nationalVisaVerifyFirst=true workflowId=${workflowId} applicantId=${applicantId}`,
+        );
+      }
+
       const fill = await this.fillService.fillStatusValidate({
         loginUrl,
+        homeUrl,
         manageApplicantsUrl,
         portalFormEmail,
         portalPassword: portalPasswordPlain,
@@ -181,12 +269,7 @@ export class BlsStatusClientService implements BlsStatusClient {
           lastName: applicant.lastName,
           ordinalIndex,
         },
-        editFill: {
-          firstName: applicant.firstName,
-          lastName: applicant.lastName,
-          placeOfBirth: applicant.placeOfBirth,
-          passportNumber: applicant.passportNumber,
-        },
+        editFill,
         headed,
         captchaServiceApiKey: config.captchaServiceApiKey,
         browserProxy: lease?.browserProxy,
@@ -195,6 +278,10 @@ export class BlsStatusClientService implements BlsStatusClient {
         onBrowserLaunched: context.registerCloseHook
           ? (close) => context.registerCloseHook!(close)
           : undefined,
+        priorCheckpoint: loadedCheckpoint.checkpoint,
+        onCheckpoint,
+        crmApplicantIds,
+        shouldAddFamilyMembers: familyGate.shouldAddFamilyMembers,
       });
 
       portalPasswordPlain = undefined;
@@ -211,31 +298,33 @@ export class BlsStatusClientService implements BlsStatusClient {
       }
 
       if (fill.errorCode?.trim()) {
-        return this.safeFail(
-          fill.errorCode.trim(),
-          fill.error?.slice(0, 500) ?? 'Status validate fill failed',
-        );
+        return mapBlsStatusClientFailure({
+          errorCode: fill.errorCode.trim(),
+          errorMessage: sanitizeBlsStatusClientErrorMessage(
+            fill.error ?? 'Status validate fill failed',
+          ),
+          submitAmbiguous: fill.submitAmbiguous === true,
+        });
       }
 
       if (fill.submitAmbiguous === true) {
-        return {
-          ok: false,
-          errorClass: BLS_WORKFLOW_ERROR_CLASS.VERIFY_THEN_REPEAT,
+        return mapBlsStatusClientFailure({
           errorCode: BLS_STATUS_SUBMIT_AMBIGUOUS_ERROR_CODE,
-          errorMessage:
-            fill.error?.slice(0, 500) ??
-            BLS_STATUS_SUBMIT_AMBIGUOUS_ERROR_MESSAGE,
-        };
+          errorMessage: sanitizeBlsStatusClientErrorMessage(
+            fill.error ?? BLS_STATUS_SUBMIT_AMBIGUOUS_ERROR_MESSAGE,
+          ),
+          submitAmbiguous: true,
+        });
       }
 
+      // REQ-004 / NFR: UNKNOWN never success — prefer existing bls_status_unknown.
       if (fill.status === BLS_APPLICANT_PORTAL_STATUS.UNKNOWN) {
-        return {
-          ok: false,
-          errorClass: BLS_WORKFLOW_ERROR_CLASS.SAFE_TO_REPEAT,
+        return mapBlsStatusClientFailure({
           errorCode: BLS_STATUS_UNKNOWN_ERROR_CODE,
-          errorMessage:
-            fill.error?.slice(0, 500) ?? BLS_STATUS_UNKNOWN_ERROR_MESSAGE,
-        };
+          errorMessage: sanitizeBlsStatusClientErrorMessage(
+            fill.error ?? BLS_STATUS_UNKNOWN_ERROR_MESSAGE,
+          ),
+        });
       }
 
       if (
@@ -243,19 +332,20 @@ export class BlsStatusClientService implements BlsStatusClient {
           BLS_APPLICANT_PORTAL_STATUS.FORM_FILLING_IN_PROGRESS ||
         fill.readyToBook !== true
       ) {
-        return {
-          ok: false,
-          errorClass: BLS_WORKFLOW_ERROR_CLASS.SAFE_TO_REPEAT,
+        return mapBlsStatusClientFailure({
           errorCode: BLS_STATUS_NOT_READY_ERROR_CODE,
-          errorMessage:
-            fill.error?.slice(0, 500) ?? BLS_STATUS_NOT_READY_ERROR_MESSAGE,
-        };
+          errorMessage: sanitizeBlsStatusClientErrorMessage(
+            fill.error ?? BLS_STATUS_NOT_READY_ERROR_MESSAGE,
+          ),
+        });
       }
 
-      return this.safeFail(
-        BLS_STATUS_PIPELINE_ERROR_CODE,
-        fill.error?.slice(0, 500) ?? 'Status validate fill failed',
-      );
+      return mapBlsStatusClientFailure({
+        errorCode: BLS_STATUS_PIPELINE_ERROR_CODE,
+        errorMessage: sanitizeBlsStatusClientErrorMessage(
+          fill.error ?? 'Status validate fill failed',
+        ),
+      });
     } catch (err) {
       if (context.abortSignal?.aborted) {
         return buildBlsClientAbortResult();
@@ -264,10 +354,10 @@ export class BlsStatusClientService implements BlsStatusClient {
       this.logger.error(
         `bls_status_client unexpected failure workflowId=${workflowId} ${message}`,
       );
-      return this.safeFail(
-        BLS_STATUS_PIPELINE_ERROR_CODE,
-        message.slice(0, 500),
-      );
+      return mapBlsStatusClientFailure({
+        errorCode: BLS_STATUS_PIPELINE_ERROR_CODE,
+        errorMessage: sanitizeBlsStatusClientErrorMessage(message),
+      });
     } finally {
       portalPasswordPlain = undefined;
       if (lease) {
@@ -277,11 +367,9 @@ export class BlsStatusClientService implements BlsStatusClient {
   }
 
   private safeFail(errorCode: string, errorMessage: string): BlsClientResult {
-    return {
-      ok: false,
-      errorClass: BLS_WORKFLOW_ERROR_CLASS.SAFE_TO_REPEAT,
+    return mapBlsStatusClientFailure({
       errorCode,
-      errorMessage,
-    };
+      errorMessage: sanitizeBlsStatusClientErrorMessage(errorMessage),
+    });
   }
 }

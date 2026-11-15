@@ -40,10 +40,16 @@ export type {
   ClientMaskedPassportDto,
   ClientPassportUpdateDto,
 } from './client.types';
+export type { ClientPortalFormConditionals } from './client-portal-form-conditionals.types';
+export type {
+  ClientPortalFormDetailDto,
+  ClientPortalFormUpdateDto,
+} from './client-portal-form.types';
 export type {
   ApplicationDto,
   ApplicationStatusChangeDto,
 } from './application.types';
+export type { ApplicationUpsertDto } from './application-upsert.types';
 export type {
   ApplicationStatusHistoryActorRole,
   ApplicationStatusHistoryDto,

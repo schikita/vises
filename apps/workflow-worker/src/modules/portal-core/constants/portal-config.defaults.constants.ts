@@ -10,6 +10,9 @@ export const DEFAULT_LOGIN_PATH = '/Global/account/login';
 export const DEFAULT_MANAGE_APPLICANTS_PATH =
   '/Global/appointmentdata/myappointments';
 
+/** Default path to authenticated Global home (successful-enter FR-4). */
+export const DEFAULT_HOME_PATH = '/Global/home/index';
+
 /** Patchright navigation / default action timeout (ms). */
 export const PORTAL_NAV_TIMEOUT_MS = 30_000;
 

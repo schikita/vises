@@ -7,10 +7,13 @@ import { isPortalCaptchaVerifiedAfterNav } from './is-portal-captcha-verified-af
 import { isPortalLoginFormVisibleAfterNav } from './is-portal-login-form-visible-after-nav.util';
 import { isPortalPasswordChangeFormVisibleAfterNav } from './is-portal-password-change-form-visible-after-nav.util';
 import { portalCaptchaVerifiedLoopSleep } from './portal-captcha-verified-loop-sleep.util';
+import { waitForPortalBookingCaptchaSurfaceDismissed } from './wait-for-portal-booking-captcha-surface-dismissed.util';
 import { waitForPortalCaptchaVerified } from './wait-for-portal-captcha-verified.util';
 
 /**
  * Wait for captcha episode success (portal-login-inline-captcha DEC-004 / SUB-004).
+ * When `acceptBookingSurfaceDismiss` is true: booking captcha surface gone
+ * (REQ-013 / VT-TASK-008) — does not require `#btnVerified`.
  * When `acceptLoginAuthSuccess` is false: `#btnVerified` only (register).
  * When true: `#btnVerified` **or** forced Change Password visible **or** login
  * form gone (login auth / form-progress / 010 DEC-001).
@@ -21,8 +24,24 @@ export const waitForPortalCaptchaEpisodeSuccess = async (
   page: PortalPage,
   timeoutMs: number,
   pollIntervalMs: number,
-  options?: { acceptLoginAuthSuccess?: boolean },
+  options?: {
+    acceptLoginAuthSuccess?: boolean;
+    acceptBookingSurfaceDismiss?: boolean;
+  },
 ): Promise<WaitForPortalCaptchaEpisodeSuccessResult> => {
+  const acceptBookingSurfaceDismiss =
+    options?.acceptBookingSurfaceDismiss === true;
+  if (acceptBookingSurfaceDismiss) {
+    const dismissed = await waitForPortalBookingCaptchaSurfaceDismissed(
+      page,
+      timeoutMs,
+      pollIntervalMs,
+    );
+    return dismissed
+      ? { ok: true, via: 'booking_surface_dismiss' }
+      : { ok: false };
+  }
+
   const acceptLoginAuthSuccess = options?.acceptLoginAuthSuccess === true;
 
   if (!acceptLoginAuthSuccess) {

@@ -29,6 +29,7 @@ import { detectPortalLoginSiteProcessingAlert } from './detect-portal-login-site
 import { ensurePortalCaptchaChallengeReady } from './ensure-portal-captcha-challenge-ready.util';
 import { ensurePortalLoginCredentialsForCaptcha } from './ensure-portal-login-credentials-for-captcha.util';
 import { formatPortalLogContext } from '../../portal-core/utils/format-portal-log-context.util';
+import { isPortalBookingCaptchaSurfaceVisible } from './is-portal-booking-captcha-surface-visible.util';
 import { isPortalCaptchaVerifiedAfterNav } from './is-portal-captcha-verified-after-nav.util';
 import { isPortalFillAbortRequested } from './is-portal-fill-abort-requested.util';
 import { isPortalLoginFormVisibleAfterNav } from './is-portal-login-form-visible-after-nav.util';
@@ -92,8 +93,24 @@ export const runPortalCaptchaVerifiedLoop = async (
 
   const remainingMs = () => budgetDeadlineAt.getTime() - Date.now();
   const acceptLoginAuthSuccess = input.acceptLoginAuthSuccess === true;
+  const acceptBookingSurfaceDismiss =
+    input.acceptBookingSurfaceDismiss === true;
 
-  if (await isPortalCaptchaVerifiedAfterNav(page)) {
+  if (
+    acceptBookingSurfaceDismiss &&
+    !(await isPortalBookingCaptchaSurfaceVisible(page))
+  ) {
+    logger.log(
+      `${logPrefix} phase=captcha_verified_loop success attempts=${attempts} reason=already_verified via=booking_surface_dismiss`,
+    );
+    await emitCheckpoint({ attempts });
+    return { ok: true, attempts, stopReason: 'verified' };
+  }
+
+  if (
+    !acceptBookingSurfaceDismiss &&
+    (await isPortalCaptchaVerifiedAfterNav(page))
+  ) {
     logger.log(
       `${logPrefix} phase=captcha_verified_loop success attempts=${attempts} reason=already_verified via=btnVerified`,
     );
@@ -469,7 +486,7 @@ export const runPortalCaptchaVerifiedLoop = async (
       `${logPrefix} phase=captcha_verified_loop attempt=${attempt} chain_ended reason=${chainResult.endReason}`,
     );
 
-    // Dedicated wait for #btnVerified (and login auth when flag set) within remaining budget.
+    // Dedicated wait: booking surface dismiss, #btnVerified, and/or login auth.
     const remainingAfterChain = remainingMs();
     if (remainingAfterChain <= 0) {
       logger.error(
@@ -489,14 +506,14 @@ export const runPortalCaptchaVerifiedLoop = async (
       PORTAL_CAPTCHA_VERIFIED_AFTER_APPLY_WAIT_MS,
     );
     logger.log(
-      `${logPrefix} phase=captcha_verified_loop attempt=${attempt} waiting_for_episode_success waitMs=${waitMs} acceptLoginAuthSuccess=${acceptLoginAuthSuccess}`,
+      `${logPrefix} phase=captcha_verified_loop attempt=${attempt} waiting_for_episode_success waitMs=${waitMs} acceptLoginAuthSuccess=${acceptLoginAuthSuccess} acceptBookingSurfaceDismiss=${acceptBookingSurfaceDismiss}`,
     );
 
     const episode = await waitForPortalCaptchaEpisodeSuccess(
       page,
       waitMs,
       PORTAL_CAPTCHA_VERIFIED_AFTER_APPLY_POLL_MS,
-      { acceptLoginAuthSuccess },
+      { acceptLoginAuthSuccess, acceptBookingSurfaceDismiss },
     );
 
     if (episode.ok) {
