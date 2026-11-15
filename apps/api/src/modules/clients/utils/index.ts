@@ -17,3 +17,5 @@ export { pickPortalFormUpdateFields } from './pick-portal-form-update-fields.uti
 export { applyPortalFormFields } from './apply-portal-form-fields.util';
 export { mapClientToPortalFormDetailDto } from './map-client-to-portal-form-detail-dto.util';
 export { parsePricePerClientWholeUnits } from './parse-price-per-client-whole-units.util';
+export { buildNewClientRow } from './build-new-client-row.util';
+export { pickMostRecentlyUpdatedApplication } from './pick-most-recently-updated-application.util';

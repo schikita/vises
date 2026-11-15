@@ -104,7 +104,7 @@ describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
     encryptFields: stubEncryptFields,
   });
 
-  it('seeds 13 clients and 13 applications with 1:1 clientId links', (): void => {
+  it('seeds 13 clients and 13 applications with linked clientId values', (): void => {
     expect(dataset.clients).toHaveLength(13);
     expect(dataset.applications).toHaveLength(13);
     const clientIds = new Set(dataset.clients.map((c) => c.id));
