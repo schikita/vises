@@ -1,0 +1,38 @@
+/**
+ * CamelCase Client portal-form string columns (APF / REQ-002 / DEC-002).
+ * Excludes `portalFormConditionals` jsonb (handled separately).
+ */
+export const CLIENT_PORTAL_FORM_STRING_FIELD_KEYS = [
+  'address',
+  'homeAddressLine2',
+  'homeCountry',
+  'homeCity',
+  'homePostalCode',
+  'employerName',
+  'employerPhone',
+  'employerAddress',
+  'occupation',
+  'previousFingerPrintStatus',
+  'previousFingerPrintDate',
+  'blsInvitingAuthority',
+  'invitingAuthorityName',
+  'invitingCountry',
+  'invitingCity',
+  'invitingZipCode',
+  'invitingAddress',
+  'invitingEmail',
+  'invitingContactNo',
+  'invitingFaxNo',
+  'invitingContactName',
+  'invitingContactSurname',
+  'invitingContactCountry',
+  'invitingContactCity',
+  'invitingContactZipCode',
+  'invitingContactAddress',
+  'invitingContactContactNo',
+  'invitingContactEmail',
+  'invitingContactFaxNo',
+  'costCoveredBy',
+  'meansOfSupport',
+  'memberStateSecondDestination',
+] as const;

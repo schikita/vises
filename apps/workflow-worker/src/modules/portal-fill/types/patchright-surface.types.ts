@@ -19,6 +19,16 @@ export type PortalLocator = {
   isDisabled(): Promise<boolean>;
 };
 
+/** Patchright/Playwright native dialog (alert/confirm/prompt). */
+export type PortalDialog = {
+  message(): string;
+  type(): string;
+  accept(promptText?: string): Promise<void>;
+  dismiss(): Promise<void>;
+};
+
+export type PortalDialogHandler = (dialog: PortalDialog) => void | Promise<void>;
+
 /** Frame (or page) surface used for CAPTCHA extract/apply inside an iframe. */
 export type PortalFrame = {
   url(): string;
@@ -27,6 +37,8 @@ export type PortalFrame = {
     pageFunction: (arg: Arg) => R | Promise<R>,
     arg: Arg,
   ): Promise<R>;
+  /** Present on Patchright Frame — required for Edit Member setTextField. */
+  locator(selector: string): PortalLocator;
   waitForSelector(
     selector: string,
     options?: { state?: string; timeout?: number },
@@ -34,6 +46,8 @@ export type PortalFrame = {
 };
 
 export type PortalPage = {
+  /** Current page URL (Patchright page.url). */
+  url(): string;
   evaluate<R>(pageFunction: () => R | Promise<R>): Promise<R>;
   evaluate<R, Arg>(
     pageFunction: (arg: Arg) => R | Promise<R>,
@@ -69,6 +83,14 @@ export type PortalPage = {
     arg: Arg,
     options?: { timeout?: number },
   ): Promise<unknown>;
+  /**
+   * Native dialog listener (REQ-013 Edit success alert). Optional on the
+   * typed surface — runtime Patchright Page always exposes these.
+   */
+  on?(event: 'dialog', handler: PortalDialogHandler): void;
+  once?(event: 'dialog', handler: PortalDialogHandler): void;
+  off?(event: 'dialog', handler: PortalDialogHandler): void;
+  removeListener?(event: 'dialog', handler: PortalDialogHandler): void;
   screenshot(options?: {
     path?: string;
     fullPage?: boolean;

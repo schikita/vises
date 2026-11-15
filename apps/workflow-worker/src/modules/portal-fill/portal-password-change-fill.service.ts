@@ -46,6 +46,7 @@ export class PortalPasswordChangeFillService {
     options: FillPortalPasswordChangeOptions,
   ): Promise<FillPortalPasswordChangeResult> {
     const targetUrl = normalizeTargetUrl(options.targetUrl);
+    const homeUrl = normalizeTargetUrl(options.homeUrl);
     let browser: PortalBrowser | undefined;
     let sessionSlotHeld = false;
     const logPrefix = formatPortalLogContext({
@@ -165,6 +166,7 @@ export class PortalPasswordChangeFillService {
         portalFormEmail: options.portalFormEmail,
         currentPassword: options.currentPassword,
         newPassword: options.newPassword,
+        homeUrl,
         captchaServiceApiKey: options.captchaServiceApiKey,
         captchaProvider: this.captchaProvider,
         logPrefix,
@@ -190,6 +192,10 @@ export class PortalPasswordChangeFillService {
         return {
           navigationOk: false,
           submitAmbiguous: pipeline.submitAmbiguous,
+          // Portal may already have applied the new password (home-gate fail).
+          ...(pipeline.passwordChanged === true
+            ? { passwordChanged: true }
+            : {}),
           error: pipeline.error,
           ...(pipeline.errorCode
             ? { errorCode: pipeline.errorCode }

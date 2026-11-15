@@ -32,3 +32,23 @@ export const TEMPORARY_EMAIL_PORTAL_PASSWORD_CUE_PATTERN =
  * Same shape as OTP fallback; callers must exclude the OTP message id.
  */
 export const TEMPORARY_EMAIL_PORTAL_PASSWORD_BODY_FALLBACK_PATTERN = '\\b(\\d{6})\\b';
+
+/**
+ * Stable subject substring for the BLS data-protection consent email (REQ-003).
+ * Use with `WaitTemporaryEmailMessageInput.subjectIncludes`.
+ */
+export const TEMPORARY_EMAIL_DATA_PROTECTION_SUBJECT_INCLUDES =
+  'BLS - Data Protection Information';
+
+/**
+ * Visible text of the green consent CTA (exact fixture substring; whitespace
+ * normalized before match). Never confuse with the disagree CTA.
+ */
+export const TEMPORARY_EMAIL_DATA_PROTECTION_CONSENT_CTA_TEXT =
+  'I have read and understood the information on data protection and I explicitly consent to the data treatment';
+
+/**
+ * Visible text of the red disagree CTA — extractors must never return its href.
+ */
+export const TEMPORARY_EMAIL_DATA_PROTECTION_DISAGREE_CTA_TEXT =
+  "I disagree and don't give my consent";

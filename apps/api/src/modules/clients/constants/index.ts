@@ -7,3 +7,4 @@ export {
   CLIENT_APP_CODE_BASE,
   CLIENT_APP_CODE_RANGE,
 } from './client-app-code.constants';
+export { CLIENT_PORTAL_FORM_STRING_FIELD_KEYS } from './client-portal-form-field-keys.constants';

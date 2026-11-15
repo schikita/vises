@@ -98,6 +98,31 @@ Exact script: `npm run build && node --test ./test/workflow/crypto-and-state.tes
 
 Enhances TASK-015 staff SPA (step viz, events poll closing **ISSUE-003**, CON-006 handoff, dual-mode Автозаполнение). Realtime: **DEC-001** snapshot + events poll — **no** WebSocket/SSE. Product IMPLEMENTING not started.
 
+## Follow-on Manage Applicants form (separate feature)
+
+| Field | Value |
+|-------|-------|
+| Feature id | `manage-applicants-appointment-form` |
+| Status | **VERIFYING** — Phase A+B DONE (001–009, 011); SPA (010) deferred; live E2E pending |
+| Authoritative docs | [`manage-applicants-appointment-form/`](./manage-applicants-appointment-form/) |
+| Spec SoT | [`manage-applicants-appointment-form/02-spec.md`](./manage-applicants-appointment-form/02-spec.md) |
+| Plan / tasks | [`manage-applicants-appointment-form/04-plan.md`](./manage-applicants-appointment-form/04-plan.md), [`05-tasks.md`](./manage-applicants-appointment-form/05-tasks.md) |
+| Mirror | `specs/features/manage-applicants-appointment-form/` — may be absent; prefer `docs/sdd/` |
+
+Extends STATUS_VALIDATE beyond TASK-011 minimal edit fill (full Edit Member form, checkpoint resume, Add Family Member designed Phase B) → Ready → TASK-012 / CON-006 handoff. Does **not** reopen this closed durable-bls-workflow review.
+
+## Follow-on Visa Type booking continue (separate feature)
+
+| Field | Value |
+|-------|-------|
+| Feature id | `bls-booking-visa-type` |
+| Status | **READY_FOR_REVIEW** (Phase A/B DONE 2026-11-14; VT-TASK-011 DEFERRED) |
+| Authoritative docs | [`bls-booking-visa-type/`](./bls-booking-visa-type/) |
+| Spec SoT | [`bls-booking-visa-type/02-spec.md`](./bls-booking-visa-type/02-spec.md) |
+| Plan / tasks | [`bls-booking-visa-type/04-plan.md`](./bls-booking-visa-type/04-plan.md), [`05-tasks.md`](./bls-booking-visa-type/05-tasks.md) |
+
+Continues BOOK after Ready: email data-protection consent → Visa Type Selection fill → **Submit** (+ captcha / slots-unavailable). **Supersedes TASK-012 Submit stop only**; Premium Accept / payment remain forbidden. Does **not** casually reopen this closed durable-bls-workflow review.
+
 ## Related DONE SDD (baselines — extend, don’t casually reopen)
 
 | Feature id | Relevance |

@@ -1,4 +1,5 @@
-﻿import type { FieldResult } from './portal-field.types';
+﻿import type { ClientPortalFormConditionals } from '@vises/contracts';
+import type { FieldResult } from './portal-field.types';
 
 /** Applicant shape used by mapping (subset of SPA Applicant + optional gap fields). */
 export interface ApplicantInput {
@@ -10,6 +11,11 @@ export interface ApplicantInput {
   placeOfBirth?: string;
   countryOfBirth?: string;
   nationality?: string;
+  nationalityAtBirth?: string;
+  nationalId?: string;
+  otherNames?: string;
+  gender?: string;
+  maritalStatus?: string;
   passportNumber?: string;
   passportIssued?: string;
   passportExpires?: string;
@@ -23,6 +29,48 @@ export interface ApplicantInput {
   passportIssuedBy?: string;
   email?: string;
   phone?: string;
+  /** Freeform home address (Edit Member `#HomeAddressLine1` when structured parts absent). */
+  address?: string;
+  purpose?: string;
+  firstEntry?: string;
+  entries?: string;
+  durationDays?: string;
+  relationship?: string;
+  /** Portal form plaintext (APF / REQ-007) — omitted when Client column null/blank. */
+  homeAddressLine2?: string;
+  homeCountry?: string;
+  homeCity?: string;
+  homePostalCode?: string;
+  employerName?: string;
+  employerPhone?: string;
+  employerAddress?: string;
+  occupation?: string;
+  previousFingerPrintStatus?: string;
+  previousFingerPrintDate?: string;
+  blsInvitingAuthority?: string;
+  invitingAuthorityName?: string;
+  invitingCountry?: string;
+  invitingCity?: string;
+  invitingZipCode?: string;
+  invitingAddress?: string;
+  invitingEmail?: string;
+  invitingContactNo?: string;
+  invitingFaxNo?: string;
+  invitingContactName?: string;
+  invitingContactSurname?: string;
+  invitingContactCountry?: string;
+  invitingContactCity?: string;
+  invitingContactZipCode?: string;
+  invitingContactAddress?: string;
+  invitingContactContactNo?: string;
+  invitingContactEmail?: string;
+  invitingContactFaxNo?: string;
+  costCoveredBy?: string;
+  meansOfSupport?: string;
+  memberStateSecondDestination?: string;
+  /** Conditional-section bag from Client (optional fill only). */
+  portalFormConditionals?: ClientPortalFormConditionals;
+  isMinor?: boolean | string;
   [key: string]: unknown;
 }
 

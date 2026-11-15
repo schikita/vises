@@ -192,6 +192,8 @@ export const BLS_WORKFLOW_CLAIMABLE_STATUSES = [
 /**
  * Terminal workflow statuses (non-active).
  * BOOK Must success uses `AWAITING_STAFF_BOOKING` — not `COMPLETED` (DEC-010).
+ * Triggered after materials-covered UNKNOWN_NEXT / staff handoff (DEC-004 /
+ * OQ-007), not open-UI-only BOOK continue.
  */
 export const BLS_WORKFLOW_TERMINAL_STATUSES = [
   BLS_WORKFLOW_STATUS.AWAITING_STAFF_BOOKING,

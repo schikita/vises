@@ -29,7 +29,9 @@ import { BlsWorkflowRepository } from './bls-workflow.repository';
  * (portal-credential-reveal DEC-004 / DEC-005 / DEC-009 / DEC-010).
  * Terminal entry schedules due-at only — does not delete mailbox or purge vault.
  * Soft-fail throughout; never logs tokens, passwords, or DEK material.
- * Not invoked on REGISTER / OTP success alone.
+ * Not invoked on REGISTER / OTP success alone, mid-booking SAFE_TO_REPEAT
+ * slots retries, or WAITING_STAFF staff gates (retain mailbox until true
+ * terminal — bls-booking-visa-type DEC-004 / NFR-005 / VT-TASK-010).
  */
 @Injectable()
 export class BlsWorkflowTerminalCleanupService {

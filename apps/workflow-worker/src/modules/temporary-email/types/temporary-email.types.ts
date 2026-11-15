@@ -24,6 +24,11 @@ export type TemporaryMailboxAccount = {
 export type CreateTemporaryMailboxInput = {
   /** Workflow id (or run-scoped key) for browser session reuse (DEC-004). */
   contextKey: string;
+  /**
+   * When set, reopen the retained mailbox identity (BOOK DP consent /
+   * OQ-006). Browser adapter restores local@domain; HTTP adapters ignore.
+   */
+  restoreAddress?: string;
 };
 
 /**
@@ -47,6 +52,17 @@ export type WaitTemporaryEmailMessageInput = {
    * post-registration portal password email).
    */
   excludeMessageIds?: string[];
+  /**
+   * When set, only accept a message whose subject/preview contains this
+   * substring (e.g. TEMPORARY_EMAIL_DATA_PROTECTION_SUBJECT_INCLUDES).
+   */
+  subjectIncludes?: string;
+  /**
+   * When true, also accept messages already in the inbox that match
+   * `subjectIncludes` (BOOK DP consent — email may predate wait start).
+   * Default false preserves OTP/password “new mail only” polling.
+   */
+  includeExisting?: boolean;
 };
 
 export type WaitTemporaryEmailMessageResult = {

@@ -1,4 +1,7 @@
-import { PORTAL_STATUS_SELECTORS } from '../constants';
+import {
+  PORTAL_APPLICANT_STATUS_LABELS,
+  PORTAL_STATUS_SELECTORS,
+} from '../constants';
 import type { PortalPage } from '../types';
 import type { PortalApplicantStatusRow } from '../types/portal-status.types';
 import { normalizeBlsApplicantPortalStatus } from './normalize-bls-applicant-portal-status.util';
@@ -7,6 +10,10 @@ type ScrapeArg = {
   statusLabelPrefix: string;
   editActionTitle: string;
   manageApplicantFn: string;
+  readyLabel: string;
+  formFillingLabel: string;
+  readyCssClass: string;
+  formFillingCssClass: string;
 };
 
 type RawRow = {
@@ -18,8 +25,9 @@ type RawRow = {
 };
 
 /**
- * Scrape Manage Applicants rows (fixtures `applicant_details.html` /
- * `ready_book_status.html`) and normalize status labels.
+ * Scrape Manage Applicants rows and normalize status labels (OQ-006).
+ * Prefer exact portal label text; CSS class (`text-success` / `text-danger`)
+ * is a secondary cue only when label text is empty.
  */
 export const scrapePortalApplicantStatusRows = async (
   page: PortalPage,
@@ -28,11 +36,17 @@ export const scrapePortalApplicantStatusRows = async (
     statusLabelPrefix: PORTAL_STATUS_SELECTORS.statusLabelPrefix,
     editActionTitle: PORTAL_STATUS_SELECTORS.editActionTitle,
     manageApplicantFn: PORTAL_STATUS_SELECTORS.manageApplicantFn,
+    readyLabel: PORTAL_APPLICANT_STATUS_LABELS.READY_TO_BOOK,
+    formFillingLabel: PORTAL_APPLICANT_STATUS_LABELS.FORM_FILLING_IN_PROGRESS,
+    readyCssClass: PORTAL_STATUS_SELECTORS.readyStatusCssClass,
+    formFillingCssClass: PORTAL_STATUS_SELECTORS.formFillingStatusCssClass,
   };
 
   const rawRows = await page.evaluate((a: ScrapeArg): RawRow[] => {
     const collapse = (text: string): string =>
       text.replace(/\s+/g, ' ').trim();
+    const collapseLower = (text: string): string =>
+      collapse(text).toLowerCase();
 
     const extractPortalId = (onclick: string | null): string | null => {
       if (!onclick) return null;
@@ -43,6 +57,24 @@ export const scrapePortalApplicantStatusRows = async (
       const m = onclick.match(re);
       const id = m?.[1]?.trim() ?? '';
       return id.length > 0 ? id : null;
+    };
+
+    const pickExactLabel = (candidates: string[]): string => {
+      const readyExact = collapseLower(a.readyLabel);
+      const formExact = collapseLower(a.formFillingLabel);
+      for (const candidate of candidates) {
+        const c = collapseLower(candidate);
+        if (c === readyExact || c === formExact) {
+          return collapse(candidate);
+        }
+      }
+      for (const candidate of candidates) {
+        const c = collapseLower(candidate);
+        if (c.includes(readyExact) || c.includes(formExact)) {
+          return collapse(candidate);
+        }
+      }
+      return '';
     };
 
     const rows = Array.from(
@@ -68,21 +100,47 @@ export const scrapePortalApplicantStatusRows = async (
         );
       }
       if (!nameText) {
-        const nameMatch = text.match(/Applicant Name:\s*(.+?)(?:Relationship:|$)/i);
+        const nameMatch = text.match(
+          /Applicant Name:\s*(.+?)(?:Relationship:|$)/i,
+        );
         nameText = collapse(nameMatch?.[1] ?? '');
       }
 
-      let statusRaw = '';
+      const labelCandidates: string[] = [];
       const statusSpans = Array.from(
-        row.querySelectorAll('span.text-danger, span.text-success, b span'),
+        row.querySelectorAll(
+          `span.${a.formFillingCssClass}, span.${a.readyCssClass}, b span, span`,
+        ),
       );
       for (const span of statusSpans) {
         const s = collapse(span.textContent ?? '');
-        if (s && !s.toLowerCase().startsWith('status')) {
-          statusRaw = s;
-          break;
+        if (!s || s.toLowerCase().startsWith('status')) {
+          continue;
+        }
+        labelCandidates.push(s);
+      }
+
+      let statusRaw = pickExactLabel(labelCandidates);
+
+      // Secondary: CSS class only when no label text matched (OQ-006).
+      if (!statusRaw) {
+        const readyByClass = row.querySelector(`span.${a.readyCssClass}`);
+        const formByClass = row.querySelector(
+          `span.${a.formFillingCssClass}`,
+        );
+        if (readyByClass) {
+          const t = collapse(readyByClass.textContent ?? '');
+          if (t && !t.toLowerCase().startsWith('status')) {
+            statusRaw = t;
+          }
+        } else if (formByClass) {
+          const t = collapse(formByClass.textContent ?? '');
+          if (t && !t.toLowerCase().startsWith('status')) {
+            statusRaw = t;
+          }
         }
       }
+
       if (!statusRaw) {
         const statusMatch = text.match(/Status:\s*(.+?)(?:Actions:|$)/i);
         statusRaw = collapse(statusMatch?.[1] ?? '');

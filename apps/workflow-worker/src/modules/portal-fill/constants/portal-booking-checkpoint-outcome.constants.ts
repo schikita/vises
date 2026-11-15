@@ -1,0 +1,9 @@
+/**
+ * BOOK checkpoint `lastOutcome` tokens (02-database.md §3).
+ */
+export const PORTAL_BOOKING_CHECKPOINT_OUTCOME = {
+  SLOTS_UNAVAILABLE: 'SLOTS_UNAVAILABLE',
+  UNKNOWN_NEXT: 'UNKNOWN_NEXT',
+  CAPTCHA_PENDING: 'CAPTCHA_PENDING',
+  PREMIUM_STOP: 'PREMIUM_STOP',
+} as const;

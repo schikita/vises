@@ -4,6 +4,7 @@ import type {
   RunPortalPasswordChangePipelineResult,
 } from '../types';
 import { clickPortalPasswordChangeSubmit } from './click-portal-password-change-submit.util';
+import { ensurePortalAuthenticatedHome } from './ensure-portal-authenticated-home.util';
 import { fillPortalPasswordChangeForm } from './fill-portal-password-change-form.util';
 import { isPortalPasswordChangeFormVisibleAfterNav } from './is-portal-password-change-form-visible-after-nav.util';
 import { runPortalLoginPrepPipeline } from './run-portal-login-prep-pipeline.util';
@@ -15,7 +16,8 @@ const logger = new Logger('runPortalPasswordChangePipeline');
 /**
  * Login (vaulted current password) then conditional forced password change
  * (REQ-012 / TASK-010). Same browser session — no storageState (DEC-016).
- * Never logs password values.
+ * After success or notPresented, ensure authenticated home while page is open
+ * (successful-enter SE-T05). Never logs password values.
  */
 export const runPortalPasswordChangePipeline = async (
   options: RunPortalPasswordChangePipelineOptions,
@@ -54,13 +56,43 @@ export const runPortalPasswordChangePipeline = async (
   notes.push('authenticated landing before password-change probe');
   logger.log(`${logPrefix} phase=login success`);
 
+  const runHomeGate = async (
+    successBase: Omit<RunPortalPasswordChangePipelineResult, 'notes'> & {
+      notes?: string[];
+    },
+  ): Promise<RunPortalPasswordChangePipelineResult> => {
+    logger.log(`${logPrefix} phase=ensure_home start`);
+    const home = await ensurePortalAuthenticatedHome(options.page, {
+      homeUrl: options.homeUrl,
+    });
+    notes.push(...home.notes);
+    if (!home.ok) {
+      logger.error(
+        `${logPrefix} phase=ensure_home failure code=${home.errorCode} ${home.error}`,
+      );
+      return {
+        ok: false,
+        error: home.error,
+        errorCode: home.errorCode,
+        ...(successBase.passwordChanged === true
+          ? { passwordChanged: true }
+          : {}),
+        ...(successBase.notPresented === true ? { notPresented: true } : {}),
+        notes,
+      };
+    }
+    notes.push('authenticated home recognized after password-change');
+    logger.log(`${logPrefix} phase=ensure_home success`);
+    return { ...successBase, notes };
+  };
+
   const forcedUi = await isPortalPasswordChangeFormVisibleAfterNav(
     options.page,
   );
   if (!forcedUi) {
     notes.push('forced password change UI not presented');
     logger.log(`${logPrefix} phase=detect not_presented`);
-    return { ok: true, notPresented: true, notes };
+    return runHomeGate({ ok: true, notPresented: true, notes });
   }
 
   notes.push('forced password change UI detected');
@@ -109,5 +141,10 @@ export const runPortalPasswordChangePipeline = async (
 
   notes.push(`password change verified via=${verified.via}`);
   logger.log(`${logPrefix} phase=verify success via=${verified.via}`);
-  return { ok: true, notPresented: false, passwordChanged: true, notes };
+  return runHomeGate({
+    ok: true,
+    notPresented: false,
+    passwordChanged: true,
+    notes,
+  });
 };

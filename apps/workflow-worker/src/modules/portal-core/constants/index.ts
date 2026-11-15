@@ -2,6 +2,7 @@ export {
   DEFAULT_REGISTER_PATH,
   DEFAULT_LOGIN_PATH,
   DEFAULT_MANAGE_APPLICANTS_PATH,
+  DEFAULT_HOME_PATH,
   PORTAL_NAV_TIMEOUT_MS,
   PORTAL_BROWSER_LAUNCH_TIMEOUT_MS,
   PORTAL_SKIP_CAPTCHA_GUARD,
@@ -17,6 +18,11 @@ export {
 } from './app-status-needs-fixes.constants';
 
 export { PII_ENCRYPTED_FIELD_KEYS } from './pii-encrypted-fields.constants';
+
+export {
+  CLIENT_PORTAL_PLAINTEXT_FIELD_KEYS,
+  type ClientPortalPlaintextFieldKey,
+} from './client-portal-plaintext-field-keys.constants';
 
 export {
   PII_MSG_KEY_UNAVAILABLE,

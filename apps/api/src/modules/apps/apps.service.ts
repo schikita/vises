@@ -305,6 +305,10 @@ export class AppsService implements IAppsService {
       status: privileged.status as ApplicationStatus,
       destination: body.destination ?? '',
       visaType: body.visaType ?? '',
+      visaSubType:
+        body.visaSubType !== undefined
+          ? body.visaSubType
+          : (row?.visaSubType ?? null),
       submitCountry: body.submitCountry ?? '',
       submitCity: body.submitCity ?? '',
       travelDate: body.travelDate ?? '',

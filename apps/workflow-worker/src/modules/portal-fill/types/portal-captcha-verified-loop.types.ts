@@ -45,6 +45,13 @@ export type RunPortalCaptchaVerifiedLoopInput = {
    */
   acceptLoginAuthSuccess?: boolean;
   /**
+   * When true (booking captcha), episode success is booking captcha surface
+   * dismissed / next-page cue — does **not** require `#btnVerified`
+   * (REQ-013 / VT-TASK-008). Mutually exclusive with register `#btnVerified`
+   * wait when set; do not combine with `acceptLoginAuthSuccess`.
+   */
+  acceptBookingSurfaceDismiss?: boolean;
+  /**
    * Optional login email for mid-loop/chain credential ensure (DEC-002).
    * Supplied only when non-empty after trim; omitted → email ensure skipped.
    */

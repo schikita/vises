@@ -7,4 +7,5 @@ export interface IPortalAutofillConfig {
   resolvePortalRegisterUrl(config: AutofillConfig): string;
   resolvePortalLoginUrl(config: AutofillConfig): string;
   resolvePortalManageApplicantsUrl(config: AutofillConfig): string;
+  resolvePortalHomeUrl(config: AutofillConfig): string;
 }

@@ -12,6 +12,8 @@ export type AppOut = {
   status: string;
   destination: string;
   visaType: string;
+  /** Portal Visa Sub Type; null when unset (REQ-003 / DEC-003). */
+  visaSubType: string | null;
   submitCountry: string;
   submitCity: string;
   travelDate: string;

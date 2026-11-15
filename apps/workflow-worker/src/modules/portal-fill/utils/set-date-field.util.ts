@@ -2,11 +2,15 @@
 import {
   PORTAL_DATEPICKER_SERVER_FIELD_IDS,
   PORTAL_DATEPICKER_STALE_DEFAULT_YMD,
-  PORTAL_REGISTER_USER_SELECTORS,
 } from '../constants';
-import type { PortalFieldName, PortalPage, WidgetOpResult } from '../types';
+import type {
+  PortalWidgetFieldName,
+  PortalWidgetSurface,
+  WidgetOpResult,
+} from '../types';
 import { commitDateViaCalendarUi } from './commit-date-via-calendar-ui.util';
 import { ensureDatepickerDaySelected } from './ensure-datepicker-day-selected.util';
+import { resolvePortalFieldSelector } from './resolve-portal-field-selector.util';
 
 /**
  * Set a portal Kendo/DOM date field from a strict `YYYY-MM-DD` value.
@@ -17,13 +21,14 @@ import { ensureDatepickerDaySelected } from './ensure-datepicker-day-selected.ut
  * Calendar UI fallback only when API verify fails (DEC-017).
  * After any successful commit, require dateview `k-state-selected` (solid
  * selection) when calendar chrome is present — not focus-only outline.
+ * Never types into readonly datepicker inputs.
  */
 export const setDateField = async (
-  page: PortalPage,
-  name: PortalFieldName,
+  surface: PortalWidgetSurface,
+  name: PortalWidgetFieldName,
   isoDate: string,
 ): Promise<WidgetOpResult> => {
-  const selector = PORTAL_REGISTER_USER_SELECTORS.fields[name];
+  const selector = resolvePortalFieldSelector(name);
   const ymdMatch = /^(\d{4}-\d{2}-\d{2})/.exec(String(isoDate).trim());
   const intendedYmd = ymdMatch ? ymdMatch[1] : String(isoDate).trim();
 
@@ -32,7 +37,7 @@ export const setDateField = async (
   ): Promise<WidgetOpResult> => {
     if (!committed.ok) return committed;
     const ensured = await ensureDatepickerDaySelected(
-      page,
+      surface,
       name,
       intendedYmd,
     );
@@ -46,7 +51,7 @@ export const setDateField = async (
     };
   };
 
-  const apiResult = await page.evaluate(
+  const apiResult = await surface.evaluate(
     ({
       selector,
       name,
@@ -394,7 +399,7 @@ export const setDateField = async (
     if (afterApi.ok) return afterApi;
     // API value ok but calendar selection missing → full calendar UI then re-ensure.
     const calendarResult = await commitDateViaCalendarUi(
-      page,
+      surface,
       name,
       intendedYmd,
     );
@@ -404,7 +409,7 @@ export const setDateField = async (
   // DEC-017: calendar UI only after API verify failure against a resolvable Kendo path.
   if (apiResult.via === 'kendoDatePicker-api-unverified') {
     const calendarResult = await commitDateViaCalendarUi(
-      page,
+      surface,
       name,
       intendedYmd,
     );

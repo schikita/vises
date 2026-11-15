@@ -4,11 +4,12 @@ import type {
   BlsApplicantCompletenessFields,
   BlsApplicantCompletenessViolation,
 } from '../types/bls-applicant-completeness.types';
+import { pickOptionalStringField } from './pick-optional-string-field.util';
 import { validateBlsApplicantCompleteness } from './validate-bls-applicant-completeness.util';
 
 /**
  * Collect Start Completeness violations for every workflow-participating
- * applicant plus application `clientEmail` (DEC-001 / REQ-007 / REQ-010).
+ * applicant plus application `clientEmail` (DEC-001 / REQ-007 / REQ-010 / APF REQ-008).
  * Does not run Core/Extended date inequalities (CON-001).
  */
 export const collectBlsApplicationApplicantCompletenessViolations = (input: {
@@ -32,44 +33,69 @@ export const collectBlsApplicationApplicantCompletenessViolations = (input: {
       const record = row as Record<string, unknown>;
       fields = {
         id: applicantId,
-        firstName:
-          typeof record.firstName === 'string' ? record.firstName : undefined,
-        lastName:
-          typeof record.lastName === 'string' ? record.lastName : undefined,
-        lastNameAtBirth:
-          typeof record.lastNameAtBirth === 'string'
-            ? record.lastNameAtBirth
-            : undefined,
-        dob: typeof record.dob === 'string' ? record.dob : undefined,
-        countryOfBirth:
-          typeof record.countryOfBirth === 'string'
-            ? record.countryOfBirth
-            : undefined,
-        passportNumber:
-          typeof record.passportNumber === 'string'
-            ? record.passportNumber
-            : undefined,
-        passportIssued:
-          typeof record.passportIssued === 'string'
-            ? record.passportIssued
-            : undefined,
-        passportExpires:
-          typeof record.passportExpires === 'string'
-            ? record.passportExpires
-            : undefined,
-        passportType:
-          typeof record.passportType === 'string'
-            ? record.passportType
-            : undefined,
-        passportIssueCountry:
-          typeof record.passportIssueCountry === 'string'
-            ? record.passportIssueCountry
-            : undefined,
-        passportIssuedBy:
-          typeof record.passportIssuedBy === 'string'
-            ? record.passportIssuedBy
-            : undefined,
-        phone: typeof record.phone === 'string' ? record.phone : undefined,
+        firstName: pickOptionalStringField(record, 'firstName'),
+        lastName: pickOptionalStringField(record, 'lastName'),
+        lastNameAtBirth: pickOptionalStringField(record, 'lastNameAtBirth'),
+        dob: pickOptionalStringField(record, 'dob'),
+        countryOfBirth: pickOptionalStringField(record, 'countryOfBirth'),
+        passportNumber: pickOptionalStringField(record, 'passportNumber'),
+        passportIssued: pickOptionalStringField(record, 'passportIssued'),
+        passportExpires: pickOptionalStringField(record, 'passportExpires'),
+        passportType: pickOptionalStringField(record, 'passportType'),
+        passportIssueCountry: pickOptionalStringField(record, 'passportIssueCountry'),
+        passportIssuedBy: pickOptionalStringField(record, 'passportIssuedBy'),
+        phone: pickOptionalStringField(record, 'phone'),
+        address: pickOptionalStringField(record, 'address'),
+        homeCountry: pickOptionalStringField(record, 'homeCountry'),
+        homeCity: pickOptionalStringField(record, 'homeCity'),
+        homePostalCode: pickOptionalStringField(record, 'homePostalCode'),
+        purpose: pickOptionalStringField(record, 'purpose'),
+        firstEntry: pickOptionalStringField(record, 'firstEntry'),
+        entries: pickOptionalStringField(record, 'entries'),
+        durationDays: pickOptionalStringField(record, 'durationDays'),
+        employerName: pickOptionalStringField(record, 'employerName'),
+        employerPhone: pickOptionalStringField(record, 'employerPhone'),
+        employerAddress: pickOptionalStringField(record, 'employerAddress'),
+        occupation: pickOptionalStringField(record, 'occupation'),
+        blsInvitingAuthority: pickOptionalStringField(record, 'blsInvitingAuthority'),
+        invitingAuthorityName: pickOptionalStringField(
+          record,
+          'invitingAuthorityName',
+        ),
+        invitingCountry: pickOptionalStringField(record, 'invitingCountry'),
+        invitingCity: pickOptionalStringField(record, 'invitingCity'),
+        invitingZipCode: pickOptionalStringField(record, 'invitingZipCode'),
+        invitingAddress: pickOptionalStringField(record, 'invitingAddress'),
+        invitingEmail: pickOptionalStringField(record, 'invitingEmail'),
+        invitingContactNo: pickOptionalStringField(record, 'invitingContactNo'),
+        invitingContactName: pickOptionalStringField(record, 'invitingContactName'),
+        invitingContactSurname: pickOptionalStringField(
+          record,
+          'invitingContactSurname',
+        ),
+        invitingContactCountry: pickOptionalStringField(
+          record,
+          'invitingContactCountry',
+        ),
+        invitingContactCity: pickOptionalStringField(record, 'invitingContactCity'),
+        invitingContactZipCode: pickOptionalStringField(
+          record,
+          'invitingContactZipCode',
+        ),
+        invitingContactAddress: pickOptionalStringField(
+          record,
+          'invitingContactAddress',
+        ),
+        invitingContactContactNo: pickOptionalStringField(
+          record,
+          'invitingContactContactNo',
+        ),
+        invitingContactEmail: pickOptionalStringField(
+          record,
+          'invitingContactEmail',
+        ),
+        costCoveredBy: pickOptionalStringField(record, 'costCoveredBy'),
+        meansOfSupport: pickOptionalStringField(record, 'meansOfSupport'),
       };
     }
 
