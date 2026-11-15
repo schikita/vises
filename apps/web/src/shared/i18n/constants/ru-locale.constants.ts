@@ -12,6 +12,9 @@ export const RU_LOCALE = {
     backToApps: 'К заявкам',
     title: 'Создать заявку',
     subtitle: 'Данные как в анкете визового центра: латиницей, как в загранпаспорте.',
+    subtitleOnePage:
+      'Одна страница: анкета BLS Edit Member и параметры бронирования. Сохранить всё — заявка, паспорт и портал-форма. Без выбора клиента создаётся новый CRM Client.',
+    portalFormTitle: 'Анкета портала',
     steps: {
       submission: 'Подача',
       questionnaire: 'Анкета',
@@ -33,6 +36,11 @@ export const RU_LOCALE = {
       transfer: 'Трансфер',
       comment: 'Комментарий',
       commentPlaceholder: 'Комментарий к заявке...',
+      existingClient: 'Существующий клиент (необязательно)',
+      existingClientEmpty: '— Создать нового клиента —',
+      existingClientLoading: 'Загружаем список клиентов…',
+      existingClientHint:
+        'Пусто: apps upsert создаст CRM Client и спишет дебет один раз. Выбор: новая заявка к этому клиенту без нового дебета.',
       clientEmail: 'Email клиента',
       clientEmailPlaceholder: 'client@example.com',
       clientEmailHint: 'Укажите email клиента. По нему будет создан или найден доступ в кабинет.',
@@ -44,6 +52,8 @@ export const RU_LOCALE = {
     continue: 'Продолжить',
     create: 'Создать заявку',
     creating: 'Создаём…',
+    saveAll: 'Сохранить всё',
+    savingAll: 'Сохраняем…',
     createdTitle: 'Заявка создана',
     createdSubtitle: 'Отправьте клиенту логин, пароль и ссылку для входа.',
     accessFor: 'Доступ для {{name}}',

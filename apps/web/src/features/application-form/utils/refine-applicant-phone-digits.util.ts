@@ -1,10 +1,11 @@
 import type { RefinementCtx } from 'zod'
 import { portalAutofillPhoneDigits } from '@/entities/portal-autofill'
-import { BELARUS_PHONE_LOCAL_DIGIT_COUNT } from '../constants/belarus-phone.constants'
+import { BLS_APPLICANT_COMPLETENESS_PHONE_DIGITS_LENGTH } from '../constants/bls-applicant-completeness.constants'
 import { APPLICATION_FORM_MESSAGES } from '../constants/form-messages.constants'
 
 /**
- * Start Completeness phone format: exactly 9 digits after `\D` strip (REQ-002 / DEC-006).
+ * Start Completeness phone format: exactly 9 digits after `\D` strip
+ * (mirrors `BLS_APPLICANT_COMPLETENESS_PHONE_DIGITS_LENGTH` / AC-07).
  * Required-empty is owned by schema `min(1)`; this refine only rejects wrong length.
  */
 export const refineApplicantPhoneDigits = (
@@ -13,7 +14,7 @@ export const refineApplicantPhoneDigits = (
 ): void => {
   const digits = portalAutofillPhoneDigits(data.phone)
   if (digits.length === 0) return
-  if (digits.length !== BELARUS_PHONE_LOCAL_DIGIT_COUNT) {
+  if (digits.length !== BLS_APPLICANT_COMPLETENESS_PHONE_DIGITS_LENGTH) {
     ctx.addIssue({
       code: 'custom',
       path: ['phone'],

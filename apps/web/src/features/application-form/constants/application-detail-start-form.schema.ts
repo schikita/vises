@@ -29,6 +29,8 @@ export const applicationDetailStartFormSchema = z
   .object({
     id: z.string(),
     code: z.string(),
+    /** Opaque Client id from AppOut; empty when unset (PF-TASK-002b). */
+    clientId: z.string(),
     clientEmail: z
       .string()
       .trim()

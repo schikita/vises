@@ -4,11 +4,12 @@ export const APPLICATION_DETAIL_TABS: Array<{
   id: ApplicationDetailTabId
   label: string
 }> = [
+  { id: 'applicants', label: 'Анкета портала' },
   { id: 'trip', label: 'Поездка и статус' },
-  { id: 'applicants', label: 'Заявители' },
   { id: 'payment', label: 'Оплата и документы' },
   { id: 'autofill', label: 'Автозаполнение' },
   { id: 'history', label: 'История' },
 ]
 
-export const APPLICATION_DETAIL_DEFAULT_TAB: ApplicationDetailTabId = 'trip'
+/** Primary portal data entry (PF-TASK-006) — one-page form, not multi-tab anketa. */
+export const APPLICATION_DETAIL_DEFAULT_TAB: ApplicationDetailTabId = 'applicants'

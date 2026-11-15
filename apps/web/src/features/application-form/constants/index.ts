@@ -10,6 +10,25 @@ export { RELATIONSHIPS } from './relationships.constants'
 export { MARITAL_STATUSES } from './marital-statuses.constants'
 export { PURPOSES } from './purposes.constants'
 export { ENTRIES } from './entries.constants'
+export { OCCUPATIONS } from './occupations.constants'
+export { COST_COVERED_BY_OPTIONS } from './cost-covered-by.constants'
+export { MEANS_OF_SUPPORT_OPTIONS } from './means-of-support.constants'
+export { EU_FAMILY_RELATIONSHIPS } from './eu-family-relationships.constants'
+export {
+  BLS_INVITING_AUTHORITY,
+  BLS_INVITING_AUTHORITY_VALUES,
+  BLS_INVITING_AUTHORITY_LABELS,
+} from './inviting-authority.constants'
+export {
+  PREVIOUS_FINGERPRINT_STATUS,
+  PREVIOUS_FINGERPRINT_STATUS_VALUES,
+  PREVIOUS_FINGERPRINT_STATUS_REQUIRES_DATE,
+  PREVIOUS_FINGERPRINT_STATUS_LABELS,
+} from './fingerprint-statuses.constants'
+export {
+  BLS_APPLICANT_COMPLETENESS_PHONE_DIGITS_LENGTH,
+  BLS_APPLICANT_COMPLETENESS_REQUIRED_FIELD_KEYS,
+} from './bls-applicant-completeness.constants'
 export {
   BELARUS_PHONE_COUNTRY_CODE,
   BELARUS_PHONE_COUNTRY_LABEL,
@@ -41,3 +60,18 @@ export {
 } from './staff-application-form.schema'
 export { applicationDetailFormSchema } from './application-detail-form.schema'
 export { applicationDetailStartFormSchema } from './application-detail-start-form.schema'
+export { portalFormConditionalsObjectSchema } from './portal-form-conditionals.schema'
+export {
+  portalOnePageFormObjectSchema,
+  portalOnePageFormSchema,
+} from './portal-one-page-form.schema'
+export { PORTAL_FORM_THEME } from './portal-form-theme.constants'
+export { PORTAL_FORM_SECTION_BANNERS } from './portal-form-section-banners.constants'
+export { PORTAL_FORM_LABELS } from './portal-form-labels.constants'
+export { PORTAL_VISA_TYPES } from './portal-visa-types.constants'
+export { PORTAL_VISA_SUB_TYPES } from './portal-visa-sub-types.constants'
+export { PORTAL_BOOKING_CATEGORIES } from './portal-booking-categories.constants'
+export {
+  PORTAL_SAVE_ALL_STEPS,
+  PORTAL_SAVE_ALL_STEP_LABELS,
+} from './portal-save-all-steps.constants'

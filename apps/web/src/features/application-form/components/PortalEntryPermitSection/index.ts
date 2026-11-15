@@ -1,0 +1,1 @@
+export { PortalEntryPermitSection } from './PortalEntryPermitSection'

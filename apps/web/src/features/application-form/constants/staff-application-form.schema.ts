@@ -8,6 +8,8 @@ export const staffApplicationFormSchema = staffTripFormSchema
   .extend({
     id: z.string(),
     code: z.string(),
+    /** Empty until apps upsert returns AppOut.clientId (PF-TASK-002b). */
+    clientId: z.string(),
     clientEmail: z
       .string()
       .trim()

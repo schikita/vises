@@ -1,0 +1,1 @@
+export { PortalOnePageCoreSections } from './PortalOnePageCoreSections'

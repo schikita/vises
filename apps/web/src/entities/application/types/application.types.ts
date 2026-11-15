@@ -70,12 +70,22 @@ export type TimelineItem = {
 export type Application = {
   id: string
   code: string
+  /**
+   * 1:1 Client id for staff portal-form / passport HTTP routes (PF-TASK-002b).
+   * Empty string until the application is saved and AppOut returns a real id.
+   */
+  clientId: string
   clientEmail: string
   /** Portal RegisterUser / login email; null when unset (DEC-004). */
   portalFormEmail: string | null
   status: Status
   destination: string
   visaType: string
+  /**
+   * Portal Visa Sub Type; null when unset (REQ-003 / DEC-003).
+   * Optional until form schemas collect it (PF-TASK-004); API AppOut always returns it.
+   */
+  visaSubType?: string | null
   category?: string
   submitCountry: string
   submitCity: string

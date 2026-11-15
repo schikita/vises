@@ -25,6 +25,8 @@ export const applicationDetailFormSchema = z
   .object({
     id: z.string(),
     code: z.string(),
+    /** Opaque Client id from AppOut; empty when unset (PF-TASK-002b). */
+    clientId: z.string(),
     clientEmail: z.string(),
     /** Read-only on detail; ignored on upsert write (DEC-004). */
     portalFormEmail: z.string().nullable().optional(),

@@ -1,0 +1,1 @@
+export { PortalEuFamilyPersonalDataSection } from './PortalEuFamilyPersonalDataSection'

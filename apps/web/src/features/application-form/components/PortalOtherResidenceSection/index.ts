@@ -1,0 +1,1 @@
+export { PortalOtherResidenceSection } from './PortalOtherResidenceSection'

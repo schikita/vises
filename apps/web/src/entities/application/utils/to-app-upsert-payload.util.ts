@@ -2,7 +2,9 @@ import type { AppUpsertWrite, Application } from '../types'
 
 /**
  * Body for POST /apps upsert: drop read-only embeds the API forbids on write
- * (`portalProgress` is computed on read only). May include portalWorkflowAction.
+ * (`portalProgress` is computed on read only). Forwards `visaSubType` with the
+ * rest of Application write fields. May include portalWorkflowAction.
+ * Does not treat `applicants[]` as SoT for portal-extended Client fields.
  */
 export const toAppUpsertPayload = (
   app: AppUpsertWrite,

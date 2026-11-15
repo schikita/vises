@@ -1,0 +1,1 @@
+export { PortalPersonalDetailsSection } from './PortalPersonalDetailsSection'

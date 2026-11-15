@@ -1,0 +1,1 @@
+export { PortalMinorsSection } from './PortalMinorsSection'

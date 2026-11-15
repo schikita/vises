@@ -6,11 +6,13 @@ export const emptyApplication = (email: string): Application => {
   return {
     id: uid('app'),
     code: `VS-${Math.floor(2400 + Math.random() * 500)}`,
+    clientId: '',
     clientEmail: email,
     portalFormEmail: null,
     status: 'new',
     destination: 'Испания',
     visaType: 'Туристическая',
+    visaSubType: null,
     category: 'Normal',
     submitCountry: 'Belarus',
     submitCity: 'Minsk',

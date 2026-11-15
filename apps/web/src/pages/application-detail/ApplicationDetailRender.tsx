@@ -1,17 +1,9 @@
-import type {
-  FocusEvent,
-  FormEvent,
-} from 'react'
-import type {
-  UseFormRegister,
-  UseFormSetValue,
-  UseFormWatch,
-} from 'react-hook-form'
+import type { FocusEvent, FormEvent, ReactElement } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Trash2, Upload } from 'lucide-react'
-import type { Application, DocType } from '@/entities/application'
+import type { Application } from '@/entities/application'
 import {
   DOC_TYPES,
   STATUSES,
@@ -20,62 +12,23 @@ import {
   statusLabel,
 } from '@/entities/application'
 import {
-  ApplicantFields,
   CATEGORIES,
   CITIES_BY_COUNTRY,
   SUBMIT_COUNTRIES,
   getNestedFormError,
 } from '@/features/application-form'
 import { Avatar, Btn, Card, Dialog, Empty, Field, StatusBadge } from '@/shared/ui'
-import {
-  BlsWorkflowPanel,
-  type BeforeStartBlsWorkflow,
-  type OnStartBlsWorkflowApiError,
-} from '@/widgets/bls-workflow-panel'
+import { BlsWorkflowPanel } from '@/widgets/bls-workflow-panel'
 import { formatDateTime } from '@/shared/lib'
 import {
   APPLICATION_DETAIL_START_VALIDATION_COPY,
   APPLICATION_DETAIL_TABS,
 } from './constants'
-import type { ApplicationDetailStartIssue, ApplicationDetailTabId } from './types'
+import type { ApplicationDetailRenderProps } from './types'
 import {
-  hasApplicationDetailApplicantErrors,
   hasApplicationDetailTabErrors,
   resolveApplicationDetailFieldControlName,
 } from './utils'
-
-type ApplicationDetailRenderProps = {
-  form: Application | null
-  loading: boolean
-  saved: boolean
-  saveError: string
-  uploading: DocType | null
-  docError: string
-  destinations: string[]
-  cities: string[]
-  managerNames: string[]
-  appsListPath: string
-  activeTab: ApplicationDetailTabId
-  startValidationOpen: boolean
-  startValidationIssues: ApplicationDetailStartIssue[]
-  /** Detail-owned Start disable signal for BLS panel (DEC-003). */
-  startFormBlocked: boolean
-  register: UseFormRegister<Application>
-  setValue: UseFormSetValue<Application>
-  watch: UseFormWatch<Application>
-  onTabChange: (tab: ApplicationDetailTabId) => void
-  onCloseStartValidation: () => void
-  onStartRelevantBlur: (fieldName: string) => void
-  onStartRelevantChange: (fieldName: string) => void
-  onBeforeStartBlsWorkflow: BeforeStartBlsWorkflow
-  onStartBlsWorkflowApiError: OnStartBlsWorkflowApiError
-  onSave: () => void
-  onRemove: () => void
-  onUpload: (type: DocType, file: File) => void
-  onOpenDoc: (docId: string) => void
-  /** Opens RegisterUser screenshot for AUTOFILL_RUN_LINKED (DEC-007). */
-  onAutofillRunLinked: (runId: string) => void | Promise<void>
-}
 
 export const ApplicationDetailRender = ({
   form,
@@ -92,6 +45,7 @@ export const ApplicationDetailRender = ({
   startValidationOpen,
   startValidationIssues,
   startFormBlocked,
+  portalPanel,
   register,
   setValue,
   watch,
@@ -106,7 +60,7 @@ export const ApplicationDetailRender = ({
   onUpload,
   onOpenDoc,
   onAutofillRunLinked,
-}: ApplicationDetailRenderProps) => {
+}: ApplicationDetailRenderProps): ReactElement => {
   const { t } = useTranslation()
   const {
     formState: { errors },
@@ -372,34 +326,7 @@ export const ApplicationDetailRender = ({
         </div>
       ) : null}
 
-      {activeTab === 'applicants' ? (
-        <div role="tabpanel">
-          <Card>
-            <p className="mb-4 font-bold">Заявители</p>
-            <div className="space-y-6">
-              {form.applicants.map((applicant, index) => {
-                const applicantHasError = hasApplicationDetailApplicantErrors(errors, index)
-                return (
-                  <div key={applicant.id} className={index ? 'border-t border-line pt-6' : ''}>
-                    <p
-                      className={`mb-3 text-sm font-bold ${
-                        applicantHasError
-                          ? 'border-l-4 border-clay bg-[#fbe7e0] pl-3 text-clay'
-                          : ''
-                      }`}
-                    >
-                      {applicant.firstName || applicant.lastName
-                        ? `${applicant.firstName} ${applicant.lastName}`
-                        : `Заявитель ${index + 1}`}
-                    </p>
-                    <ApplicantFields namePrefix={`applicants.${index}`} />
-                  </div>
-                )
-              })}
-            </div>
-          </Card>
-        </div>
-      ) : null}
+      {activeTab === 'applicants' ? portalPanel : null}
 
       {activeTab === 'payment' ? (
         <div className="grid gap-5 lg:grid-cols-2" role="tabpanel">

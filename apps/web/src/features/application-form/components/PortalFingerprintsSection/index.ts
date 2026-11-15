@@ -1,0 +1,1 @@
+export { PortalFingerprintsSection } from './PortalFingerprintsSection'

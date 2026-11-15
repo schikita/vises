@@ -10,6 +10,13 @@ export type {
   Application,
 } from './application'
 export type {
+  ClientDetailWithPortalForm,
+  ClientDetailDto,
+  ClientPortalFormDetailDto,
+  ClientPortalFormUpdateDto,
+  ClientPortalFormConditionals,
+} from './client'
+export type {
   PortalAutofillCaptureStatus,
   PortalAutofillRunListItem,
   PortalAutofillRunListResponse,

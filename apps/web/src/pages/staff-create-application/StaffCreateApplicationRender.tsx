@@ -1,91 +1,52 @@
-import type { FormEvent } from 'react'
-import type {
-  FieldArrayWithId,
-  FieldErrors,
-  UseFormRegister,
-  UseFormSetValue,
-  UseFormWatch,
-} from 'react-hook-form'
+import type { ReactElement } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Copy, Link2, Plus, Trash2 } from 'lucide-react'
-import type { IssuedAccess } from '@/entities/user'
-import type { Application } from '@/entities/application'
+import { ArrowLeft, Copy, Link2 } from 'lucide-react'
 import { inviteUrl } from '@/entities/session'
 import {
-  ApplicantFields,
-  CATEGORIES,
-  CITIES_BY_COUNTRY,
   getNestedFormError,
-  SUBMIT_COUNTRIES,
+  PortalOnePageFormSections,
 } from '@/features/application-form'
 import { Btn, Card, Field } from '@/shared/ui'
-import { STAFF_ANKETA_TABS, STAFF_CREATE_STEP_KEYS } from './constants'
-import type { StaffAnketaTab } from './types'
-
-type StaffCreateApplicationRenderProps = {
-  step: number
-  anketaTab: StaffAnketaTab
-  cities: string[]
-  saving: boolean
-  error: string
-  issued: IssuedAccess | null
-  createdAppId: string | null
-  copied: boolean
-  staffAppsBase: string
-  register: UseFormRegister<Application>
-  setValue: UseFormSetValue<Application>
-  watch: UseFormWatch<Application>
-  errors: FieldErrors<Application>
-  applicantFields: FieldArrayWithId<Application, 'applicants', 'fieldKey'>[]
-  onAnketaTabChange: (tab: StaffAnketaTab) => void
-  onAddApplicant: () => void
-  onRemoveApplicant: (index: number) => void
-  onSubmit: (e: FormEvent) => void
-  onBack: () => void
-  onCopyLink: (token: string) => void
-  onCopyAll: () => void
-  onGoToCreatedApp: () => void
-}
+import type { StaffCreateApplicationRenderProps } from './types/staff-create-application-render.types'
+import { formatClientListOptionLabel } from './utils'
 
 export const StaffCreateApplicationRender = ({
-  step,
-  anketaTab,
-  cities,
   saving,
   error,
   issued,
   createdAppId,
   copied,
   staffAppsBase,
+  clients,
+  clientsLoading,
+  clientsError,
+  selectedClientId,
   register,
-  setValue,
-  watch,
   errors,
-  applicantFields,
-  onAnketaTabChange,
-  onAddApplicant,
-  onRemoveApplicant,
+  onSelectedClientIdChange,
   onSubmit,
   onBack,
   onCopyLink,
   onCopyAll,
   onGoToCreatedApp,
-}: StaffCreateApplicationRenderProps) => {
+}: StaffCreateApplicationRenderProps): ReactElement => {
   const { t } = useTranslation()
 
   if (issued && createdAppId) {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         <Link
           to={staffAppsBase}
           className="inline-flex items-center gap-1 text-sm font-semibold text-muted"
         >
           <ArrowLeft size={14} /> {t('staffCreate.backToApps')}
         </Link>
-        <h1 className="mt-3 text-2xl font-extrabold tracking-tight">{t('staffCreate.createdTitle')}</h1>
+        <h1 className="mt-3 text-2xl font-extrabold tracking-tight">
+          {t('staffCreate.createdTitle')}
+        </h1>
         <p className="mt-1 text-sm text-muted">{t('staffCreate.createdSubtitle')}</p>
-        {error && <p className="mt-4 text-sm font-semibold text-clay">{error}</p>}
+        {error ? <p className="mt-4 text-sm font-semibold text-clay">{error}</p> : null}
         <Card className="mt-6 border-leaf/40 bg-[#f3f8f5]">
           <p className="font-bold">{t('staffCreate.accessFor', { name: issued.user.name })}</p>
           <p className="mt-2 text-sm">
@@ -113,12 +74,8 @@ export const StaffCreateApplicationRender = ({
     )
   }
 
-  const err = (path: string) => getNestedFormError(errors, path)
-  const paused = watch('paused')
-  const transfer = watch('transfer')
-
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-4xl">
       <Link
         to={staffAppsBase}
         className="inline-flex items-center gap-1 text-sm font-semibold text-muted"
@@ -126,190 +83,61 @@ export const StaffCreateApplicationRender = ({
         <ArrowLeft size={14} /> {t('staffCreate.backToApps')}
       </Link>
       <h1 className="mt-3 text-2xl font-extrabold tracking-tight">{t('staffCreate.title')}</h1>
-      <p className="mt-1 text-sm text-muted">{t('staffCreate.subtitle')}</p>
+      <p className="mt-1 text-sm text-muted">{t('staffCreate.subtitleOnePage')}</p>
 
-      <div className="mt-6 flex gap-2">
-        {STAFF_CREATE_STEP_KEYS.map((key, i) => (
-          <div key={key} className="flex-1">
-            <div className={`h-1.5 rounded-full ${i <= step ? 'bg-leaf' : 'bg-line'}`} />
-            <p className={`mt-2 text-xs font-bold ${i === step ? 'text-ink' : 'text-muted'}`}>
-              {t(`staffCreate.steps.${key}`)}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <form className="mt-6" onSubmit={onSubmit}>
-        {step === 0 && (
-          <Card>
-            <p className="mb-4 font-bold">{t('staffCreate.submissionCardTitle')}</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Field label={t('staffCreate.fields.category')} required error={err('category')}>
-                  <select className="field" {...register('category')}>
-                    {CATEGORIES.map((x) => (
-                      <option key={x}>{x}</option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-              <Field
-                label={t('staffCreate.fields.submitCountry')}
-                required
-                error={err('submitCountry')}
-              >
-                <select
-                  className="field"
-                  {...register('submitCountry', {
-                    onChange: (e) => {
-                      const country = e.target.value
-                      const nextCities = CITIES_BY_COUNTRY[country] ?? []
-                      setValue('submitCountry', country, { shouldDirty: true })
-                      setValue('submitCity', nextCities[0] ?? '', { shouldDirty: true })
-                    },
-                  })}
-                >
-                  {SUBMIT_COUNTRIES.map((x) => (
-                    <option key={x}>{x}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label={t('staffCreate.fields.submitCity')} required error={err('submitCity')}>
-                <select className="field" {...register('submitCity')}>
-                  {cities.map((x) => (
-                    <option key={x}>{x}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field
-                label={t('staffCreate.fields.submitFrom')}
-                required
-                error={err('submitFrom')}
-              >
-                <input type="date" className="field" {...register('submitFrom')} />
-              </Field>
-              <Field label={t('staffCreate.fields.submitTo')} required error={err('submitTo')}>
-                <input type="date" className="field" {...register('submitTo')} />
-              </Field>
-              <div className="sm:col-span-2">
-                <Field
-                  label={t('staffCreate.fields.travelDate')}
-                  required
-                  error={err('travelDate')}
-                >
-                  <input type="date" className="field" {...register('travelDate')} />
-                </Field>
-              </div>
-              <div className="sm:col-span-2 flex flex-wrap gap-5">
-                <label className="flex items-center gap-2 text-sm font-semibold">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(paused)}
-                    onChange={(e) => setValue('paused', e.target.checked, { shouldDirty: true })}
-                  />
-                  {t('staffCreate.fields.paused')}
-                </label>
-                <label className="flex items-center gap-2 text-sm font-semibold">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(transfer)}
-                    onChange={(e) => setValue('transfer', e.target.checked, { shouldDirty: true })}
-                  />
-                  {t('staffCreate.fields.transfer')}
-                </label>
-              </div>
-              <div className="sm:col-span-2">
-                <Field label={t('staffCreate.fields.comment')}>
-                  <textarea
-                    className="field min-h-[88px]"
-                    placeholder={t('staffCreate.fields.commentPlaceholder')}
-                    {...register('comment')}
-                  />
-                </Field>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-4">
-            <Card>
-              <Field
-                label={t('staffCreate.fields.clientEmail')}
-                required
-                error={err('clientEmail')}
-              >
-                <input
-                  className="field"
-                  type="email"
-                  placeholder={t('staffCreate.fields.clientEmailPlaceholder')}
-                  autoComplete="email"
-                  {...register('clientEmail')}
-                />
-              </Field>
-              <p className="mt-2 text-xs text-muted">{t('staffCreate.fields.clientEmailHint')}</p>
-            </Card>
-
-            <div className="flex flex-wrap gap-2">
-              {STAFF_ANKETA_TABS.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                    anketaTab === tab
-                      ? 'bg-leaf text-white'
-                      : 'bg-white text-muted ring-1 ring-line'
-                  }`}
-                  onClick={() => onAnketaTabChange(tab)}
-                >
-                  {t(`staffCreate.tabs.${tab}`)}
-                </button>
-              ))}
-            </div>
-
-            {applicantFields.map((field, index) => (
-              <Card key={field.fieldKey}>
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <p className="font-bold">
-                    {t('staffCreate.applicantCardTitle', { index: index + 1 })}
-                  </p>
-                  {applicantFields.length > 1 && (
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 text-sm font-bold text-clay"
-                      onClick={() => onRemoveApplicant(index)}
-                    >
-                      <Trash2 size={14} />
-                      {t('staffCreate.removeApplicant')}
-                    </button>
-                  )}
-                </div>
-                <ApplicantFields namePrefix={`applicants.${index}`} section={anketaTab} />
-              </Card>
-            ))}
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 text-sm font-bold text-leaf"
-              onClick={onAddApplicant}
+      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+        <Card>
+          <Field label={t('staffCreate.fields.existingClient')}>
+            <select
+              className="field"
+              value={selectedClientId}
+              disabled={clientsLoading}
+              onChange={(e) => onSelectedClientIdChange(e.target.value)}
             >
-              <Plus size={16} />
-              {t('staffCreate.addApplicant')}
-            </button>
-          </div>
-        )}
+              <option value="">{t('staffCreate.fields.existingClientEmpty')}</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {formatClientListOptionLabel(client)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <p className="mt-2 text-xs text-muted">
+            {clientsLoading
+              ? t('staffCreate.fields.existingClientLoading')
+              : clientsError
+                ? clientsError
+                : t('staffCreate.fields.existingClientHint')}
+          </p>
+        </Card>
 
-        {error && <p className="mt-4 text-sm font-semibold text-clay">{error}</p>}
+        <Card>
+          <Field
+            label={t('staffCreate.fields.clientEmail')}
+            required
+            error={getNestedFormError(errors, 'clientEmail')}
+          >
+            <input
+              className="field"
+              type="email"
+              placeholder={t('staffCreate.fields.clientEmailPlaceholder')}
+              autoComplete="email"
+              {...register('clientEmail')}
+            />
+          </Field>
+          <p className="mt-2 text-xs text-muted">{t('staffCreate.fields.clientEmailHint')}</p>
+        </Card>
 
-        <div className="mt-4 flex justify-between">
-          <Btn variant="ghost" className="bg-white" onClick={onBack}>
+        <PortalOnePageFormSections title={t('staffCreate.portalFormTitle')} />
+
+        {error ? <p className="text-sm font-semibold text-clay">{error}</p> : null}
+
+        <div className="flex justify-between gap-3 pb-8">
+          <Btn variant="ghost" className="bg-white" type="button" onClick={onBack}>
             {t('staffCreate.back')}
           </Btn>
           <Btn type="submit" disabled={saving}>
-            {step === 0
-              ? t('staffCreate.continue')
-              : saving
-                ? t('staffCreate.creating')
-                : t('staffCreate.create')}
+            {saving ? t('staffCreate.savingAll') : t('staffCreate.saveAll')}
           </Btn>
         </div>
       </form>

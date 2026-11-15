@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react'
 import { FormProvider, useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -9,9 +15,18 @@ import {
   fetchAppById,
   statusLabel,
 } from '@/entities/application'
+import { fetchClientDetail } from '@/entities/client'
 import { staffBase } from '@/entities/session'
 import { fetchManagerNames } from '@/entities/user'
-import { applicationDetailFormSchema, applicationDetailStartFormSchema } from '@/features/application-form'
+import {
+  applicationDetailFormSchema,
+  applicationDetailStartFormSchema,
+  createEmptyPortalOnePageFormValues,
+  mapClientDetailAndApplicationToPortalFormValues,
+  portalOnePageFormSchema,
+  runPortalSaveAllDetail,
+  type PortalOnePageFormValues,
+} from '@/features/application-form'
 import { nowIso, uid } from '@/shared/lib'
 import {
   APPLICATION_DETAIL_DEFAULT_TAB,
@@ -30,9 +45,10 @@ import {
   resolveApplicationDetailStartFirstTab,
   syncApplicationDetailStartFormErrors,
 } from './utils'
+import { ApplicationDetailPortalPanel } from './ApplicationDetailPortalPanel'
 import { ApplicationDetailRender } from './ApplicationDetailRender'
 
-export const ApplicationDetail = () => {
+export const ApplicationDetail = (): ReactElement => {
   const { id } = useParams()
   const nav = useNavigate()
   const {
@@ -54,16 +70,31 @@ export const ApplicationDetail = () => {
   const [saveError, setSaveError] = useState('')
   const [uploading, setUploading] = useState<DocType | null>(null)
   const [docError, setDocError] = useState('')
-  const [activeTab, setActiveTab] = useState<ApplicationDetailTabId>(APPLICATION_DETAIL_DEFAULT_TAB)
+  const [activeTab, setActiveTab] = useState<ApplicationDetailTabId>(
+    APPLICATION_DETAIL_DEFAULT_TAB,
+  )
   const [managerNames, setManagerNames] = useState<string[]>([])
   const [startValidationOpen, setStartValidationOpen] = useState(false)
   const [startValidationIssues, setStartValidationIssues] = useState<
     ApplicationDetailStartIssue[]
   >([])
+  const [portalLoadState, setPortalLoadState] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >('idle')
+  const [portalLoadError, setPortalLoadError] = useState('')
+  const [portalSaving, setPortalSaving] = useState(false)
+  const [portalSaveError, setPortalSaveError] = useState('')
+  const [portalSaved, setPortalSaved] = useState(false)
 
   const form = useForm<Application>({
     resolver: zodResolver(applicationDetailFormSchema) as Resolver<Application>,
     defaultValues: found ?? undefined,
+    mode: 'onSubmit',
+  })
+
+  const portalForm = useForm<PortalOnePageFormValues>({
+    resolver: zodResolver(portalOnePageFormSchema) as Resolver<PortalOnePageFormValues>,
+    defaultValues: createEmptyPortalOnePageFormValues(),
     mode: 'onSubmit',
   })
 
@@ -82,6 +113,10 @@ export const ApplicationDetail = () => {
   useEffect(() => {
     if (isDirty) setSaved(false)
   }, [isDirty])
+
+  useEffect(() => {
+    if (portalForm.formState.isDirty) setPortalSaved(false)
+  }, [portalForm.formState.isDirty])
 
   useEffect(() => {
     let cancelled = false
@@ -139,8 +174,68 @@ export const ApplicationDetail = () => {
     form.setValue('timeline', found.timeline)
     form.setValue('documents', found.documents)
     form.setValue('portalFormEmail', found.portalFormEmail ?? null)
+    form.setValue('clientId', found.clientId)
     form.setValue('updatedAt', found.updatedAt)
   }, [found, form])
+
+  const foundRef = useRef(found)
+  foundRef.current = found
+  const portalLoadKey = `${found?.id ?? ''}:${found?.clientId?.trim() ?? ''}`
+
+  useEffect(() => {
+    const [applicationId = '', clientId = ''] = portalLoadKey.split(':')
+    if (!applicationId) {
+      setPortalLoadState('idle')
+      setPortalLoadError('')
+      portalForm.reset(createEmptyPortalOnePageFormValues())
+      return
+    }
+
+    if (!clientId) {
+      setPortalLoadState('error')
+      setPortalLoadError(
+        'У заявки нет clientId — загрузка портал-формы недоступна',
+      )
+      portalForm.reset(createEmptyPortalOnePageFormValues())
+      return
+    }
+
+    const applicationSnapshot = foundRef.current
+    if (!applicationSnapshot || applicationSnapshot.id !== applicationId) {
+      setPortalLoadState('idle')
+      return
+    }
+
+    let cancelled = false
+    setPortalLoadState('loading')
+    setPortalLoadError('')
+    void fetchClientDetail(clientId)
+      .then((client) => {
+        if (cancelled) return
+        portalForm.reset(
+          mapClientDetailAndApplicationToPortalFormValues(
+            client,
+            applicationSnapshot,
+          ),
+        )
+        setPortalSaved(false)
+        setPortalLoadState('ready')
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        // Operator-safe: status/codes only — never field values.
+        const message =
+          err instanceof Error && err.message.trim()
+            ? err.message.trim()
+            : 'не удалось загрузить клиента'
+        setPortalLoadError(message)
+        setPortalLoadState('error')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [portalLoadKey, portalForm])
 
   /** Returns null on success, Russian error message on failure. */
   const persistApplicationValues = useCallback(
@@ -186,8 +281,45 @@ export const ApplicationDetail = () => {
     [apps, found, form, session?.name, upsert],
   )
 
-  const save = form.handleSubmit(async (values) => {
+  const save = form.handleSubmit(async (values): Promise<void> => {
     await persistApplicationValues(values)
+  })
+
+  const saveAllPortal = portalForm.handleSubmit(async (values): Promise<void> => {
+    const clientId = found?.clientId?.trim()
+    if (!found || !clientId) {
+      setPortalSaveError(
+        'У заявки нет clientId — сохранение портал-формы недоступно',
+      )
+      return
+    }
+    setPortalSaving(true)
+    setPortalSaveError('')
+    const live = apps.find((a) => a.id === found.id) ?? found
+    const result = await runPortalSaveAllDetail({
+      clientId,
+      values,
+      application: { ...form.getValues(), ...live },
+      upsert,
+    })
+    setPortalSaving(false)
+    if (!result.ok) {
+      setPortalSaveError(result.message)
+      return
+    }
+    portalForm.reset(values)
+    setPortalSaved(true)
+    // Keep CRM Application form booking fields in sync with portal Save-all.
+    form.setValue('destination', values.destination.trim(), { shouldDirty: false })
+    form.setValue('visaType', values.visaType.trim(), { shouldDirty: false })
+    form.setValue('visaSubType', values.visaSubType.trim(), { shouldDirty: false })
+    form.setValue('category', values.category.trim(), { shouldDirty: false })
+    form.setValue('submitCountry', values.submitCountry.trim(), {
+      shouldDirty: false,
+    })
+    form.setValue('submitCity', values.submitCity.trim(), { shouldDirty: false })
+    form.setValue('travelDate', values.travelDate.trim(), { shouldDirty: false })
+    form.setValue('returnDate', values.returnDate.trim(), { shouldDirty: false })
   })
 
   const openStartDialog = useCallback((issues: ApplicationDetailStartIssue[]) => {
@@ -212,7 +344,6 @@ export const ApplicationDetail = () => {
       const issues = mapApplicationDetailStartApiDetailToIssues(detail)
       if (issues.length === 0) return
       openStartDialog(issues)
-      // Backend sets «Нужны правки» on date-gate 400 — refresh so the form status updates.
       const appId = form.getValues('id')
       if (!appId) return
       void fetchAppById(appId)
@@ -242,7 +373,6 @@ export const ApplicationDetail = () => {
     [syncStartFormErrors],
   )
 
-  /** DEC-005: once Start errors exist, re-sync on change for snappier recovery. */
   const onStartRelevantChange = useCallback(
     (fieldName: string) => {
       if (!hasKnownStartErrors) return
@@ -252,7 +382,6 @@ export const ApplicationDetail = () => {
     [hasKnownStartErrors, syncStartFormErrors],
   )
 
-  /** DEC-004: tab change runs Start Completeness + date sync (no Dialog). */
   const onTabChange = useCallback(
     (tab: ApplicationDetailTabId) => {
       setActiveTab(tab)
@@ -263,7 +392,6 @@ export const ApplicationDetail = () => {
 
   const onBeforeStartBlsWorkflow = useCallback(
     async (_options: { supersede: boolean }): Promise<boolean> => {
-      // Click-path full Start gate: Completeness + dates before any workflow API.
       const values = form.getValues()
       const applicants = values.applicants ?? []
       if (applicants.length === 0) {
@@ -284,7 +412,6 @@ export const ApplicationDetail = () => {
         openStartDialog(issues)
         const firstTab = resolveApplicationDetailStartFirstTab(issues)
         if (firstTab) setActiveTab(firstTab)
-        // Persist status first (reset clears field errors), then re-apply errors.
         await markApplicationNeedsFixes()
         syncApplicationDetailStartFormErrors({
           values: form.getValues(),
@@ -294,14 +421,12 @@ export const ApplicationDetail = () => {
         return false
       }
 
-      // Clear any stale Start chrome once the click-path schema passes.
       syncApplicationDetailStartFormErrors({
         values: form.getValues(),
         setError: form.setError,
         clearErrors: form.clearErrors,
       })
 
-      // Persist + arm via upsert (DEC-015). supersede → portalWorkflowAction.
       const persistError = await persistApplicationValues(
         form.getValues(),
         _options.supersede ? 'supersede' : 'ensure',
@@ -314,15 +439,10 @@ export const ApplicationDetail = () => {
 
       return true
     },
-    [
-      form,
-      markApplicationNeedsFixes,
-      openStartDialog,
-      persistApplicationValues,
-    ],
+    [form, markApplicationNeedsFixes, openStartDialog, persistApplicationValues],
   )
 
-  const onUpload = (type: DocType, file: File) => {
+  const onUpload = (type: DocType, file: File): void => {
     const appId = form.getValues('id')
     if (!appId) return
     setDocError('')
@@ -367,6 +487,20 @@ export const ApplicationDetail = () => {
         activeTab={activeTab}
         startValidationOpen={startValidationOpen}
         startValidationIssues={startValidationIssues}
+        portalPanel={
+          <FormProvider {...portalForm}>
+            <ApplicationDetailPortalPanel
+              loading={portalLoadState === 'loading' || portalLoadState === 'idle'}
+              loadError={portalLoadError}
+              saving={portalSaving}
+              saveError={portalSaveError}
+              saved={portalSaved}
+              onSaveAll={() => {
+                void saveAllPortal()
+              }}
+            />
+          </FormProvider>
+        }
         register={form.register}
         setValue={form.setValue}
         watch={form.watch}

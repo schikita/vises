@@ -8,6 +8,8 @@ export const clientApplicationFormSchema = clientTripFormSchema
   .extend({
     id: z.string(),
     code: z.string(),
+    /** Empty until apps upsert returns AppOut.clientId (PF-TASK-002b). */
+    clientId: z.string(),
     clientEmail: z.string(),
     /** Client create leaves null; ignored on client screens (DEC-004). */
     portalFormEmail: z.string().nullable().optional(),
