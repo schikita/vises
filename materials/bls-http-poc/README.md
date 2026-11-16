@@ -13,7 +13,9 @@
 |---|---|
 | `solver_server.py` | HTTP-бэкенд капчи: torch + `model_best.pt` (144×72, 4 conv-блока). `POST /solve {target, tiles:[{id,b64}]}` → `{picks}`. Порт 8788 |
 | `flow-register.mjs` | Регистрация: GET RegisterUser → капча (GenerateCaptcha/SubmitCaptcha) → справочники GUID → SendRegisterUserVerificationCode → OTP из tempmail.plus → POST RegisterUser → пароль портала из 2-го письма |
+| `flow-slot-watch.mjs` | Монитор слотов: раунды `flow-book.mjs` (--resume при живой сессии, полный re-login при мёртвой), пауза ≥20-30 мин между раундами (бюджет капчи ~3/час на аккаунт); стоп при видеоверификации или unexpected-состоянии (возможно календарь) |
 | `flow-login-status-book.mjs` | Вход: LoginSubmit (ResponseData JSON) → капча → LoginCaptchaSubmit → пароль (ResponseData JSON) → смена пароля (если принудительная) → myappointments (статусы) → newappointment (safe-stop, CON-006) |
+| `flow-book.mjs` | Рабочий проход BOOK: рестартуемый логин (re-login после смены пароля) → форма заявителя (~90 полей) → dp-consent (авто-accept: liveness → email-ссылка → awstrack-unwrap) → VisaType → капча записи → SlotSelection / видеоверификация; `--resume` из bls-session.json; основа раундов flow-slot-watch |
 | `eval-show-hide.js` | Мини-интерпретатор обфусцированного show/hide JS портала (диагностика) |
 | `flow-register2.log`, `flow-login5.log` | Живые логи прогонов (evidence) |
 
@@ -110,6 +112,75 @@ SlotSelection                                       → «Appointment slots are 
 недостижим даже для живого пользователя в браузере; при появлении слота
 флоу останавливается на нём и передаёт сессию человеку (см. handoff ниже).
 
+## Прогон 2026-11-16 (полный рестарт, включая регистрацию)
+
+Полный повтор сценария с нуля: новый аккаунт `vises961738cdbb94@fexpost.com`,
+тестовая личность (паспорт `ZZ5255366`, мобайл `295075107`) — реальные данные
+VS-2538 повторно зарегистрировать нельзя (см. таблицу лимитов). Итоги:
+
+1. **Уникальность паспорта и мобайла (новое поведение портала)** — повторная
+   регистрация тех же паспорта/мобайла падает на `SendRegisterUserVerificationCode`
+   с `{"success":false,"error":"<ul><li>Passport Number Already Exists</li><li>Mobile Number Already Exist</li></ul>"}`.
+   Данные VS-2538 навсегда привязаны к октябрьскому аккаунту. В `flow-register.mjs`
+   добавлены env-оверрайды `PASSPORT_NUMBER` / `MOBILE` для тестовых личностей
+   (несуществующая серия `ZZ…` не может collision'нуть с реальным документом).
+2. **«Welcome»-письмо приходило всегда** — октябрьский «mail wait timeout» был
+   багом предиката: subject «Welcome To BLS Appointment System» не содержит ни
+   одного слова из /password|login|credential|details|registration/, и waitForMail
+   игнорировал письмо 5 минут, хотя оно реально приходит через ~2 сек после
+   `{"success":true}`. Предикат расширен (+ welcome|appointment system).
+   Публичные tempmail-ящики со временем очищаются — пароль старого аккаунта
+   восстановим только через `/Global/account/ForgotPassword`.
+3. **Регистрация тестовой личности — ✅**: капча (1-я попытка Invalid selection,
+   2-я все conf=1.0), OTP через 8 сек, `POST RegisterUser → {"success":true}`,
+   пароль портала (rotated, см. evidence) из welcome-письма (evidence-register/result.json).
+4. **Логин после обязательной смены пароля** — `ChangeUserPassword → {"success":true,
+   returnUrl:"/"}`, но сессия инвалидируется (известная проблема №3, октябрём не
+   накрыта, т.к. к book12 пароль уже был сменён ранее). `flow-login-status-book.mjs`
+   переписан: рестартуемый цикл логина (после смены пароля — повторный вход с новым),
+   гвард «maximum number of allowed captcha», `--resume`/`bls-session.json`
+   (экономит 2 сабмита капчи на прогон), dp-страница сохраняется в evidence.
+5. **dp-consent принимаетcя полностью безбраузерно (впервые; раньше — ручной клик)**:
+   - первое посещение: `newappointment` рендерит страницу с модалками →
+     ajax `GET /Global/appointment/biometricaccepted` (liveness) →
+     `GET /Global/appointment/DataProtectionEmailSent` (шлёт письмо);
+   - повторные посещения: `newappointment` сразу 302 → `DataProtectionEmailSent`;
+   - письмо «BLS - Data Protection Information» (SES) содержит ссылку, завёрнутую в
+     awstrack.me: `…/L0/<percent-encoded destination>/<трекеры>`. Разворачивание =
+     `decodeURIComponent` сегмента после `/L0/` до первого литерального `/`
+     (ровно то, что делает редирект awstrack; токен `data=` должен остаться
+     одинарно-закодированным — двойное кодирование даёт «acceptance failed»);
+   - `GET` развёрнутой ссылки → «Successfully received your data protection
+     information acceptance» → `newappointment` → **Visa Type Selection** (safe-stop
+     CON-006). Капчу записи портал на этом пути не потребовал (сабмиты: 0).
+   Финальный прогон flow-login11: LOGIN(resume) → STATUS → dp-accept → VisaType ✅.
+6. **Полный флоу до SlotSelection — ✅ (flow-book13, --resume)**: форма заявителя
+   заполнена с первой попытки (`{"success":true,"action":"Edit"}`, без итераций
+   по полям — в отличие от октября) → статус **Ready To Book**; VisaType-POST
+   (Minsk/Schengen/Normal) поймал 2×429 (лимит этого эндпоинта, ожидаемо), на 3-й
+   попытке 302 → AppointmentCaptcha (решена, все conf=1.0) → **SlotSelection** →
+   302 на NewAppointment с «Appointment slots are not available» — слотов нет,
+   как и 2026-10-23. Слот не бронируется (нет открытых; бронь тестовой личности
+   не выполнялась). Сабмиты капчи за окно: 2 (логин) + 1 (запись) = 3 — точно в
+   бюджет. Полная безбраузерная цепочка теперь: REGISTER → LOGIN(+смена пароля,
+   re-login) → STATUS → форма заявителя → dp-consent → VisaType → капча записи →
+   SlotSelection. Недостижим только шаг видеоверификации (за открытым слотом).
+7. **Монитор слотов (flow-slot-watch.mjs)** — фоновое ожидание появления слотов:
+   раунды полного прохода (resume сессии из bls-session.json, полный re-login при
+   истечении), пауза `SLOT_WATCH_POLL_MS` (25 мин + джиттер, бюджет капчи записи
+   ~3/час на аккаунт), `SLOT_WATCH_MAX_ROUNDS` (8). Стоп-состояния: видеоверификация
+   (слоты есть — human handoff, сессия сохранена), unexpected-страница (возможно
+   календарь — остановка для ручного просмотра, никогда не «спим» мимо слота),
+   FLOW FAILED. Ответ на вопрос «есть ли слоты дешевле полного флоу»: нет — решение
+   принимается сервером на SlotSelection внутри captcha-gated walk (см. выше),
+   публичных индикаторов/JSON-эндпоинтов нет; каждая проверка ≈ 1 сабмит капчи записи.
+   В production (portal-http) монитора пока нет: slots_unavailable → ok →
+   AWAITING_STAFF_BOOKING (nextRunAt=null) — воркер не опрашивает повторно.
+8. **Все находки портированы в сам флóу** (не только в flow-login-status-book):
+   dp-consent авто-accept, re-login после смены пароля и сессия --resume теперь и в
+   `flow-book.mjs` (раунды монитора используют именно его); `flow-slot-watch.mjs`
+   подхватывает ротированный пароль из evidence-book/new-portal-password.txt.
+
 ## Handoff: браузерная достройка шага человеком
 
 - Всё состояние — cookies (`.AspNetCore.Cookies` httpOnly, `route`,
@@ -138,6 +209,7 @@ SlotSelection                                       → «Appointment slots are 
 
 | Лимит | Наблюдение |
 |---|---|
+| Уникальность паспорта/мобайла | **Глобальная**: повторная регистрация тех же паспорта/мобайла → «Passport Number Already Exists» / «Mobile Number Already Exist» уже на шаге SendRegisterUserVerificationCode (капча и GUID тратятся впустую). Один человек = один аккаунт навсегда; восстановление доступа — только ForgotPassword. |
 | Сабмиты капчи на аккаунт | **~3 за час** («You have reached the maximum number of allowed captcha submissions»). Полный вход = 2 сабмита + 1 на капчу записи. Ретраи «в лоб» сжигают бюджет. |
 | 502/504 флакичность | ~20-30% POST-запросов в плохие часы. **5xx на сабмите капчи обычно = капча потреблена**: повтор того же тела не проходит — рестарт этапа целиком. |
 | 429 per-IP | ~10-15 запросов за ~10 мин; особенно агрессивен на `/Global/Appointment/VisaType`. |

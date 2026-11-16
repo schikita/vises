@@ -1,0 +1,63 @@
+06:16:32 GET /Global/Account/RegisterUser -> 200 (65596b)
+06:16:32 hidden fields: Mode,CaptchaParam,CaptchaData,CaptchaId,ServerDateOfBirth,ServerPassportExpiryDate,ServerPassportIssueDate,SecurityCode,MobileVerificationEnabled,EncryptedEmail,EncryptedMobile,__RequestVerificationToken
+06:16:32 captcha data param ok, CaptchaId=e75b4038-0897-4da6-8771-269a0a97d3f9
+06:16:41 GET /Global/query/GetLOVIdNameList -> 200 (6409b)
+06:16:49 GET /Global/query/GetCountryList -> 200 (99531b)
+06:16:49 PassportType GUID=0a152f62-b7b2-49ad-893e-b41b15e2bef3 BirthCountry GUID=8a55fa26-377d-49b2-b5f6-42fc22bd5e79
+06:16:57 GET /Global/CaptchaPublic/GenerateCaptcha -> 200 (389662b)
+06:16:57 captcha: tiles=54 labels=23 cells=9 target=970
+06:16:57 solver: ["mifzhv=180(1)","vuikian=970(1)","pijeq=970(1)","vbitdkfs=970(1)","hcmuihs=321(1)","nuocoby=879(0.6)","dyhauiy=970(0.9916)","yuaqukwsm=970(1)","cyqbajga=879(1)"]
+06:17:05 POST /Global/CaptchaPublic/SubmitCaptcha -> 200 (3597b)
+06:17:05 captcha submit response: {"success":false,"error":"Invalid selection","vm":"v/PUuI+4YrAr02/2g1o4Qs2/SNNuyO1tbUzvMpTJqba5j9OPJiElvD7NbxG8G/X3aDGQ1dWVY+cmiASfyVkIHuCdy+IXukvATZdhg8ETTzJjk4uDi7uY0B9/EiccR3eHFIdgb4i3GBPK75IjMlF8A
+06:17:13 GET /Global/CaptchaPublic/GenerateCaptcha -> 200 (428579b)
+06:17:13 captcha: tiles=54 labels=33 cells=9 target=804
+06:17:13 solver: ["adflsh=804(1)","kiiouglol=733(1)","wrdpviox=897(1)","rmmbts=514(1)","tanzmzfo=501(1)","jofzhlph=804(1)","kedeoo=804(1)","ydxjtzof=378(1)","xyuvapd=563(1)"]
+06:17:21 POST /Global/CaptchaPublic/SubmitCaptcha -> 200 (624b)
+06:17:21 captcha submit response: {"success":true,"captcha":"WXBo7x6NcWmXiHjbCWDAPBeQ8delhW3YEMWvkxnc/udX7hIGPHslIj8M+bDgPeWXdv7ofMhxUFthzsYXG+Wo5S05mMEUC8eYoKDRakyIKViJCzfAq9S4E/AEGG1ODxVAo1NPc36y9s5PY5tg8XYIx4AAcD0CoULZQjJysuE16CmnK
+06:17:21 CAPTCHA SOLVED (browserless, local NN)
+06:17:31 POST /Global/account/SendRegisterUserVerificationCode -> 200 (592b)
+06:17:31 send OTP response: {"success":true,"error":"Email Sent","encryptEmail":"12dOj2NlRK33s%2fTFEO8SFAeIHGK8quPIuHcA6IcgICuBGvrvtDyjxQid4n%2bWG8g%2fMErWvnAsrqv0HZXIz9IX1R%2f%2fThtYn5mj8XWNIneaRFB0pMRzZM1bzBz4suzOEk5AkQciDadf1tMUcfwFYHSgpRc3hCgcFjXrwjG8XOgajvNaRKkqwuLrFeyZA%2f9JZO3a","encryptMobile":"pCfmrvjL1YWcH3tV6ssSsoMv
+06:17:31 waiting for OTP mail to vises961738cdbb94@fexpost.com (since mail_id 0)
+06:17:39 OTP extracted: 663317
+06:17:48 POST /Global/Account/RegisterUser -> 200 (16b)
+06:17:48 register submit response: {"success":true}
+06:17:48 REGISTER SUCCESS ✅
+06:17:48 waiting for password mail (since mail_id 2179514055)
+06:17:56   waiting for mail... (seen 2)
+06:18:04   waiting for mail... (seen 2)
+06:18:12   waiting for mail... (seen 2)
+06:18:21   waiting for mail... (seen 2)
+06:18:29   waiting for mail... (seen 2)
+06:18:37   waiting for mail... (seen 2)
+06:18:45   waiting for mail... (seen 2)
+06:18:53   waiting for mail... (seen 2)
+06:19:02   waiting for mail... (seen 2)
+06:19:10   waiting for mail... (seen 2)
+06:19:18   waiting for mail... (seen 2)
+06:19:26   waiting for mail... (seen 2)
+06:19:34   waiting for mail... (seen 2)
+06:19:43   waiting for mail... (seen 2)
+06:19:51   waiting for mail... (seen 2)
+06:19:59   waiting for mail... (seen 2)
+06:20:07   waiting for mail... (seen 2)
+06:20:15   waiting for mail... (seen 2)
+06:20:24   waiting for mail... (seen 2)
+06:20:32   waiting for mail... (seen 2)
+06:20:40   waiting for mail... (seen 2)
+06:20:48   waiting for mail... (seen 2)
+06:20:56   waiting for mail... (seen 2)
+06:21:05   waiting for mail... (seen 2)
+06:21:13   waiting for mail... (seen 2)
+06:21:21   waiting for mail... (seen 2)
+06:21:29   waiting for mail... (seen 2)
+06:21:37   waiting for mail... (seen 2)
+06:21:46   waiting for mail... (seen 2)
+06:21:54   waiting for mail... (seen 2)
+06:22:02   waiting for mail... (seen 2)
+06:22:10   waiting for mail... (seen 2)
+06:22:18   waiting for mail... (seen 2)
+06:22:27   waiting for mail... (seen 2)
+06:22:35   waiting for mail... (seen 2)
+06:22:43   waiting for mail... (seen 2)
+06:22:51   waiting for mail... (seen 2)
+FLOW FAILED: mail wait timeout

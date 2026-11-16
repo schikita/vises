@@ -1,0 +1,22 @@
+06:24:15 GET /Global/account/login -> 200 (41354b)
+06:24:15 login email field: diuqnyz (10 fields, 9 decoys)
+06:24:25 POST /Global/account/LoginSubmit -> 302 (0b) loc=/Global/newcaptcha/logincaptcha?data=12dOj2NlRK33s%2FTFEO8SF
+06:24:33 GET /Global/newcaptcha/logincaptcha -> 200 (465383b)
+06:24:33 on captcha page: /Global/newcaptcha/logincaptcha
+06:24:33   captcha: cells=9 target=396
+06:24:33   solver: ["396(1)","367(1)","745(1)","108(1)","396(1)","674(1)","559(1)","396(1)","396(1)"] -> picks ["gijsblvu","qsrtacexe","fccimfqf","fausx"]
+06:24:42 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 302 (0b) loc=/Global/NewCaptcha/LoginCaptcha?data=12dOj2NlRK33s%2FTFEO8SF
+06:24:51 GET /Global/NewCaptcha/LoginCaptcha -> 200 (457835b)
+06:24:51 password field: gmpqea (10 fields)
+06:24:51   captcha: cells=9 target=458
+06:24:51   solver: ["477(0.8788)","458(1)","458(1)","458(1)","458(1)","458(1)","284(1)","709(1)","458(1)"] -> picks ["tydodmypy","rvxbhx","tbrrot","yfqff","ybwuahjn","yvcgtkix"]
+06:25:00 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 302 (0b) loc=/Global/account/changepassword?alert=True
+06:25:10 GET /Global/account/changepassword -> 200 (27433b)
+06:25:10 after password: /Global/account/changepassword
+06:25:10 forced password change detected
+06:25:19 POST /Global/account/ChangeUserPassword -> 200 (32b)
+06:25:19 password change -> 200 {"success":true,"returnUrl":"/"}
+06:25:19 NEW PORTAL PASSWORD: Vs****REDACTED (saved to evidence)
+06:25:28 GET /Global/appointmentdata/myappointments -> 302 (0b) loc=http://appointment.blsspainbelarus.by/Global/Account/LogIn?R
+06:25:37 GET /Global/Account/LogIn -> 308 (164b) loc=https://appointment.blsspainbelarus.by/Global/Account/LogIn?
+FLOW FAILED: not authenticated: redirected to http://appointment.blsspainbelarus.by/Global/Account/LogIn?ReturnUrl=%2FGlobal%2Fappointmentdata%2Fmyappointments

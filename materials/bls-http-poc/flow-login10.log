@@ -1,0 +1,43 @@
+07:24:51 session restored from bls-session.json
+07:25:01 GET /Global/appointmentdata/myappointments -> 200 (47351b)
+07:25:01 RESUMED session is AUTHENTICATED ✅
+07:25:01 AUTHENTICATED ✅
+07:25:01 applicant row: Applicant Name: VASILYEVA DARIA VASILYEVA Relationship: Primary Applicant Date Of Birth: 2002-10-28 Status: Form Filling [Form Filling In-Progress] id=f94c98e8-8bda-4c73-810b-524f9ae95b58
+07:25:10 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/appointment/DataProtectionEmailSent
+07:25:19 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:25:19 dp email-sent page — clicking the mailed accept link
+07:25:27   awstrack wrapper unwrapped
+07:25:27 dp accept mail "BLS - Data Protection Information": https://appointment.blsspainbelarus.by/global/appointment/dataprotectionemailaccept?data=3b%252fVnCC…
+07:25:36 GET /global/appointment/dataprotectionemailaccept -> 200 (22773b)
+07:25:36 dataprotectionemailaccept -> 200 /global/appointment/dataprotectionemailaccept
+07:25:44 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/appointment/DataProtectionEmailSent
+07:25:54 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:25:54 dp email-sent page — clicking the mailed accept link
+07:26:02   awstrack wrapper unwrapped
+07:26:02 dp accept mail "BLS - Data Protection Information": https://appointment.blsspainbelarus.by/global/appointment/dataprotectionemailaccept?data=3b%252fVnCC…
+07:26:12 GET /global/appointment/dataprotectionemailaccept -> 200 (22773b)
+07:26:12 dataprotectionemailaccept -> 200 /global/appointment/dataprotectionemailaccept
+07:26:21 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/appointment/DataProtectionEmailSent
+07:26:30 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:26:30 dp email-sent page — clicking the mailed accept link
+07:26:38   awstrack wrapper unwrapped
+07:26:38 dp accept mail "BLS - Data Protection Information": https://appointment.blsspainbelarus.by/global/appointment/dataprotectionemailaccept?data=3b%252fVnCC…
+07:26:47 GET /global/appointment/dataprotectionemailaccept -> 200 (22773b)
+07:26:47 dataprotectionemailaccept -> 200 /global/appointment/dataprotectionemailaccept
+07:26:56 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/appointment/DataProtectionEmailSent
+07:27:05 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:27:05 dp email-sent page — clicking the mailed accept link
+07:27:14   awstrack wrapper unwrapped
+07:27:14 dp accept mail "BLS - Data Protection Information": https://appointment.blsspainbelarus.by/global/appointment/dataprotectionemailaccept?data=3b%252fVnCC…
+07:27:22 GET /global/appointment/dataprotectionemailaccept -> 200 (22773b)
+07:27:22 dataprotectionemailaccept -> 200 /global/appointment/dataprotectionemailaccept
+07:27:31 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/appointment/DataProtectionEmailSent
+07:27:40 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:27:40 dp email-sent page — clicking the mailed accept link
+07:27:48   awstrack wrapper unwrapped
+07:27:48 dp accept mail "BLS - Data Protection Information": https://appointment.blsspainbelarus.by/global/appointment/dataprotectionemailaccept?data=3b%252fVnCC…
+07:27:57 GET /global/appointment/dataprotectionemailaccept -> 200 (22773b)
+07:27:57 dataprotectionemailaccept -> 200 /global/appointment/dataprotectionemailaccept
+07:28:07 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/appointment/DataProtectionEmailSent
+07:28:17 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:28:17 DONE — evidence in E:\my\vises\materials\bls-http-poc\evidence-login

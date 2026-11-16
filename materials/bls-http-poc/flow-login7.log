@@ -1,0 +1,22 @@
+07:16:04 GET /Global/account/login -> 200 (40787b)
+07:16:04 login email field: cyvxzspri (10 fields, 9 decoys)
+07:16:14 POST /Global/account/LoginSubmit -> 302 (0b) loc=/Global/newcaptcha/logincaptcha?data=12dOj2NlRK33s%2FTFEO8SF
+07:16:24 GET /Global/newcaptcha/logincaptcha -> 200 (466414b)
+07:16:24 on captcha page: /Global/newcaptcha/logincaptcha
+07:16:24   captcha: cells=9 target=222
+07:16:24   solver: ["236(1)","222(1)","828(1)","611(1)","222(0.9993)","292(1)","351(1)","222(1)","517(1)"] -> picks ["misoxrs","ghzvn","uylevghd"]
+07:16:34 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 302 (0b) loc=/Global/NewCaptcha/LoginCaptcha?data=12dOj2NlRK33s%2FTFEO8SF
+07:16:44 GET /Global/NewCaptcha/LoginCaptcha -> 200 (442714b)
+07:16:44 password field: bxxuc (10 fields)
+07:16:44   captcha: cells=9 target=372
+07:16:44   solver: ["550(1)","372(1)","372(1)","372(1)","372(1)","757(1)","447(1)","372(0.9992)","372(1)"] -> picks ["sakglb","mgxomc","cudimg","qinswjpbz","grqmeqrtp","hicnakur"]
+07:16:53 POST /Global/NewCaptcha/LoginCaptchaSubmit -> 302 (0b) loc=/
+07:17:02 GET / -> 200 (22757b)
+07:17:02 after password: /
+07:17:10 GET /Global/appointmentdata/myappointments -> 200 (47351b)
+07:17:10 session saved to bls-session.json
+07:17:10 AUTHENTICATED ✅
+07:17:10 applicant row: Applicant Name: VASILYEVA DARIA VASILYEVA Relationship: Primary Applicant Date Of Birth: 2002-10-28 Status: Form Filling [Form Filling In-Progress] id=f94c98e8-8bda-4c73-810b-524f9ae95b58
+07:17:20 GET /Global/appointment/newappointment -> 200 (28609b)
+07:17:20 unexpected booking page state: /Global/appointment/newappointment — stopping
+07:17:20 DONE — evidence in E:\my\vises\materials\bls-http-poc\evidence-login

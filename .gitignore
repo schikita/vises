@@ -20,3 +20,7 @@ specs
 *_pg
 logs
 *.tsbuildinfo
+# BLS POC: live portal session cookies + evidence (passwords/tokens) — never commit
+materials/bls-http-poc/bls-session*.json
+materials/bls-http-poc/evidence-*/
+materials/bls-http-poc/flow-slot-watch-round*.log

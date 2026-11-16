@@ -1,0 +1,16 @@
+07:29:18 session restored from bls-session.json
+07:29:27 GET /Global/appointmentdata/myappointments -> 200 (47351b)
+07:29:27 RESUMED session is AUTHENTICATED ✅
+07:29:27 AUTHENTICATED ✅
+07:29:27 applicant row: Applicant Name: VASILYEVA DARIA VASILYEVA Relationship: Primary Applicant Date Of Birth: 2002-10-28 Status: Form Filling [Form Filling In-Progress] id=f94c98e8-8bda-4c73-810b-524f9ae95b58
+07:29:37 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/appointment/DataProtectionEmailSent
+07:29:47 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:29:47 dp email-sent page — clicking the mailed accept link
+07:29:56   awstrack wrapper unwrapped
+07:29:56 dp accept mail "BLS - Data Protection Information": https://appointment.blsspainbelarus.by/global/appointment/dataprotectionemailaccept?data=3b%2fVnCCjY…
+07:30:05 GET /global/appointment/dataprotectionemailaccept -> 200 (22765b)
+07:30:05 dataprotectionemailaccept -> 200 /global/appointment/dataprotectionemailaccept
+07:30:14 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/Appointment/VisaType?data=RsIX4Tg%2B1zTgTK%2FJdZPo5v
+07:30:23 GET /Global/Appointment/VisaType -> 200 (120013b)
+07:30:23 BOOKING UI OPEN: Visa Type Selection reached — SAFE STOP (CON-006, no submit) 🛑
+07:30:23 DONE — evidence in E:\my\vises\materials\bls-http-poc\evidence-login

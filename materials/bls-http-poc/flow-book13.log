@@ -1,0 +1,32 @@
+07:34:35 session restored from bls-session.json
+07:34:48 GET /Global/appointmentdata/myappointments -> 200 (47351b)
+07:34:48 RESUMED session is AUTHENTICATED ✅
+07:34:48 applicant row: Applicant Name: VASILYEVA DARIA VASILYEVA Relationship: Primary Applicant Date Of Birth: 2002-10-28 Status: Form Filling [Form Filling In-Progress] id=f94c98e8-8bda-4c73-810b-524f9ae95b58
+07:34:48 applicant form incomplete — opening edit form
+07:34:48   location=Minsk visaType=Schengen Visa userId=5c8eb177-f172-477a-9d52-3eddfb1623d9
+07:35:01 GET /Global/appointmentdata/ManageApplicant -> 200 (168568b)
+07:35:01   submitting applicant form (attempt 1) -> /Global/AppointmentData/ManageApplicant
+07:35:14 POST /Global/AppointmentData/ManageApplicant -> 200 (32b)
+07:35:14   form response: {"success":true,"action":"Edit"}
+07:35:27 GET /Global/appointmentdata/myappointments -> 200 (48111b)
+07:35:27   status after edit: Ready To Book Appointment (editOk=true)
+07:35:39 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/Appointment/VisaType?data=RsIX4Tg%2B1zTgTK%2FJdZPo5p
+07:35:52 GET /Global/Appointment/VisaType -> 200 (119080b)
+07:35:52 BOOKING: Visa Type Selection — filling and submitting
+07:35:52   real dropdown fields: {"Location":"hkyywzgac","Visa Type":"cgawskxz","Visa Sub Type":"kjfnfytp","Category":"thpptnq"}
+07:35:52   dropdown values: {"hkyywzgac":"8218","cgawskxz":"8372","kjfnfytp":"7972","thpptnq":"5652"}
+07:35:52   ResponseData: {"gesdok":"","cwroggi":"","ezsgwy":"","fdskohz":"","thpptnq":"5652","hkyywzgac":"8218","ilhwjvjuz":"","qzjvcztw":"","lertslgh":"","iswxuroe":"","cgawskxz":"8372","vsanhfiql":"","nhryxptn":"","nyjleup":"","faoyxgq":"","fggldz":"","kjfnfytp":"7972","yfdan":"","clrhzmms":"","idbvhg":"","cwnfqhg":"","opajtlwmm":"","vhqztu":"","xkmgswvnq":"","uphsk":""}
+07:36:03 POST /Global/Appointment/VisaType -> 429 (836b)
+07:36:03   visa type POST 429 (attempt 1/4) — waiting 240s
+07:40:14 POST /Global/Appointment/VisaType -> 429 (836b)
+07:40:14   visa type POST 429 (attempt 2/4) — waiting 240s
+07:44:26 POST /Global/Appointment/VisaType -> 302 (0b) loc=/Global/Appointment/AppointmentCaptcha?data=RsIX4Tg%2B1zTgTK
+07:44:38 GET /Global/Appointment/AppointmentCaptcha -> 200 (457119b)
+07:44:38   visa type submitted -> 200 /Global/Appointment/AppointmentCaptcha
+07:44:38 BOOKING: appointment captcha — solving
+07:44:38   captcha: cells=9 target=487 solver=["128(1)","466(1)","577(1)","487(1)","511(1)","487(1)","487(1)","784(1)","487(1)"] -> picks=["hvydzy","wokpotubz","ndysf","quryuhpmp"] pickConf=1.000 anyConf=1.000
+07:44:50 POST /Global/appointment/appointmentcaptcha -> 302 (0b) loc=/Global/Appointment/SlotSelection?data=RsIX4Tg%2B1zTgTK%2FJd
+07:45:08 GET /Global/Appointment/SlotSelection -> 302 (0b) loc=/Global/Appointment/NewAppointment?msg=ZokWWxtCWRl2wwydQeR8i
+07:45:21 GET /Global/Appointment/NewAppointment -> 200 (28812b)
+07:45:21 BOOKING: Appointment slots are NOT available — flow reached SlotSelection gate; video verification lies beyond an open slot 🛑
+07:45:21 DONE — evidence in E:\my\vises\materials\bls-http-poc\evidence-book

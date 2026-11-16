@@ -1,0 +1,18 @@
+07:19:36 session restored from bls-session.json
+07:19:46 GET /Global/appointmentdata/myappointments -> 200 (47351b)
+07:19:46 RESUMED session is AUTHENTICATED ✅
+07:19:46 AUTHENTICATED ✅
+07:19:46 applicant row: Applicant Name: VASILYEVA DARIA VASILYEVA Relationship: Primary Applicant Date Of Birth: 2002-10-28 Status: Form Filling [Form Filling In-Progress] id=f94c98e8-8bda-4c73-810b-524f9ae95b58
+07:19:56 GET /Global/appointment/newappointment -> 200 (28609b)
+07:19:56 data protection consent page — accepting (liveness → dp email → accept link)
+07:20:06 GET /Global/appointment/biometricaccepted -> 200 (16b)
+07:20:06 biometricaccepted -> 200 {"success":true}
+07:20:15 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:20:15 DataProtectionEmailSent -> 200 /Global/appointment/DataProtectionEmailSent
+07:20:23 dp accept mail "BLS - Data Protection Information": https://l5zdvkmm.r.eu-central-1.awstrack.me/L0/https:%2F%2Fappointment.blsspainbelarus.by%2Fglobal%2…
+07:20:33 GET /L0/https:%2F%2Fappointment.blsspainbelarus.by%2Fg -> 400 (0b)
+07:20:33 dataprotectionemailaccept -> 400 /L0/https:%2F%2Fappointment.blsspainbelarus.by%2Fglobal%2Fappointment%2Fdataprotectionemailaccept%3Fdata=3b%252fVnCCjYWNVjOfKrXJUq8enyDNtbw1XLcW8vO5mN6wHfDfJzIg2msa5qTdQPMR7mXdxkDMWfXfR9XUNOQheKWxEPR9HdeEBtfBDDeICK0Gpb7owSjdlg9l6qd6tfi5g/1/010701a1e33a66b2-38bf6dbf-f9d3-44cc-87ba-27694847c5ef-000000/UnY-cjGN0nTzZww31yrMkEC-s2E=258
+07:20:42 GET /Global/appointment/newappointment -> 302 (0b) loc=/Global/appointment/DataProtectionEmailSent
+07:20:51 GET /Global/appointment/DataProtectionEmailSent -> 200 (22923b)
+07:20:51 data protection page variant without known handlers — saving evidence, stopping
+FLOW FAILED: unhandled dp page variant — inspect dp-variant.html

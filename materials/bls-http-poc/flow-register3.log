@@ -1,0 +1,15 @@
+06:13:21 GET /Global/Account/RegisterUser -> 200 (65588b)
+06:13:21 hidden fields: Mode,CaptchaParam,CaptchaData,CaptchaId,ServerDateOfBirth,ServerPassportExpiryDate,ServerPassportIssueDate,SecurityCode,MobileVerificationEnabled,EncryptedEmail,EncryptedMobile,__RequestVerificationToken
+06:13:21 captcha data param ok, CaptchaId=27a3a34e-e30a-4be3-9024-b48f99a5e9b9
+06:13:28 GET /Global/query/GetLOVIdNameList -> 200 (6409b)
+06:13:36 GET /Global/query/GetCountryList -> 200 (99531b)
+06:13:36 PassportType GUID=0a152f62-b7b2-49ad-893e-b41b15e2bef3 BirthCountry GUID=8a55fa26-377d-49b2-b5f6-42fc22bd5e79
+06:13:45 GET /Global/CaptchaPublic/GenerateCaptcha -> 200 (423086b)
+06:13:45 captcha: tiles=54 labels=25 cells=9 target=408
+06:13:45 solver: ["ykvck=959(1)","vqykguuhp=408(1)","rmjtoen=790(1)","mfaecdjur=408(1)","vtyzzoed=188(1)","mvvhb=408(1)","psffc=788(1)","idzkmvhx=970(1)","diujtrwl=270(1)"]
+06:13:54 POST /Global/CaptchaPublic/SubmitCaptcha -> 200 (624b)
+06:13:54 captcha submit response: {"success":true,"captcha":"r7eP016cEAg7xo09KTx+8nL9+bPA6Zk/E3GGTwVMyL9j5+t/66S0ZaMCQWo8lNwfFMDIboNJC7vto0rpVQLV+7DOhjt5tNYFD6ZBp4JVtDBHGU3m0QLuLvuO4sz3pP7EryrgxnYg5A5OtXTA2yvQ3Rm4Upch9LjvkKlPwRgbkZhEg
+06:13:54 CAPTCHA SOLVED (browserless, local NN)
+06:14:01 POST /Global/account/SendRegisterUserVerificationCode -> 200 (112b)
+06:14:01 send OTP response: {"success":false,"error":"<ul><li>Passport Number Already Exists</li><li>Mobile Number Already Exist</li></ul>"}
+FLOW FAILED: OTP send failed: <ul><li>Passport Number Already Exists</li><li>Mobile Number Already Exist</li></ul>

@@ -319,11 +319,18 @@ async function main() {
     log('RESUMED session is AUTHENTICATED ✅');
   } else {
   // Full login: restart-capable loop. On flaky-portal failures (504 consumed captcha,
-  // Login?err= redirect) the whole sequence restarts from the email step.
-  let loginAttempts = 0;
-  for (loginAttempts = 1; loginAttempts <= 3; loginAttempts++) {
+  // Login?err= redirect) the whole sequence restarts from the email step. After a
+  // forced password change the session is invalidated (known issue #3) — re-login
+  // with the new password instead of failing.
+  let currentPassword = PORTAL_PASSWORD;
+  for (let loginAttempts = 1; loginAttempts <= 3; loginAttempts++) {
     try {
-      await doLogin();
+      const changedPw = await doLogin(currentPassword);
+      if (changedPw) {
+        currentPassword = changedPw;
+        log('password changed during login — session invalidated, re-logging in with new password');
+        continue;
+      }
       break;
     } catch (e) {
       if (loginAttempts >= 3) throw e;
@@ -331,7 +338,7 @@ async function main() {
       await sleep(120000);
     }
   }
-  async function doLogin() {
+  async function doLogin(password) {
   // ===== LOGIN step 1: email =====
   const loginPage = await req('GET', '/Global/account/login', { headers: { Accept: 'text/html,...' } });
   const emailForm = findRealFieldInputs(loginPage.text, 'LoginSubmit', 'text');
@@ -391,7 +398,7 @@ async function main() {
         fetchChallenge: async () => req('GET', page.url, { headers: { Accept: 'text/html,...' } }),
       });
       const submittedData = {};
-      for (const f of pwFields.all) submittedData[f.id] = f.id === pwFields.real.id ? PORTAL_PASSWORD : '';
+      for (const f of pwFields.all) submittedData[f.id] = f.id === pwFields.real.id ? password : '';
       const pwBody = [
         ['SelectedImages', picks2.join(',')],
         ['Id', pwForm.hiddens.Id ?? ''],
@@ -429,23 +436,23 @@ async function main() {
     }
     if (!afterPw) throw new Error('password submit retries exhausted');
     log(`after password: ${new URL(afterPw.url).pathname}`);
-    await handlePostLogin(afterPw);
+    return await handlePostLogin(afterPw);
   } else {
     // maybe email step went straight through (no captcha this time) — check auth
     log('no password step — checking state');
-    await handlePostLogin(pwPage);
+    return await handlePostLogin(pwPage);
   }
   } // end doLogin()
 
-  async function handlePostLogin(page) {
-    // forced password change?
+  async function handlePostLogin(page, password) {
+    // forced password change? returns the new password (session invalidated → caller re-logins)
     if (page.url.includes('changepassword') || page.text.includes('ChangeUserPassword')) {
       log('forced password change detected');
       const chForm = parseFormHiddens(page.text, 'ChangeUserPassword');
       if (!chForm) throw new Error('changepassword form not found');
       const newPassword = `Vs${crypto.randomInt(1000, 9999)}!${crypto.randomBytes(3).toString('hex')}`;
       const chBody = [
-        ['CurrentPassword', PORTAL_PASSWORD],
+        ['CurrentPassword', password],
         ['NewPassword', newPassword],
         ['ConfirmPassword', newPassword],
         ...Object.entries(chForm.hiddens),
@@ -454,7 +461,48 @@ async function main() {
       log(`password change -> ${chRes.status} ${chRes.text.slice(0, 120)}`);
       fs.writeFileSync(path.join(EVIDENCE_DIR, 'new-portal-password.txt'), newPassword);
       log(`NEW PORTAL PASSWORD: ${newPassword} (saved to evidence)`);
+      return newPassword;
     }
+    return null;
+  }
+
+  // dp-consent completion via emailed accept link (2026-11-16): poll tempmail
+  // (newest first), unwrap the SES awstrack redirect, GET the portal accept URL.
+  async function acceptDpViaEmailLink() {
+    saveSession();
+    let link = null;
+    const t0 = Date.now();
+    while (!link && Date.now() - t0 < 300000) {
+      await sleep(8000);
+      try {
+        const list = await fetchMailList();
+        for (const m of list.mail_list || []) {
+          const body = JSON.stringify(await fetchMailBody(m.mail_id));
+          const hit = body.match(/https?[^"'\\\s]*dataprotectionemailaccept[^"'\\\s]*/i);
+          if (!hit) continue;
+          let href = hit[0].replace(/\\\//g, '/').replace(/&amp;/g, '&');
+          // SES wraps links in awstrack.me redirects: .../L0/<pct-encoded destination>/<trackers>.
+          // The encoded destination contains no literal '/', so the first '/' after /L0/'
+          // ends it. awstrack's redirect = ONE full decodeURIComponent of that segment
+          // (so %252f in the wrapper is %2f in the real URL — the data= token ends up
+          // singly-encoded, which is what the portal's decryptor expects).
+          if (/awstrack\.me\/L0\//i.test(href)) {
+            href = decodeURIComponent(href.split('/L0/')[1].split('/')[0]);
+            log('  awstrack wrapper unwrapped');
+          }
+          link = href;
+          log(`dp accept mail "${m.subject}": ${link.slice(0, 100)}…`);
+          break;
+        }
+      } catch (e) {
+        log(`  tempmail error: ${e.message}`);
+      }
+    }
+    if (!link) throw new Error('dp accept mail/link not received in 5 min');
+    const acceptRes = await req('GET', link, { headers: { Accept: 'text/html,...' }, referer: `${BASE}/` });
+    log(`dataprotectionemailaccept -> ${acceptRes.status} ${new URL(acceptRes.url).pathname}`);
+    fs.writeFileSync(path.join(EVIDENCE_DIR, 'dp-accept-response.html'), acceptRes.text);
+    saveSession();
   }
 
   // ===== verify authenticated =====
@@ -483,13 +531,13 @@ async function main() {
   ];
   const TEXT_VALUES = {
     FirstName: 'DARIA', SurName: 'VASILYEVA', SurnameAtBirth: 'VASILYEVA', LastName: 'VASILYEVA',
-    PlaceOfBirth: 'GOMEL', PassportNo: 'MP4374307', IssuePlace: 'RUEP GOMEL',
+    PlaceOfBirth: 'GOMEL', PassportNo: process.env.PASSPORT_NUMBER || 'MP4374307', IssuePlace: 'RUEP GOMEL',
     DateOfBirth: '2002-10-28', IssueDate: '2019-03-03', ExpiryDate: '2029-03-03',
     TravelDate: '2026-11-20', IntendedDateOfArrival: '2026-11-20', IntendedDateOfDeparture: '2026-12-04',
     IntendedStayDuration: '14',
     HomeAddressLine1: 'MINSK', HomeAddressCity: 'MINSK', HomeAddressPostalCode: '220000',
-    HomeAddressContactNumber: '293851061',
-    EmployerName: 'NOT EMPLOYED', EmployerPhone: '293851061', EmployerAddress: 'MINSK',
+    HomeAddressContactNumber: process.env.MOBILE || '293851061',
+    EmployerName: 'NOT EMPLOYED', EmployerPhone: process.env.MOBILE || '293851061', EmployerAddress: 'MINSK',
     InvitingContactName: 'MARTA', InvitingContactSurname: 'GARCIA', InvitingContactCity: 'MADRID',
     InvitingContactAddress: 'CALLE SERRANO 88', InvitingContactZipCode: '28006',
     InvitingContactEmail: 'marta.garcia@example.com', InvitingContactContactNo: '34600000000',
@@ -584,7 +632,7 @@ async function main() {
   // ===== BOOK: walk booking flow up to VIDEO VERIFICATION =====
   let page = await req('GET', '/Global/appointment/newappointment', { headers: { Accept: 'text/html,...' } });
   let guard = 0;
-  while (guard++ < 8) {
+  while (guard++ < 12) {
     // 429/5xx page bodies: wait and re-GET the same URL
     let pageGuard = 0;
     while ((page.status === 429 || page.status >= 500) && pageGuard++ < 4) {
@@ -695,10 +743,37 @@ async function main() {
       page = vtRes;
       continue;
     }
-    if (/DataProtection/i.test(url) && /data protection information/i.test(text) && !/slots are not available/i.test(text)) {
-      log('BOOKING: data protection consent page');
+    if (page.text.includes('OnDpAccept') && !/slots are not available/i.test(text)) {
+      // First-visit dp-consent page: liveness + dp modals render AT newappointment.
+      // Chain (2026-11-16): ajax GET biometricaccepted → GET DataProtectionEmailSent
+      // (portal emails the link) → GET the mailed (awstrack-wrapped) link.
+      log('BOOKING: data protection consent page — accepting (liveness → dp email → accept link)');
       fs.writeFileSync(path.join(EVIDENCE_DIR, 'dp-page.html'), page.text);
-      throw new Error('dp consent appeared — inspect dp-page.html for the accept control request');
+      const bio = await req('GET', '/Global/appointment/biometricaccepted', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json, text/javascript, */*; q=0.01' },
+        referer: page.url,
+      });
+      log(`  biometricaccepted -> ${bio.status} ${String(bio.text).slice(0, 80)}`);
+      const dpMail = await req('GET', '/Global/appointment/DataProtectionEmailSent', { headers: { Accept: 'text/html,...' }, referer: page.url });
+      log(`  DataProtectionEmailSent -> ${dpMail.status} ${new URL(dpMail.url).pathname}`);
+      await acceptDpViaEmailLink();
+      page = await req('GET', '/Global/appointment/newappointment', { headers: { Accept: 'text/html,...' } });
+      continue;
+    }
+    if (/DataProtectionEmailSent/i.test(url)) {
+      // Biometric consent already recorded on an earlier run: newappointment 302s
+      // here directly — email already sent, just click the mailed accept link.
+      log('BOOKING: dp email-sent page — clicking the mailed accept link');
+      fs.writeFileSync(path.join(EVIDENCE_DIR, 'dp-emailsent-page.html'), page.text);
+      await acceptDpViaEmailLink();
+      page = await req('GET', '/Global/appointment/newappointment', { headers: { Accept: 'text/html,...' } });
+      continue;
+    }
+    if (/DataProtection/i.test(url) && /data protection information/i.test(text) && !/slots are not available/i.test(text)) {
+      log('BOOKING: data protection page variant without known handlers — saving evidence');
+      fs.writeFileSync(path.join(EVIDENCE_DIR, 'dp-variant.html'), page.text);
+      saveSession();
+      throw new Error('unhandled dp page variant — inspect dp-variant.html');
     }
     if (/You have not filled out and completed the applicant detail form/i.test(text)) {
       log('BOOKING: portal demands applicant form for THIS visa type — completing it now');

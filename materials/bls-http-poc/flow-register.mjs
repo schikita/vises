@@ -212,11 +212,11 @@ const APPLICANT = {
   DateOfBirth: '2002-10-28',
   PassportType: 'Ordinary Passport',
   BirthCountry: 'Belarus',
-  PassportNumber: 'MP4374307',
+  PassportNumber: process.env.PASSPORT_NUMBER || 'MP4374307',
   PassportIssueDate: '2019-03-03',
   PassportExpiryDate: '2029-03-03',
   IssuePlace: 'RUEP GOMEL',
-  Mobile: '293851061',
+  Mobile: process.env.MOBILE || '293851061',
   CountryCode: '+375',
   Email: `${MAIL_LOCAL}@${MAIL_DOMAIN}`,
 };
@@ -449,7 +449,10 @@ async function main() {
   const sinceId2 = Math.max(sinceId, ...(seen2.mail_list || []).map((m) => m.mail_id), otpMail.meta.mail_id);
   log(`waiting for password mail (since mail_id ${sinceId2})`);
   const pwMail = await waitForMail(
-    (m) => /password|login|credential|details|registration/i.test(m.subject || ''),
+    // NOTE: welcome-mail subject is "Welcome To BLS Appointment System" — it has
+    // no "password" keyword, a subject-only /password|login|…/ filter never matches
+    // it (misdiagnosed as "mail never delivered" in the 2026-10-23 run).
+    (m) => /password|login|credential|details|registration|welcome|appointment system/i.test(m.subject || ''),
     { sinceId: sinceId2, timeoutMs: 300000 },
   );
   const pwText = JSON.stringify(pwMail.body || {});
