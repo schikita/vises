@@ -31,7 +31,8 @@ export class Application {
   })
   portalFormEmail!: string | null;
 
-  @Column({ type: 'varchar', length: 20, default: 'drafting' })
+  /** Length ≥32 so BUSINESS ids fit (`not_ready_for_appointment`=25). */
+  @Column({ type: 'varchar', length: 32, default: 'draft' })
   status!: ApplicationStatus;
 
   @Column({ type: 'varchar', length: 80, default: '' })

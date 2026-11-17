@@ -29,8 +29,8 @@ export const applyVisitsListSort = <T extends ObjectLiteral>(
       return qb.orderBy(`${alias}.visit_time`, dir);
     case 'place':
       return qb.orderBy(`LOWER(${alias}.visit_place)`, dir);
-    case 'status':
-      return qb.orderBy(`LOWER(${alias}.status)`, dir);
+    case 'created':
+      return qb.orderBy(`${alias}.created_at`, dir);
     default:
       return qb.orderBy(`${alias}.visit_date`, 'ASC');
   }

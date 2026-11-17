@@ -9,6 +9,8 @@ export { resolveLatestAppIdForAgent } from './resolve-latest-app-id-for-agent.ut
 export { formatAgentCurrentBalance } from './format-agent-current-balance.util';
 export { formatAgentTotalRevenue } from './format-agent-total-revenue.util';
 export { buildAgentTotalRevenueMap } from './build-agent-total-revenue-map.util';
+export { groupAgentOwnedApplications } from './group-agent-owned-applications.util';
+export { applicationRecencyTime } from './application-recency-time.util';
 export { mapToStaffRole } from './map-to-staff-role.util';
 export { normalizeUsersListRoleFilter } from './normalize-users-list-role-filter.util';
 export { throwForbiddenRole } from './throw-forbidden-role.util';

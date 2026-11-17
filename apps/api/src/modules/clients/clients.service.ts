@@ -95,7 +95,7 @@ export class ClientsService implements IClientsService {
           code: generateClientAppCode(),
           clientEmail: body.email ?? '',
           portalFormEmail: null,
-          status: 'drafting',
+          status: 'draft',
           paymentAmount,
           paymentPaid: false,
           createdAt: now,

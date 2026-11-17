@@ -7,11 +7,14 @@ import { settingsOut } from '../../shared/mappers';
 import type { AppEnv } from '../config/types';
 import { isProdNodeEnv } from '../config/utils';
 import { SeedService } from '../seed/seed.service';
-import { LOCKED_SUBMIT_CITIES, SETTINGS_SINGLETON_ID } from './constants';
+import { SETTINGS_SINGLETON_ID } from './constants';
 import { PatchSettingsDto } from './dto/patch-settings.dto';
 import type { ISettingsService } from './interfaces';
 import type { SettingsOut } from './types';
-import { isLockedSubmitCities, parsePricePerClientToDefaultPrice } from './utils';
+import {
+  normalizeSettingsStringList,
+  parsePricePerClientToDefaultPrice,
+} from './utils';
 
 @Injectable()
 export class SettingsService implements ISettingsService {
@@ -23,7 +26,6 @@ export class SettingsService implements ISettingsService {
 
   async get(): Promise<SettingsOut> {
     const row = await this.requireRow();
-    await this.normalizeLockedCities(row);
     return this.toOut(row);
   }
 
@@ -37,10 +39,11 @@ export class SettingsService implements ISettingsService {
         body.price_per_client,
       );
     }
-    // DEC-011: coerce cities to Minsk-only regardless of client payload.
-    row.cities = [...LOCKED_SUBMIT_CITIES];
+    if (body.cities !== undefined) {
+      row.cities = normalizeSettingsStringList(body.cities);
+    }
     if (body.destinations !== undefined) {
-      row.destinations = body.destinations;
+      row.destinations = normalizeSettingsStringList(body.destinations);
     }
     if (body.emailOtpEnabled !== undefined) {
       row.emailOtpEnabled = body.emailOtpEnabled;
@@ -61,21 +64,11 @@ export class SettingsService implements ISettingsService {
   }
 
   private toOut(row: Setting): SettingsOut {
-    const out = settingsOut(row, this.isDemoControlsEnabled());
-    return {
-      ...out,
-      cities: [...LOCKED_SUBMIT_CITIES],
-    };
+    return settingsOut(row, this.isDemoControlsEnabled());
   }
 
   private isDemoControlsEnabled(): boolean {
     return !isProdNodeEnv(this.config.get('NODE_ENV', { infer: true }));
-  }
-
-  private async normalizeLockedCities(row: Setting): Promise<void> {
-    if (isLockedSubmitCities(row.cities)) return;
-    row.cities = [...LOCKED_SUBMIT_CITIES];
-    await this.settings.save(row);
   }
 
   private async requireRow(): Promise<Setting> {

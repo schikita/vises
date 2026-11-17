@@ -7,41 +7,69 @@ import { buildAnalyticsDto } from './build-analytics-dto.util';
 const makeFact = (
   partial: Pick<
     AnalyticsApplicationFact,
-    'applicationId' | 'agentId' | 'effectiveStatus' | 'receivedAt'
+    | 'applicationId'
+    | 'agentId'
+    | 'effectiveStatus'
+    | 'bookedAt'
+    | 'createdAt'
+    | 'paymentPaid'
+    | 'paymentAmount'
+    | 'submitCity'
+    | 'visitDate'
   >,
 ): AnalyticsApplicationFact => ({
   ...partial,
-  issuedAt: null,
+  receivedAt: null,
 });
 
 const defaultPagination = { page: 1, pageSize: 20 };
 const emptyAgents = new Map();
 
-describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P15)', (): void => {
+describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P15 / DEC-ASAU-003 / DEC-ASAU-009)', (): void => {
   const facts: AnalyticsApplicationFact[] = [
     makeFact({
       applicationId: 'a1',
       agentId: 'agent-a',
-      effectiveStatus: 'drafting',
-      receivedAt: null,
+      effectiveStatus: 'draft',
+      bookedAt: null,
+      createdAt: new Date('2026-01-05T00:00:00.000Z'),
+      paymentPaid: false,
+      paymentAmount: 180,
+      submitCity: 'Moscow',
+      visitDate: '',
     }),
     makeFact({
       applicationId: 'a2',
       agentId: 'agent-a',
-      effectiveStatus: 'pending',
-      receivedAt: new Date('2026-01-10T00:00:00.000Z'),
+      effectiveStatus: 'not_ready_for_appointment',
+      bookedAt: new Date('2026-01-10T00:00:00.000Z'),
+      createdAt: new Date('2026-01-10T00:00:00.000Z'),
+      paymentPaid: true,
+      paymentAmount: 200,
+      submitCity: 'Moscow',
+      visitDate: '',
     }),
     makeFact({
       applicationId: 'a3',
       agentId: 'agent-a',
-      effectiveStatus: 'issued',
-      receivedAt: new Date('2026-01-12T00:00:00.000Z'),
+      effectiveStatus: 'booked',
+      bookedAt: new Date('2026-01-12T00:00:00.000Z'),
+      createdAt: new Date('2026-01-12T00:00:00.000Z'),
+      paymentPaid: false,
+      paymentAmount: 180,
+      submitCity: 'Kazan',
+      visitDate: '2026-01-20',
     }),
     makeFact({
       applicationId: 'b1',
       agentId: 'agent-b',
       effectiveStatus: 'booked',
-      receivedAt: new Date('2026-02-01T00:00:00.000Z'),
+      bookedAt: new Date('2026-02-01T00:00:00.000Z'),
+      createdAt: new Date('2026-02-01T00:00:00.000Z'),
+      paymentPaid: true,
+      paymentAmount: 250,
+      submitCity: 'Moscow',
+      visitDate: '2026-02-05',
     }),
   ];
 
@@ -52,10 +80,16 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     { agentId: 'agent-b' },
   ];
 
+  const agentBalances = [
+    { agentId: 'agent-a', balance: '120.50' },
+    { agentId: 'agent-b', balance: '40.00' },
+  ];
+
   it('computes global and per-agent percentages as decimal strings', (): void => {
     const dto = buildAnalyticsDto({
       facts,
       clients,
+      agentBalances,
       agentScopeId: null,
       dateRange: null,
       pagination: defaultPagination,
@@ -64,9 +98,11 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     });
 
     expect(dto.global.totalApplications).toBe(4);
-    const pending = dto.global.byStatus.find((b) => b.status === 'pending');
-    expect(pending).toEqual({
-      status: 'pending',
+    const notReady = dto.global.byStatus.find(
+      (b) => b.status === 'not_ready_for_appointment',
+    );
+    expect(notReady).toEqual({
+      status: 'not_ready_for_appointment',
       count: 1,
       percentage: '25.00',
     });
@@ -74,12 +110,28 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     const agentA = dto.perAgent.items.find((p) => p.agentId === 'agent-a');
     expect(agentA?.totalApplications).toBe(3);
     expect(
-      agentA?.byStatus.find((b) => b.status === 'drafting')?.percentage,
+      agentA?.byStatus.find((b) => b.status === 'draft')?.percentage,
     ).toBe('33.33');
 
     expect(dto.clientsPerAgent).toEqual([
-      { agentId: 'agent-a', count: 3, percentage: '75.00' },
-      { agentId: 'agent-b', count: 1, percentage: '25.00' },
+      {
+        agentId: 'agent-a',
+        count: 3,
+        percentage: '75.00',
+        balance: '120.50',
+        registered: 3,
+        paid: 1,
+        paidAmount: '200.00',
+      },
+      {
+        agentId: 'agent-b',
+        count: 1,
+        percentage: '25.00',
+        balance: '40.00',
+        registered: 1,
+        paid: 1,
+        paidAmount: '250.00',
+      },
     ]);
     expect(dto.perAgent).toMatchObject({
       total: 2,
@@ -95,8 +147,13 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
         makeFact({
           applicationId: 'c1',
           agentId: 'agent-c',
-          effectiveStatus: 'pending',
-          receivedAt: new Date('2026-03-01T00:00:00.000Z'),
+          effectiveStatus: 'filling',
+          bookedAt: null,
+          createdAt: new Date('2026-03-01T00:00:00.000Z'),
+          paymentPaid: false,
+          paymentAmount: 0,
+          submitCity: '',
+          visitDate: '',
         }),
       ],
       clients: [
@@ -107,6 +164,10 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
         { agentId: 'agent-a' },
         { agentId: 'agent-c' },
         { agentId: 'agent-c' },
+      ],
+      agentBalances: [
+        ...agentBalances,
+        { agentId: 'agent-c', balance: '0.00' },
       ],
       agentScopeId: null,
       dateRange: null,
@@ -126,6 +187,7 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     const dto = buildAnalyticsDto({
       facts,
       clients,
+      agentBalances,
       agentScopeId: null,
       dateRange: null,
       pagination: { page: 2, pageSize: 1 },
@@ -151,14 +213,20 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
       makeFact({
         applicationId: `x${i}`,
         agentId: `agent-${i}`,
-        effectiveStatus: 'pending',
-        receivedAt: new Date('2026-01-01T00:00:00.000Z'),
+        effectiveStatus: 'filling',
+        bookedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        paymentPaid: false,
+        paymentAmount: 0,
+        submitCity: '',
+        visitDate: '',
       }),
     );
     const manyClients = manyFacts.map((f) => ({ agentId: f.agentId }));
     const dto = buildAnalyticsDto({
       facts: manyFacts,
       clients: manyClients,
+      agentBalances: [],
       agentScopeId: null,
       dateRange: null,
       pagination: { page: 1, pageSize: 5 },
@@ -178,6 +246,7 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     const dto = buildAnalyticsDto({
       facts,
       clients,
+      agentBalances,
       agentScopeId: null,
       dateRange: null,
       pagination: { page: 1, pageSize: 5 },
@@ -205,6 +274,7 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     const dto = buildAnalyticsDto({
       facts,
       clients,
+      agentBalances,
       agentScopeId: null,
       dateRange: null,
       pagination: defaultPagination,
@@ -223,15 +293,25 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
       makeFact({
         applicationId: `m${i}`,
         agentId: `match-${i}`,
-        effectiveStatus: 'pending',
-        receivedAt: new Date('2026-01-01T00:00:00.000Z'),
+        effectiveStatus: 'filling',
+        bookedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        paymentPaid: false,
+        paymentAmount: 0,
+        submitCity: '',
+        visitDate: '',
       }),
     ).concat([
       makeFact({
         applicationId: 'other-1',
         agentId: 'other-agent',
-        effectiveStatus: 'pending',
-        receivedAt: new Date('2026-01-01T00:00:00.000Z'),
+        effectiveStatus: 'filling',
+        bookedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        paymentPaid: false,
+        paymentAmount: 0,
+        submitCity: '',
+        visitDate: '',
       }),
     ]);
     const manyClients = [
@@ -260,6 +340,7 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     const dto = buildAnalyticsDto({
       facts: manyFacts,
       clients: manyClients,
+      agentBalances: [],
       agentScopeId: null,
       dateRange: null,
       pagination: { page: 2, pageSize: 2 },
@@ -294,6 +375,7 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     const byId = buildAnalyticsDto({
       facts,
       clients,
+      agentBalances,
       agentScopeId: null,
       dateRange: null,
       pagination: defaultPagination,
@@ -306,6 +388,7 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     const byName = buildAnalyticsDto({
       facts,
       clients,
+      agentBalances,
       agentScopeId: null,
       dateRange: null,
       pagination: defaultPagination,
@@ -316,10 +399,64 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     expect(byName.perAgent.total).toBe(1);
   });
 
-  it('filters status metrics by receivedAt while clients ignore dates', (): void => {
+  it('populates §5.1 aggregates from application payment/city/visit fields', (): void => {
     const dto = buildAnalyticsDto({
       facts,
       clients,
+      agentBalances,
+      agentScopeId: null,
+      dateRange: null,
+      pagination: defaultPagination,
+      agentQ: '',
+      agentsById: emptyAgents,
+    });
+
+    expect(dto.bookedVsUnpaid).toEqual({
+      bookedCount: 2,
+      unpaidCount: 2,
+    });
+    expect(dto.cityDistribution).toEqual([
+      { city: 'Kazan', count: 1, percentage: '25.00' },
+      { city: 'Moscow', count: 3, percentage: '75.00' },
+    ]);
+    expect(dto.paymentCompleteness).toEqual({
+      totalApplications: 4,
+      paidCount: 2,
+      completenessPercentage: '50.00',
+    });
+    expect(dto.paidVolumeByAgent).toEqual([
+      { agentId: 'agent-a', paidAmount: '200.00', paidCount: 1 },
+      { agentId: 'agent-b', paidAmount: '250.00', paidCount: 1 },
+    ]);
+  });
+
+  it('zero-fills all six BUSINESS status buckets', (): void => {
+    const dto = buildAnalyticsDto({
+      facts,
+      clients,
+      agentBalances,
+      agentScopeId: null,
+      dateRange: null,
+      pagination: defaultPagination,
+      agentQ: '',
+      agentsById: emptyAgents,
+    });
+
+    expect(dto.global.byStatus.map((b) => b.status)).toEqual([
+      'filling',
+      'draft',
+      'not_ready_for_appointment',
+      'ready_for_appointment',
+      'booked',
+      'declined',
+    ]);
+  });
+
+  it('filters status metrics and clientsPerAgent by createdAt', (): void => {
+    const dto = buildAnalyticsDto({
+      facts,
+      clients,
+      agentBalances,
       agentScopeId: null,
       dateRange: {
         from: new Date('2026-01-01T00:00:00.000Z'),
@@ -330,18 +467,39 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
       agentsById: emptyAgents,
     });
 
-    expect(dto.global.totalApplications).toBe(2);
+    // a1/a2/a3 created in January (includes draft without bookedAt)
+    expect(dto.global.totalApplications).toBe(3);
     expect(dto.perAgent.items.map((p) => p.agentId)).toEqual(['agent-a']);
     expect(dto.clientsPerAgent).toEqual([
-      { agentId: 'agent-a', count: 3, percentage: '75.00' },
-      { agentId: 'agent-b', count: 1, percentage: '25.00' },
+      {
+        agentId: 'agent-a',
+        count: 3,
+        percentage: '100.00',
+        balance: '120.50',
+        registered: 3,
+        paid: 1,
+        paidAmount: '200.00',
+      },
+    ]);
+    expect(dto.bookedVsUnpaid).toEqual({
+      bookedCount: 1,
+      unpaidCount: 2,
+    });
+    expect(dto.paymentCompleteness).toEqual({
+      totalApplications: 3,
+      paidCount: 1,
+      completenessPercentage: '33.33',
+    });
+    expect(dto.paidVolumeByAgent).toEqual([
+      { agentId: 'agent-a', paidAmount: '200.00', paidCount: 1 },
     ]);
   });
 
-  it('scopes all series to a single agent', (): void => {
+  it('scopes all series to a single agent and never leaks other balances', (): void => {
     const dto = buildAnalyticsDto({
       facts,
       clients,
+      agentBalances,
       agentScopeId: 'agent-b',
       dateRange: null,
       pagination: defaultPagination,
@@ -358,7 +516,25 @@ describe('buildAnalyticsDto (AC-15 / AC-15a / AC-15b / §6.7.1 / DEC-P2 / DEC-P1
     expect(scopedAgent.agentId).toBe('agent-b');
     expect(dto.global.totalApplications).toBe(1);
     expect(dto.clientsPerAgent).toEqual([
-      { agentId: 'agent-b', count: 1, percentage: '100.00' },
+      {
+        agentId: 'agent-b',
+        count: 1,
+        percentage: '100.00',
+        balance: '40.00',
+        registered: 1,
+        paid: 1,
+        paidAmount: '250.00',
+      },
     ]);
+    expect(
+      dto.clientsPerAgent.every((row) => row.agentId === 'agent-b'),
+    ).toBe(true);
+    expect(dto.paidVolumeByAgent).toEqual([
+      { agentId: 'agent-b', paidAmount: '250.00', paidCount: 1 },
+    ]);
+    expect(dto.bookedVsUnpaid).toEqual({
+      bookedCount: 1,
+      unpaidCount: 0,
+    });
   });
 });

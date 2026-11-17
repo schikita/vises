@@ -1,4 +1,8 @@
 import type { ApplicationStatus } from '@vises/contracts';
+import {
+  APPLICATION_STATUSES,
+  APPLICATION_STATUS_TRANSITION_MATRIX,
+} from '@vises/contracts';
 import type { ApplicationStatusHistory } from '../../database/entities/application-status-history.entity';
 import type { Application } from '../../database/entities/application.entity';
 import type { BalanceTransaction } from '../../database/entities/balance-transaction.entity';
@@ -32,7 +36,12 @@ const APPLICATION_FORBIDDEN_PLAIN_KEYS = new Set([
   'otherNames',
 ]);
 
-describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
+const isMatrixEdge = (from: string | null, to: string): boolean =>
+  APPLICATION_STATUS_TRANSITION_MATRIX.some(
+    (row) => row.source === from && row.target === to,
+  );
+
+describe('buildFr11SeedDataset (AC-19 / FR-11 / REQ-006)', (): void => {
   const createClient = (data: Partial<Client>): Client => data as Client;
   const createApp = (data: Partial<Application>): Application =>
     data as Application;
@@ -87,32 +96,36 @@ describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
   it('seeds 1:1 clients and applications for all agents within 2–50 bounds', (): void => {
     expect(dataset.clients).toHaveLength(expectedClientCount);
     expect(dataset.applications).toHaveLength(expectedClientCount);
-    expect(agentPlans.every((plan) =>
-      plan.clientCount >= SEED_CLIENTS_PER_AGENT_MIN &&
-      plan.clientCount <= SEED_CLIENTS_PER_AGENT_MAX,
-    )).toBe(true);
+    expect(
+      agentPlans.every(
+        (plan) =>
+          plan.clientCount >= SEED_CLIENTS_PER_AGENT_MIN &&
+          plan.clientCount <= SEED_CLIENTS_PER_AGENT_MAX,
+      ),
+    ).toBe(true);
     const clientIds = new Set(dataset.clients.map((c) => c.id));
     const appClientIds = dataset.applications.map((a) => a.clientId);
     expect(new Set(appClientIds).size).toBe(expectedClientCount);
     expect(appClientIds.every((id) => clientIds.has(id))).toBe(true);
 
     for (const plan of agentPlans) {
-      const agentClients = dataset.clients.filter((c) => c.agentId === plan.userId);
+      const agentClients = dataset.clients.filter(
+        (c) => c.agentId === plan.userId,
+      );
       expect(agentClients).toHaveLength(plan.clientCount);
     }
   });
 
-  it('covers every status at least once globally', (): void => {
+  it('uses only BUSINESS statuses and covers the six-value pool', (): void => {
     const statuses = new Set(dataset.applications.map((a) => a.status));
-    expect(statuses).toEqual(
-      new Set<ApplicationStatus>([
-        'drafting',
-        'pending',
-        'rejected',
-        'booked',
-        'issued',
-      ]),
-    );
+    for (const status of statuses) {
+      expect(APPLICATION_STATUSES).toContain(status);
+    }
+    expect(statuses.has('drafting' as ApplicationStatus)).toBe(false);
+    expect(statuses.has('pending' as ApplicationStatus)).toBe(false);
+    expect(statuses.has('rejected' as ApplicationStatus)).toBe(false);
+    expect(statuses.has('issued' as ApplicationStatus)).toBe(false);
+    expect(statuses.size).toBe(APPLICATION_STATUSES.length);
   });
 
   it('writes stub ciphertext into Client FR-6 columns (not plaintext)', (): void => {
@@ -160,31 +173,59 @@ describe('buildFr11SeedDataset (AC-19 / FR-11)', (): void => {
     }
   });
 
-  it('includes drafting→pending and booked→issued history where applicable', (): void => {
+  it('seeds §4.C-valid BUSINESS history and booked visit/payment heuristics', (): void => {
     const pairs = dataset.history.map(
       (h) => `${h.fromStatus}->${h.toStatus}`,
     );
-    expect(pairs.filter((p) => p === 'drafting->pending').length).toBeGreaterThan(
-      0,
-    );
-    expect(pairs.filter((p) => p === 'booked->issued').length).toBeGreaterThan(0);
+    expect(
+      pairs.filter((p) => p === 'draft->not_ready_for_appointment').length,
+    ).toBeGreaterThan(0);
+    expect(
+      pairs.filter((p) => p === 'ready_for_appointment->booked').length,
+    ).toBeGreaterThan(0);
+    expect(pairs).not.toContain('drafting->pending');
+    expect(pairs).not.toContain('booked->issued');
+    expect(pairs).not.toContain('pending->booked');
 
-    const issuedApps = dataset.applications.filter((a) => a.status === 'issued');
-    expect(issuedApps.length).toBeGreaterThan(0);
-    for (const app of issuedApps) {
+    for (const row of dataset.history) {
+      expect(isMatrixEdge(row.fromStatus, row.toStatus)).toBe(true);
+    }
+
+    const bookedApps = dataset.applications.filter((a) => a.status === 'booked');
+    expect(bookedApps.length).toBeGreaterThan(0);
+    for (const app of bookedApps) {
+      expect(app.paymentPaid).toBe(true);
+      expect(app.visitDate.length).toBeGreaterThan(0);
       const appHistory = dataset.history.filter(
         (h) => h.applicationId === app.id,
       );
       expect(
         appHistory.some(
-          (h) => h.fromStatus === 'drafting' && h.toStatus === 'pending',
+          (h) =>
+            h.fromStatus === 'draft' &&
+            h.toStatus === 'not_ready_for_appointment',
         ),
       ).toBe(true);
       expect(
         appHistory.some(
-          (h) => h.fromStatus === 'booked' && h.toStatus === 'issued',
+          (h) =>
+            h.fromStatus === 'ready_for_appointment' && h.toStatus === 'booked',
         ),
       ).toBe(true);
+    }
+
+    const nonBooked = dataset.applications.filter((a) => a.status !== 'booked');
+    for (const app of nonBooked) {
+      expect(app.paymentPaid).toBe(false);
+      expect(app.visitDate).toBe('');
+    }
+
+    const draftLike = dataset.applications.filter(
+      (a) => a.status === 'draft' || a.status === 'filling',
+    );
+    expect(draftLike.length).toBeGreaterThan(0);
+    for (const app of draftLike) {
+      expect(app.documents).toHaveLength(0);
     }
   });
 });

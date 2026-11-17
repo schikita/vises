@@ -1,5 +1,7 @@
+import type { ApplicationStatus } from '@vises/contracts';
+
 /**
- * Visa center monitor system actor + API-key header (FR-7.4 / AC-13 / plan pin).
+ * Visa center monitor system actor + API-key header (FR-13 / §4.C / plan pin).
  * Chosen header: `X-Visa-Center-Monitor-Key` (not Authorization Bearer).
  */
 export const VISA_CENTER_MONITOR_ACTOR = 'visa_center_monitor' as const;
@@ -12,7 +14,19 @@ export const VISA_CENTER_MONITOR_API_KEY_HEADER =
 export const VISA_CENTER_MONITOR_API_KEY_HEADER_LOWER =
   'x-visa-center-monitor-key' as const;
 
-/** Default history trigger when monitor marks drafting → pending. */
+/**
+ * FR-13 monitor remap target (replaces legacy drafting→pending).
+ */
+export const VISA_CENTER_MONITOR_REMAP_TARGET =
+  'not_ready_for_appointment' as const satisfies ApplicationStatus;
+
+/** FR-13 allowed sources for the retained monitor pending endpoint. */
+export const VISA_CENTER_MONITOR_REMAP_SOURCES = [
+  'draft',
+  'filling',
+] as const satisfies readonly ApplicationStatus[];
+
+/** Default history trigger when monitor remaps into not_ready_for_appointment. */
 export const VISA_CENTER_MONITOR_DEFAULT_TRIGGER =
   'visa_center_monitor_pending' as const;
 

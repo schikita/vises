@@ -244,14 +244,14 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     return moduleRef.get(ClientsService);
   };
 
-  it('create succeeds: Client + Application(drafting) + debitWithLock one txn', async (): Promise<void> => {
+  it('create succeeds: Client + Application(draft) + debitWithLock one txn', async (): Promise<void> => {
     const service = await createService();
     const dto = await service.create({ email: 'c@example.com' }, agent);
 
     expect(settingsGet).toHaveBeenCalled();
     expect(savedClients).toHaveLength(1);
     expect(savedApplications).toHaveLength(1);
-    expect(savedApplications[0]?.status).toBe('drafting');
+    expect(savedApplications[0]?.status).toBe('draft');
     expect(savedApplications[0]?.clientId).toBe(savedClients[0]?.id);
     expect(savedApplications[0]?.paymentAmount).toBe(180);
     expect(debitWithLock).toHaveBeenCalledTimes(1);

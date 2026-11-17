@@ -8,8 +8,8 @@ import type { Application } from '../../database/entities/application.entity';
 /**
  * Append a «Нужны правки» timeline note when Start / date validation fails.
  *
- * T2: does **not** mutate `Application.status` — `'fixes'` is outside the
- * ApplicationStatus union (FR-7). Status remapping belongs to T9.
+ * Timeline-only (FR-12 / DEC-SPLIT): does **not** mutate `Application.status`.
+ * `'fixes'` is not a BUSINESS status; SYSTEM validation stays off the column.
  * Returns whether a timeline entry was appended.
  */
 export const applyApplicationNeedsFixesStatus = (

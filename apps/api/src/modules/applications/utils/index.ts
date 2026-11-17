@@ -1,4 +1,5 @@
 export { assertCanReadApplicationHistory } from './assert-can-read-application-history.util';
+export { assertMonitorStatusRemapAllowed } from './assert-monitor-status-remap-allowed.util';
 export { assertStatusTransitionAllowed } from './assert-status-transition-allowed.util';
 export { findStatusTransition } from './find-status-transition.util';
 export { lockApplicationForUpdate } from './lock-application-for-update.util';

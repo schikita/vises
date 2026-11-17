@@ -61,4 +61,4 @@ export const PORTAL_AUTOFILL_MSG_RUN_LOCKED =
  * (portal-autofill-workflow-cutover DEC-002 / REQ-003).
  */
 export const PORTAL_AUTOFILL_MSG_GONE =
-  'Регистрация на портале запускается только через сценарий BLS. Используйте «Запустить» на вкладке «Автозаполнение».';
+  'Регистрация на портале запускается только через заполнение BLS. Используйте «Запустить» на вкладке «Автозаполнение».';

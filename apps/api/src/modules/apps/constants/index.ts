@@ -6,7 +6,6 @@ export {
   CLIENT_ALLOWED_STATUS,
   DEFAULT_APP_STATUS,
 } from './app-status.constants';
-export type { AppStatusLiteral } from './app-status.constants';
 
 export { DEFAULT_PAYMENT_AMOUNT } from './payment.constants';
 
@@ -22,4 +21,5 @@ export { APPS_SERVICE } from './apps-di.tokens';
 
 export { APPS_LIST_SORT_KEYS } from './apps-list-sort.constants';
 export { VISITS_LIST_SORT_KEYS } from './visits-list-sort.constants';
+export { PAYMENTS_LIST_SORT_KEYS } from './payments-list-sort.constants';
 export { VISIT_ELIGIBLE_STATUSES } from './visits-eligibility.constants';

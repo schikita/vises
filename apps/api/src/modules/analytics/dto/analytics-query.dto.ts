@@ -5,10 +5,11 @@ import {
 } from '../constants';
 
 /**
- * Query for `GET /stats/roles-applications`.
- * Both date bounds omitted → current totals. Either/both → filter by receivedAt.
- * `page`/`pageSize` paginate only `perAgent` (qa-polish DEC-P2 / DEC-P14).
- * Optional `q` filters `perAgent` agent universe before pagination (DEC-P15).
+ * Query for `GET /stats/roles-applications` (FR-15 / qa-polish DEC-P2 / DEC-P14 / DEC-P15).
+ * Both date bounds omitted → current totals. Either/both → filter by
+ * application `createdAt`.
+ * `page`/`pageSize` paginate only `perAgent`.
+ * Optional `q` filters `perAgent` agent universe before pagination.
  */
 export class AnalyticsQueryDto {
   @IsOptional()

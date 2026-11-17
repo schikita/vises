@@ -16,12 +16,11 @@ web/dist
 specs
 *_pg
 logs
-vises_rabbitmq
-vises_pg
 
 # Compose bind-mount data (dev overlay)
 apps/api/db/
-apps/api/rabbitmq/
+apps/api/rabbitmq
+apps/api/pg
 apps/api/uploads/
 apps/api/logs/
 apps/workflow-worker/uploads/

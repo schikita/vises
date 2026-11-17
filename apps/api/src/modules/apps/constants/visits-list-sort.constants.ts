@@ -6,5 +6,5 @@ export const VISITS_LIST_SORT_KEYS: readonly VisitsListSortKey[] = [
   'date',
   'time',
   'place',
-  'status',
+  'created',
 ] as const;

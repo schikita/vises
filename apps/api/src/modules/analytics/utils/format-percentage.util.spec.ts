@@ -18,10 +18,11 @@ describe('formatPercentage (AC-15a / §6.7.1)', (): void => {
     expect(formatPercentage(2, 3)).toBe('66.67');
   });
 
-  it('formats status-share percentages used by analytics', (): void => {
-    // 2 of 8 → 25.00%
+  it('formats status-share percentages used by analytics (FR-11)', (): void => {
+    // Agent A: 8 apps — 2 draft → 25.00%
     expect(formatPercentage(2, 8)).toBe('25.00');
-    // 1 of 8 → 12.50%
+    // 1 declined → 12.50%
     expect(formatPercentage(1, 8)).toBe('12.50');
   });
+
 });

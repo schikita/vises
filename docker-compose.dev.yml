@@ -1,3 +1,16 @@
+# Dev overrides. Use with the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch
+# Requires:
+#   apps/api/.env.dev  (from .env.dev.example)
+#   apps/workflow-worker/.env.dev
+#   apps/web/.env.dev  (from .env.dev.example)
+#
+# Nginx runs inside the `web` container (apps/web/nginx/nginx.conf).
+#
+# URLs (login / SPA at root):
+#   local:  http://localhost:8090/
+#   remote: http://go-vises.top/   (DNS A → server; host :80 published)
+
 services:
   db:
     env_file:

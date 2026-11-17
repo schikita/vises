@@ -65,10 +65,16 @@ export type { UserMeDto } from './user-me.types';
 export type { UserListItemDto } from './user-list-item.types';
 export type { PaginatedList } from './paginated-list.types';
 export type {
+  AnalyticsBookedVsUnpaidDto,
+  AnalyticsCityBucketDto,
   AnalyticsClientsPerAgentDto,
+  AnalyticsDateFilterDimension,
   AnalyticsDto,
   AnalyticsGlobalDto,
+  AnalyticsPaidVolumeAgentDto,
+  AnalyticsPaymentCompletenessDto,
   AnalyticsPerAgentDto,
   AnalyticsQuery,
+  AnalyticsQueryDto,
   AnalyticsStatusBucketDto,
 } from './analytics.types';

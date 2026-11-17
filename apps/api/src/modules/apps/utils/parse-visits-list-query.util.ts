@@ -1,11 +1,11 @@
 import { normalizePage, normalizePageSize } from '../../../shared/utils';
 import { VISITS_LIST_SORT_KEYS } from '../constants/visits-list-sort.constants';
 import type {
-  VisitsFilterMode,
   VisitsListQuery,
   VisitsListSortDir,
   VisitsListSortKey,
 } from '../types/visits-list-query.types';
+import { parseVisitsIsoDate } from './parse-visits-iso-date.util';
 
 /** Parse raw query strings into a clamped visits list query. */
 export const parseVisitsListQuery = (raw: {
@@ -13,7 +13,8 @@ export const parseVisitsListQuery = (raw: {
   pageSize?: string;
   q?: string;
   city?: string;
-  mode?: string;
+  from?: string;
+  to?: string;
   sort?: string;
   sortDir?: string;
 }): VisitsListQuery => {
@@ -24,18 +25,15 @@ export const parseVisitsListQuery = (raw: {
   const sortDirRaw = (raw.sortDir ?? '').trim().toLowerCase();
   const sortDir: VisitsListSortDir =
     sortDirRaw === 'asc' || sortDirRaw === 'desc' ? sortDirRaw : 'asc';
-  const modeRaw = (raw.mode ?? '').trim().toLowerCase();
-  const mode: VisitsFilterMode =
-    modeRaw === 'all' || modeRaw === 'upcoming' ? modeRaw : 'upcoming';
 
   return {
     page: normalizePage(raw.page),
     pageSize: normalizePageSize(raw.pageSize),
     q: (raw.q ?? '').trim(),
     city: (raw.city ?? '').trim(),
-    mode,
+    from: parseVisitsIsoDate(raw.from),
+    to: parseVisitsIsoDate(raw.to),
     sort,
     sortDir,
-    todayIsoDate: new Date().toISOString().slice(0, 10),
   };
 };

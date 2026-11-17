@@ -1,8 +1,14 @@
-import type { Application } from '../../database/entities/application.entity';
+import { applicationRecencyTime } from './application-recency-time.util';
 
-/** Prefer greatest `updatedAt||createdAt` ISO key; return that application id. */
+/**
+ * Pick the latest application id by max `updatedAt`, then `createdAt`.
+ */
 export const pickLatestApplicationId = (
-  apps: readonly Application[],
+  apps: readonly {
+    id: string;
+    updatedAt: Date | string;
+    createdAt: Date | string;
+  }[],
 ): string | null => {
   if (apps.length === 0) {
     return null;
@@ -14,17 +20,18 @@ export const pickLatestApplicationId = (
     if (candidate === undefined || latest === undefined) {
       continue;
     }
-    const latestKey = (
-      latest.updatedAt?.toISOString?.() ??
-      latest.createdAt?.toISOString?.() ??
-      ''
-    ).toString();
-    const candidateKey = (
-      candidate.updatedAt?.toISOString?.() ??
-      candidate.createdAt?.toISOString?.() ??
-      ''
-    ).toString();
-    if (candidateKey.localeCompare(latestKey) > 0) {
+    const latestUpdated = applicationRecencyTime(latest.updatedAt);
+    const candidateUpdated = applicationRecencyTime(candidate.updatedAt);
+    if (candidateUpdated !== latestUpdated) {
+      if (candidateUpdated > latestUpdated) {
+        latest = candidate;
+      }
+      continue;
+    }
+    if (
+      applicationRecencyTime(candidate.createdAt) >
+      applicationRecencyTime(latest.createdAt)
+    ) {
       latest = candidate;
     }
   }

@@ -106,8 +106,12 @@ export class UsersService implements IUsersService {
       }
       const email = row.email.trim().toLowerCase();
       const login = row.login.trim().toLowerCase();
-      if (email) identityKeys.add(email);
-      if (login) identityKeys.add(login);
+      if (email) {
+        identityKeys.add(email);
+      }
+      if (login) {
+        identityKeys.add(login);
+      }
     }
 
     const identityAppsPool =
@@ -312,6 +316,13 @@ export class UsersService implements IUsersService {
       actorRole: actor.role,
       targetRole: row.role,
     });
+
+    if (body.active === false && row.id === actor.id) {
+      throw new HttpException(
+        'Cannot disable yourself',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     if (body.active === false && row.role === 'admin') {
       const others = await this.users.count({

@@ -49,13 +49,14 @@ export const buildFr11AgentApps = (
       mapSeedApplicantToPassportFields(applicant),
     );
     const createdAt = addSeedUtcDays(input.now, -(input.statuses.length - index));
-    const hasVisit = status === 'booked' || status === 'issued';
-    const paymentPaid = status === 'booked' || status === 'issued';
+    const hasVisit = status === 'booked';
+    const paymentPaid = status === 'booked';
     const travelDate = pickSeedDateString(2026, 2027, rng);
     const travelDay = Number(travelDate.slice(8, 10));
     const returnDay = Math.min(28, travelDay + pickSeedInt(5, 14, rng));
     const returnDate = `${travelDate.slice(0, 8)}${String(returnDay).padStart(2, '0')}`;
-    const docsCount = status === 'drafting' ? 0 : pickSeedInt(1, 3, rng);
+    const docsCount =
+      status === 'draft' || status === 'filling' ? 0 : pickSeedInt(1, 3, rng);
 
     clientIds.push(clientId);
     outClients.push(

@@ -21,7 +21,7 @@ import { pickSeedItem } from './pick-seed-item.util';
 
 /**
  * Build the deterministic 20-agent FR-11 plan: client counts in [2, 50],
- * random statuses over the five-value union, and balance slots =
+ * random statuses over the BUSINESS status union, and balance slots =
  * client_count + random(0..5).
  */
 export const buildSeedAgentPlans = (): SeedAgentPlan[] => {

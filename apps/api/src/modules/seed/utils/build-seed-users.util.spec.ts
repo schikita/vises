@@ -55,6 +55,14 @@ describe('buildSeedUsers (FR-11)', (): void => {
       expect(agent?.inviteToken).toBe(plan.inviteToken);
       expect(agent?.invitePassword).toBe(SEED_AGENT_PASSWORD);
       expect(agent?.balance).toBe(formatSeedMoney(plan.finalBalanceWhole, 1));
+      expect(agent?.id).toMatch(/^u-agent-\d{2}$/);
+      expect(agent?.login).toMatch(/^agent-\d{2}@vises\.app$/);
     }
+
+    expect(result.users.some((u) => u.id === 'u-agent-a')).toBe(false);
+    expect(result.users.some((u) => u.id === 'u-agent-b')).toBe(false);
+
+    const createdAts = result.users.map((u) => u.createdAt?.toISOString());
+    expect(new Set(createdAts).size).toBe(result.users.length);
   });
 });

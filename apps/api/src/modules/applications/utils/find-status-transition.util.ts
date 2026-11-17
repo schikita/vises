@@ -5,7 +5,7 @@ import {
 } from '@vises/contracts';
 
 /**
- * Look up the FR-7.4 matrix row for source → target (AC-12 / AC-14).
+ * Look up the §4.C / FR-13 matrix row for source → target.
  */
 export const findStatusTransition = (
   source: ApplicationStatus,

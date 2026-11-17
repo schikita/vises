@@ -6,7 +6,8 @@ import {
 import { formatPercentage } from './format-percentage.util';
 
 /**
- * Status distribution buckets (§6.7.1). Always emits every ApplicationStatus.
+ * Status distribution buckets (§6.7.1 / FR-15).
+ * Always zero-fills all six BUSINESS statuses via APPLICATION_STATUSES.
  */
 export const buildStatusBuckets = (
   statusCounts: ReadonlyMap<ApplicationStatus, number>,

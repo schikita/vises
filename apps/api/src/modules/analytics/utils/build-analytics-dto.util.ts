@@ -1,21 +1,24 @@
-import type {
-  AnalyticsClientsPerAgentDto,
-  AnalyticsDto,
-  AnalyticsPerAgentDto,
-} from '@vises/contracts';
+import type { AnalyticsDto, AnalyticsPerAgentDto } from '@vises/contracts';
 import { buildPaginatedList } from '../../../shared/utils';
 import type { BuildAnalyticsDtoInput } from '../types';
 import { agentMatchesAnalyticsQ } from './agent-matches-analytics-q.util';
+import { buildBookedVsUnpaid } from './build-booked-vs-unpaid.util';
+import { buildCityDistribution } from './build-city-distribution.util';
+import { buildClientsPerAgent } from './build-clients-per-agent.util';
+import { buildPaidVolumeByAgent } from './build-paid-volume-by-agent.util';
+import { buildPaymentCompleteness } from './build-payment-completeness.util';
 import { buildStatusBuckets } from './build-status-buckets.util';
 import { countFactsByStatus } from './count-facts-by-status.util';
-import { filterFactsByReceivedAt } from './filter-facts-by-received-at.util';
-import { formatPercentage } from './format-percentage.util';
+import { filterFactsByCreatedAt } from './filter-facts-by-created-at.util';
 
 /**
- * Assemble AnalyticsDto per §6.7.1 / AC-15 / AC-15a / AC-15b / AC-16 / DEC-P2 / DEC-P15.
- * Status series use history-derived facts; clients-per-agent ignores date range.
+ * Assemble AnalyticsDto per §6.7.1 / AC-15 / DEC-ASAU-003 / DEC-ASAU-009 /
+ * DEC-P2 / DEC-P15.
+ * Status series, §5.1 aggregates, and `clientsPerAgent` use facts filtered by
+ * application `createdAt` when a date range is set.
  * `perAgent` is sorted by client count descending (tie-break agentId), optionally
  * filtered by `agentQ`, then paginated. `clientsPerAgent` + `global` stay unfiltered by q.
+ * Agent scope restricts all series to self; balances never leak other agents.
  */
 export const buildAnalyticsDto = (
   input: BuildAnalyticsDtoInput,
@@ -34,10 +37,15 @@ export const buildAnalyticsDto = (
           (row): boolean => row.agentId === input.agentScopeId,
         );
 
-  const statusFacts = filterFactsByReceivedAt(
-    scopedFacts,
-    input.dateRange,
-  );
+  const scopedBalances =
+    input.agentScopeId === null
+      ? input.agentBalances
+      : input.agentBalances.filter(
+          (row): boolean => row.agentId === input.agentScopeId,
+        );
+
+  const statusFacts = filterFactsByCreatedAt(scopedFacts, input.dateRange);
+  const periodScoped = input.dateRange !== null;
 
   const globalCounts = countFactsByStatus(statusFacts);
   const globalTotal = statusFacts.length;
@@ -46,7 +54,6 @@ export const buildAnalyticsDto = (
   for (const row of scopedClients) {
     clientCounts.set(row.agentId, (clientCounts.get(row.agentId) ?? 0) + 1);
   }
-  const totalClients = scopedClients.length;
 
   const agentIds = new Set<string>();
   for (const fact of statusFacts) {
@@ -84,17 +91,6 @@ export const buildAnalyticsDto = (
   const start = (page - 1) * pageSize;
   const perAgentPage = perAgentAll.slice(start, start + pageSize);
 
-  const clientsPerAgent: AnalyticsClientsPerAgentDto[] = [...clientCounts.keys()]
-    .sort((a, b): number => a.localeCompare(b))
-    .map((agentId): AnalyticsClientsPerAgentDto => {
-      const count = clientCounts.get(agentId) ?? 0;
-      return {
-        agentId,
-        count,
-        percentage: formatPercentage(count, totalClients),
-      };
-    });
-
   return {
     perAgent: buildPaginatedList({
       items: perAgentPage,
@@ -106,6 +102,15 @@ export const buildAnalyticsDto = (
       totalApplications: globalTotal,
       byStatus: buildStatusBuckets(globalCounts, globalTotal),
     },
-    clientsPerAgent,
+    clientsPerAgent: buildClientsPerAgent(
+      scopedClients,
+      statusFacts,
+      scopedBalances,
+      periodScoped,
+    ),
+    bookedVsUnpaid: buildBookedVsUnpaid(statusFacts),
+    cityDistribution: buildCityDistribution(statusFacts),
+    paymentCompleteness: buildPaymentCompleteness(statusFacts),
+    paidVolumeByAgent: buildPaidVolumeByAgent(statusFacts),
   };
 };
