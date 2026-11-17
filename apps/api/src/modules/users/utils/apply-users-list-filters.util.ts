@@ -2,7 +2,7 @@ import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 
 /**
  * Apply users list role + text filters (parity with Users.tsx:
- * name/login/email search).
+ * id exact match + name/login/email search).
  */
 export const applyUsersListFilters = <T extends ObjectLiteral>(
   qb: SelectQueryBuilder<T>,
@@ -16,11 +16,12 @@ export const applyUsersListFilters = <T extends ObjectLiteral>(
     const q = `%${filters.q.toLowerCase()}%`;
     qb.andWhere(
       `(
-        LOWER(${alias}.name) LIKE :q
+        ${alias}.id = :qExact
+        OR LOWER(${alias}.name) LIKE :q
         OR LOWER(${alias}.login) LIKE :q
         OR LOWER(${alias}.email) LIKE :q
       )`,
-      { q },
+      { q, qExact: filters.q },
     );
   }
   return qb;

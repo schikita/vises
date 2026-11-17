@@ -1,8 +1,9 @@
 import type { ApplicationStatus } from './application-status.types';
 
 /**
- * Application response DTO (FR-5 / FR-7 / §6.6).
+ * Application response DTO (FR-5 / FR-11 / §4.A).
  * Does not embed passport plaintext; references `clientId` only.
+ * `status` is a BUSINESS `ApplicationStatus` id only.
  * `visaSubType` is optional so existing mappers stay compatible until APF-TASK-003 wires read.
  */
 export type ApplicationDto = {
@@ -21,7 +22,8 @@ export type ApplicationDto = {
 };
 
 /**
- * Staff/monitor status change body (FR-7 / §6.6 / AC-12).
+ * Staff/monitor/system status change body (FR-11 / FR-13 / §4.C).
+ * `targetStatus` must be a legal matrix target for the caller's actor.
  */
 export type ApplicationStatusChangeDto = {
   targetStatus: ApplicationStatus;

@@ -5,8 +5,9 @@ import {
 } from '../constants';
 
 /**
- * Query for `GET /stats/roles-applications`.
- * Both omitted → current totals. Either/both → filter status metrics by receivedAt.
+ * Query for `GET /stats/roles-applications` (FR-15).
+ * Both omitted → current totals. Either/both → filter status metrics by
+ * application `createdAt`.
  */
 export class AnalyticsQueryDto {
   @IsOptional()

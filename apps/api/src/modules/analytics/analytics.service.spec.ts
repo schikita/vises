@@ -6,7 +6,7 @@ import { Client } from '../database/entities/client.entity';
 import { User } from '../database/entities/user.entity';
 import { AnalyticsService } from './analytics.service';
 
-describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
+describe('AnalyticsService (AC-15 / DEC-ASAU-003 / DEC-ASAU-009)', (): void => {
   type QbStub = {
     innerJoin: jest.Mock;
     select: jest.Mock;
@@ -27,6 +27,7 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
   let appsQb: QbStub;
   let historyFind: jest.Mock;
   let clientsFind: jest.Mock;
+  let usersFind: jest.Mock;
   let service: AnalyticsService;
 
   const admin: User = Object.assign(new User(), {
@@ -40,28 +41,58 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
   });
 
   const owners = [
-    { applicationId: 'app-1', agentId: 'agent-a' },
-    { applicationId: 'app-2', agentId: 'agent-a' },
-    { applicationId: 'app-3', agentId: 'agent-b' },
+    {
+      applicationId: 'app-1',
+      agentId: 'agent-a',
+      paymentPaid: true,
+      paymentAmount: 200,
+      submitCity: 'Moscow',
+      visitDate: '2026-01-15',
+      createdAt: new Date('2026-01-10T00:00:00.000Z'),
+    },
+    {
+      applicationId: 'app-2',
+      agentId: 'agent-a',
+      paymentPaid: false,
+      paymentAmount: 180,
+      submitCity: 'Kazan',
+      visitDate: '',
+      createdAt: new Date('2026-01-12T00:00:00.000Z'),
+    },
+    {
+      applicationId: 'app-3',
+      agentId: 'agent-b',
+      paymentPaid: false,
+      paymentAmount: 180,
+      submitCity: 'Moscow',
+      visitDate: '',
+      createdAt: new Date('2026-02-01T00:00:00.000Z'),
+    },
   ];
 
   const historyRows = [
     {
       applicationId: 'app-1',
-      fromStatus: 'drafting' as const,
-      toStatus: 'pending' as const,
+      fromStatus: 'draft' as const,
+      toStatus: 'not_ready_for_appointment' as const,
       createdAt: new Date('2026-01-10T00:00:00.000Z'),
     },
     {
       applicationId: 'app-1',
-      fromStatus: 'pending' as const,
+      fromStatus: 'not_ready_for_appointment' as const,
+      toStatus: 'ready_for_appointment' as const,
+      createdAt: new Date('2026-01-10T12:00:00.000Z'),
+    },
+    {
+      applicationId: 'app-1',
+      fromStatus: 'ready_for_appointment' as const,
       toStatus: 'booked' as const,
       createdAt: new Date('2026-01-11T00:00:00.000Z'),
     },
     {
       applicationId: 'app-3',
-      fromStatus: 'drafting' as const,
-      toStatus: 'pending' as const,
+      fromStatus: 'draft' as const,
+      toStatus: 'not_ready_for_appointment' as const,
       createdAt: new Date('2026-02-01T00:00:00.000Z'),
     },
   ];
@@ -72,10 +103,18 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
     { agentId: 'agent-b' },
   ];
 
+  const agentBalanceRows = [
+    { id: 'agent-a', balance: '99.00' },
+    { id: 'agent-b', balance: '10.00' },
+  ];
+
   beforeEach(async (): Promise<void> => {
     appsQb = createQb(owners);
     historyFind = jest.fn(async (): Promise<typeof historyRows> => historyRows);
     clientsFind = jest.fn(async (): Promise<typeof clientRows> => clientRows);
+    usersFind = jest.fn(
+      async (): Promise<typeof agentBalanceRows> => agentBalanceRows,
+    );
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
@@ -94,6 +133,10 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
           provide: getRepositoryToken(Client),
           useValue: { find: clientsFind },
         },
+        {
+          provide: getRepositoryToken(User),
+          useValue: { find: usersFind },
+        },
       ],
     }).compile();
 
@@ -104,42 +147,120 @@ describe('AnalyticsService (AC-15 / AC-16 / FR-9)', (): void => {
     const dto = await service.getRolesApplications(admin, null);
 
     expect(dto.global.totalApplications).toBe(3);
-    // app-2 has no history → drafting; app-1 booked; app-3 pending
-    expect(
-      dto.global.byStatus.find((b) => b.status === 'drafting')?.count,
-    ).toBe(1);
+    // app-2 has no history → draft; app-1 booked; app-3 not_ready_for_appointment
+    expect(dto.global.byStatus.find((b) => b.status === 'draft')?.count).toBe(
+      1,
+    );
     expect(
       dto.global.byStatus.find((b) => b.status === 'booked')?.count,
     ).toBe(1);
     expect(
-      dto.global.byStatus.find((b) => b.status === 'pending')?.count,
+      dto.global.byStatus.find(
+        (b) => b.status === 'not_ready_for_appointment',
+      )?.count,
     ).toBe(1);
-    expect(dto.clientsPerAgent).toEqual([
-      { agentId: 'agent-a', count: 2, percentage: '66.67' },
-      { agentId: 'agent-b', count: 1, percentage: '33.33' },
+    expect(dto.global.byStatus.map((b) => b.status)).toEqual([
+      'filling',
+      'draft',
+      'not_ready_for_appointment',
+      'ready_for_appointment',
+      'booked',
+      'declined',
     ]);
+    expect(dto.clientsPerAgent).toEqual([
+      {
+        agentId: 'agent-a',
+        count: 2,
+        percentage: '66.67',
+        balance: '99.00',
+        registered: 2,
+        paid: 1,
+        paidAmount: '200.00',
+      },
+      {
+        agentId: 'agent-b',
+        count: 1,
+        percentage: '33.33',
+        balance: '10.00',
+        registered: 1,
+        paid: 0,
+        paidAmount: '0.00',
+      },
+    ]);
+    expect(dto.bookedVsUnpaid).toEqual({
+      bookedCount: 1,
+      unpaidCount: 2,
+    });
+    expect(dto.cityDistribution).toEqual([
+      { city: 'Kazan', count: 1, percentage: '33.33' },
+      { city: 'Moscow', count: 2, percentage: '66.67' },
+    ]);
+    expect(dto.paymentCompleteness).toEqual({
+      totalApplications: 3,
+      paidCount: 1,
+      completenessPercentage: '33.33',
+    });
+    expect(dto.paidVolumeByAgent).toEqual([
+      { agentId: 'agent-a', paidAmount: '200.00', paidCount: 1 },
+    ]);
+    expect(usersFind).toHaveBeenCalledWith({
+      where: { role: 'agent' },
+      select: { id: true, balance: true },
+    });
   });
 
-  it('scopes response for agent actors (self subset)', async (): Promise<void> => {
+  it('scopes response for agent actors (self subset, own balance only)', async (): Promise<void> => {
+    usersFind.mockImplementation(
+      async (): Promise<Array<{ id: string; balance: string }>> => [
+        { id: 'agent-a', balance: '99.00' },
+      ],
+    );
+
     const dto = await service.getRolesApplications(agent, null);
 
     expect(dto.perAgent.every((p) => p.agentId === 'agent-a')).toBe(true);
     expect(dto.global.totalApplications).toBe(2);
     expect(dto.clientsPerAgent).toEqual([
-      { agentId: 'agent-a', count: 2, percentage: '100.00' },
+      {
+        agentId: 'agent-a',
+        count: 2,
+        percentage: '100.00',
+        balance: '99.00',
+        registered: 2,
+        paid: 1,
+        paidAmount: '200.00',
+      },
     ]);
+    expect(
+      dto.clientsPerAgent.every((row) => row.agentId === 'agent-a'),
+    ).toBe(true);
+    expect(dto.paidVolumeByAgent.every((row) => row.agentId === 'agent-a')).toBe(
+      true,
+    );
+    expect(usersFind).toHaveBeenCalledWith({
+      where: { id: 'agent-a' },
+      select: { id: true, balance: true },
+    });
   });
 
-  it('filters status metrics by receivedAt range', async (): Promise<void> => {
+  it('filters status metrics by createdAt range', async (): Promise<void> => {
     const dto = await service.getRolesApplications(admin, {
       from: new Date('2026-01-01T00:00:00.000Z'),
       to: new Date('2026-01-31T23:59:59.999Z'),
     });
 
-    // Only app-1 received in January (app-2 never; app-3 in February)
-    expect(dto.global.totalApplications).toBe(1);
+    // app-1 + app-2 created in January (includes draft without booked)
+    expect(dto.global.totalApplications).toBe(2);
     expect(
       dto.global.byStatus.find((b) => b.status === 'booked')?.count,
     ).toBe(1);
+    expect(
+      dto.global.byStatus.find((b) => b.status === 'draft')?.count,
+    ).toBe(1);
+    expect(dto.paymentCompleteness).toEqual({
+      totalApplications: 2,
+      paidCount: 1,
+      completenessPercentage: '50.00',
+    });
   });
 });

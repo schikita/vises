@@ -66,9 +66,10 @@ export class AppsController {
     return this.apps.upsert(body, user);
   }
 
+  /** DEC-ASAU-006 / REQ-014 — admin|superadmin only (agents fail closed). */
   @Delete(':appId')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin', 'agent')
+  @Roles('admin', 'superadmin')
   remove(@Param('appId') appId: string): Promise<{ ok: true }> {
     return this.apps.remove(appId);
   }

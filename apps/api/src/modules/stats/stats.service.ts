@@ -16,6 +16,7 @@ import type {
   StatsUsersRoleCountRow,
 } from './types';
 import {
+  fillAppsByStatusBuckets,
   fillCreatedByDaySeries,
   mapAppRowToDashboardUpcoming,
   mapUserEntityToDashboardRecent,
@@ -99,13 +100,14 @@ export class StatsService implements IStatsService {
       .select('a.status', 'status')
       .addSelect('COUNT(*)', 'count')
       .groupBy('a.status')
-      .orderBy('a.status', 'ASC')
       .getRawMany<StatsRawCountRow>();
 
-    return rows.map((row) => ({
+    const sparse = rows.map((row) => ({
       status: String(row.status ?? ''),
       count: Number(row.count) || 0,
     }));
+
+    return fillAppsByStatusBuckets(sparse);
   }
 
   private async queryCreatedByDay(

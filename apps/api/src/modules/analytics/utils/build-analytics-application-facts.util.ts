@@ -3,12 +3,12 @@ import type {
   AnalyticsApplicationFact,
   AnalyticsHistoryEvent,
 } from '../types';
+import { resolveBookedAt } from './resolve-booked-at.util';
 import { resolveEffectiveStatus } from './resolve-effective-status.util';
-import { resolveIssuedAt } from './resolve-issued-at.util';
 import { resolveReceivedAt } from './resolve-received-at.util';
 
 /**
- * Build per-application facts from owners + history (AC-16).
+ * Build per-application facts from owners + history (AC-16 / FR-15).
  * Mutable Application.status is intentionally unused.
  */
 export const buildAnalyticsApplicationFacts = (
@@ -38,7 +38,12 @@ export const buildAnalyticsApplicationFacts = (
       agentId: owner.agentId,
       effectiveStatus: resolveEffectiveStatus(events),
       receivedAt: resolveReceivedAt(events),
-      issuedAt: resolveIssuedAt(events),
+      bookedAt: resolveBookedAt(events),
+      createdAt: owner.createdAt,
+      paymentPaid: owner.paymentPaid,
+      paymentAmount: owner.paymentAmount,
+      submitCity: owner.submitCity,
+      visitDate: owner.visitDate,
     };
   });
 };

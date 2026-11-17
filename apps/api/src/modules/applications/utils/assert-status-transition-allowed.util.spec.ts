@@ -2,8 +2,8 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { APPLICATION_STATUS_TRANSITION_MATRIX } from '@vises/contracts';
 import { assertStatusTransitionAllowed } from './assert-status-transition-allowed.util';
 
-describe('assertStatusTransitionAllowed (AC-12 / AC-14 / FR-7.4)', (): void => {
-  it('allows every matrix row for each listed actor', (): void => {
+describe('assertStatusTransitionAllowed (§4.C / FR-13 / ASAU-003)', (): void => {
+  it('allows every matrix row for each listed actor including system', (): void => {
     for (const row of APPLICATION_STATUS_TRANSITION_MATRIX) {
       for (const actor of row.actors) {
         expect((): void => {
@@ -21,8 +21,8 @@ describe('assertStatusTransitionAllowed (AC-12 / AC-14 / FR-7.4)', (): void => {
   it('rejects unknown source→target with illegal_transition', (): void => {
     try {
       assertStatusTransitionAllowed({
-        source: 'drafting',
-        target: 'issued',
+        source: 'draft',
+        target: 'booked',
         actor: 'admin',
         isOwningAgent: false,
       });
@@ -36,27 +36,10 @@ describe('assertStatusTransitionAllowed (AC-12 / AC-14 / FR-7.4)', (): void => {
     }
   });
 
-  it('rejects staff on drafting→pending (monitor-only)', (): void => {
-    try {
-      assertStatusTransitionAllowed({
-        source: 'drafting',
-        target: 'pending',
-        actor: 'admin',
-        isOwningAgent: false,
-      });
-      fail('expected throw');
-    } catch (error) {
-      expect(error).toBeInstanceOf(HttpException);
-      if (error instanceof HttpException) {
-        expect(error.getResponse()).toEqual({ detail: 'illegal_transition' });
-      }
-    }
-  });
-
   it('rejects non-owning agent with forbidden_role', (): void => {
     try {
       assertStatusTransitionAllowed({
-        source: 'pending',
+        source: 'ready_for_appointment',
         target: 'booked',
         actor: 'agent',
         isOwningAgent: false,
@@ -71,19 +54,19 @@ describe('assertStatusTransitionAllowed (AC-12 / AC-14 / FR-7.4)', (): void => {
     }
   });
 
-  it('allows booked→pending and rejected→pending for staff (AC-14)', (): void => {
+  it('allows booked→ready and declined→not_ready for staff', (): void => {
     expect((): void => {
       assertStatusTransitionAllowed({
         source: 'booked',
-        target: 'pending',
+        target: 'ready_for_appointment',
         actor: 'admin',
         isOwningAgent: false,
       });
     }).not.toThrow();
     expect((): void => {
       assertStatusTransitionAllowed({
-        source: 'rejected',
-        target: 'pending',
+        source: 'declined',
+        target: 'not_ready_for_appointment',
         actor: 'superadmin',
         isOwningAgent: false,
       });
@@ -91,27 +74,52 @@ describe('assertStatusTransitionAllowed (AC-12 / AC-14 / FR-7.4)', (): void => {
     expect((): void => {
       assertStatusTransitionAllowed({
         source: 'booked',
-        target: 'pending',
+        target: 'ready_for_appointment',
         actor: 'agent',
         isOwningAgent: true,
       });
     }).not.toThrow();
   });
 
-  it('allows monitor only for drafting→pending (AC-13)', (): void => {
+  it('allows monitor only on draft→not_ready_for_appointment', (): void => {
     expect((): void => {
       assertStatusTransitionAllowed({
-        source: 'drafting',
-        target: 'pending',
+        source: 'draft',
+        target: 'not_ready_for_appointment',
         actor: 'visa_center_monitor',
         isOwningAgent: false,
       });
     }).not.toThrow();
     try {
       assertStatusTransitionAllowed({
-        source: 'pending',
-        target: 'booked',
+        source: 'filling',
+        target: 'not_ready_for_appointment',
         actor: 'visa_center_monitor',
+        isOwningAgent: false,
+      });
+      fail('expected throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      if (error instanceof HttpException) {
+        expect(error.getResponse()).toEqual({ detail: 'illegal_transition' });
+      }
+    }
+  });
+
+  it('allows system where matrix lists it (draft→filling)', (): void => {
+    expect((): void => {
+      assertStatusTransitionAllowed({
+        source: 'draft',
+        target: 'filling',
+        actor: 'system',
+        isOwningAgent: false,
+      });
+    }).not.toThrow();
+    try {
+      assertStatusTransitionAllowed({
+        source: 'filling',
+        target: 'draft',
+        actor: 'system',
         isOwningAgent: false,
       });
       fail('expected throw');

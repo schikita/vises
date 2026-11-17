@@ -1,10 +1,11 @@
+import type { ApplicationStatus } from '@vises/contracts';
 import type { DashboardCityCount } from './dashboard-city-count.types';
 import type { DashboardRecentUser } from './dashboard-recent-user.types';
 import type { DashboardUpcomingVisit } from './dashboard-upcoming-visit.types';
 
-/** Single status bucket for the circle chart (DEC-005). */
+/** Single BUSINESS status bucket for the circle chart (DEC-005 / FR-14). */
 export type AppsByStatusRow = {
-  status: string;
+  status: ApplicationStatus;
   count: number;
 };
 

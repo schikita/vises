@@ -12,12 +12,14 @@ import { Client } from '../database/entities/client.entity';
 import {
   VISA_CENTER_MONITOR_ACTOR,
   VISA_CENTER_MONITOR_DEFAULT_TRIGGER,
+  VISA_CENTER_MONITOR_REMAP_TARGET,
 } from './constants';
 import type { ApplicationStatusChangeDto } from './dto/application-status-change.dto';
 import type { IApplicationsService } from './interfaces';
 import type { ApplyStatusTransitionInput, StaffTransitionActor } from './types';
 import {
   assertCanReadApplicationHistory,
+  assertMonitorStatusRemapAllowed,
   assertStatusTransitionAllowed,
   lockApplicationForUpdate,
   mapApplicationToDto,
@@ -84,16 +86,11 @@ export class ApplicationsService implements IApplicationsService {
           applicationId,
         );
 
-        assertStatusTransitionAllowed({
-          source: application.status,
-          target: 'pending',
-          actor: VISA_CENTER_MONITOR_ACTOR,
-          isOwningAgent: false,
-        });
+        assertMonitorStatusRemapAllowed({ source: application.status });
 
         return this.applyTransition(manager, {
           application,
-          targetStatus: 'pending',
+          targetStatus: VISA_CENTER_MONITOR_REMAP_TARGET,
           actorId: null,
           actorRole: VISA_CENTER_MONITOR_ACTOR,
           trigger: VISA_CENTER_MONITOR_DEFAULT_TRIGGER,

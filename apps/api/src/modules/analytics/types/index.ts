@@ -1,5 +1,7 @@
 export type { AnalyticsDateRange } from './analytics-date-range.types';
 export type { AnalyticsAppOwnerRow } from './analytics-app-owner-row.types';
+export type { AnalyticsAppOwnerRawRow } from './analytics-app-owner-raw-row.types';
+export type { AnalyticsAgentBalanceRow } from './analytics-agent-balance-row.types';
 export type { AnalyticsHistoryEvent } from './analytics-history-event.types';
 export type { AnalyticsApplicationFact } from './analytics-application-fact.types';
 export type { AnalyticsClientAgentRow } from './analytics-client-agent-row.types';

@@ -12,10 +12,10 @@ export interface IApplicationsService {
     actor: StaffTransitionActor,
   ): Promise<ApplicationDto>;
 
-  /** Monitor-only drafting → pending (AC-13). */
+  /** Monitor-only draft|filling → not_ready_for_appointment (FR-13). */
   markPendingByMonitor(applicationId: string): Promise<ApplicationDto>;
 
-  /** Status history oldest → newest (T14.2 / FR-7 / §6.6). */
+  /** Status history oldest → newest (T14.2 / FR-13 / §6.6). */
   getHistory(
     applicationId: string,
     actor: StaffTransitionActor,

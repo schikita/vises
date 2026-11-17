@@ -1,12 +1,8 @@
-import {
-  SEED_AGENT_A_NAME,
-  SEED_AGENT_A_STATUSES,
-  SEED_AGENT_A_TOP_UP_AMOUNT,
-  SEED_AGENT_B_NAME,
-  SEED_AGENT_B_STATUSES,
-  SEED_AGENT_B_TOP_UP_AMOUNT,
-  SEED_DEFAULT_PRICE,
-} from '../constants';
+import type { ApplicationStatusHistory } from '../../database/entities/application-status-history.entity';
+import type { Application } from '../../database/entities/application.entity';
+import type { BalanceTransaction } from '../../database/entities/balance-transaction.entity';
+import type { Client } from '../../database/entities/client.entity';
+import { SEED_DEFAULT_PRICE } from '../constants';
 import type {
   BuildFr11SeedDatasetInput,
   BuildFr11SeedDatasetResult,
@@ -21,76 +17,59 @@ import { buildFr11AgentApps } from './build-fr11-agent-apps.util';
 export const buildFr11SeedDataset = (
   input: BuildFr11SeedDatasetInput,
 ): BuildFr11SeedDatasetResult => {
-  const agentA = buildFr11AgentApps({
-    applications: input.applications,
-    clients: input.clients,
-    history: input.history,
-    agentId: input.agentAId,
-    agentName: input.agentAName || SEED_AGENT_A_NAME,
-    agentKey: 'a',
-    statuses: SEED_AGENT_A_STATUSES,
-    now: input.now,
-    encryptFields: input.encryptFields,
-    rngSeedOffset: 11,
-  });
+  const clients: Client[] = [];
+  const applications: Application[] = [];
+  const history: ApplicationStatusHistory[] = [];
+  const ledger: BalanceTransaction[] = [];
 
-  const agentB = buildFr11AgentApps({
-    applications: input.applications,
-    clients: input.clients,
-    history: input.history,
-    agentId: input.agentBId,
-    agentName: input.agentBName || SEED_AGENT_B_NAME,
-    agentKey: 'b',
-    statuses: SEED_AGENT_B_STATUSES,
-    now: input.now,
-    encryptFields: input.encryptFields,
-    rngSeedOffset: 29,
-  });
+  for (const plan of input.agentPlans) {
+    const agentApps = buildFr11AgentApps({
+      applications: input.applications,
+      clients: input.clients,
+      history: input.history,
+      agentId: plan.userId,
+      agentName: plan.name,
+      agentKey: plan.ordinal,
+      statuses: plan.statuses,
+      now: input.now,
+      encryptFields: input.encryptFields,
+      rngSeedOffset: plan.rngSeedOffset,
+    });
 
-  const agentATopUpWhole = Number.parseInt(
-    SEED_AGENT_A_TOP_UP_AMOUNT.split('.')[0] ?? '1800',
-    10,
-  );
-  const agentBTopUpWhole = Number.parseInt(
-    SEED_AGENT_B_TOP_UP_AMOUNT.split('.')[0] ?? '900',
-    10,
-  );
+    if (agentApps.clientIds.length !== plan.clientCount) {
+      throw new Error(
+        `FR-11 client count mismatch for ${plan.userId}: expected ${plan.clientCount}, got ${agentApps.clientIds.length}`,
+      );
+    }
 
-  const ledgerA = buildAgentSeedLedger({
-    ledger: input.ledger,
-    agentId: input.agentAId,
-    topUpActorId: input.superadminId,
-    topUpAmountWhole: agentATopUpWhole,
-    clientIds: agentA.clientIds,
-    idPrefix: 'btx-a',
-    baseTime: input.now,
-  });
+    const agentLedger = buildAgentSeedLedger({
+      ledger: input.ledger,
+      agentId: plan.userId,
+      topUpActorId: input.superadminId,
+      topUpAmountWhole: plan.topUpAmountWhole,
+      clientIds: agentApps.clientIds,
+      idPrefix: `btx-${plan.ordinal}`,
+      baseTime: input.now,
+    });
 
-  const ledgerB = buildAgentSeedLedger({
-    ledger: input.ledger,
-    agentId: input.agentBId,
-    topUpActorId: input.superadminId,
-    topUpAmountWhole: agentBTopUpWhole,
-    clientIds: agentB.clientIds,
-    idPrefix: 'btx-b',
-    baseTime: input.now,
-  });
+    const expectedBalance =
+      plan.topUpAmountWhole - plan.clientCount * SEED_DEFAULT_PRICE;
+    if (expectedBalance !== plan.finalBalanceWhole) {
+      throw new Error(
+        `FR-11 balance composition mismatch for ${plan.userId}: expected ${plan.finalBalanceWhole}, got ${expectedBalance}`,
+      );
+    }
 
-  // Guardrail: composition math must match FR-11 final balances.
-  const expectedA =
-    agentATopUpWhole - agentA.clientIds.length * SEED_DEFAULT_PRICE;
-  const expectedB =
-    agentBTopUpWhole - agentB.clientIds.length * SEED_DEFAULT_PRICE;
-  if (expectedA !== 360 || expectedB !== 0) {
-    throw new Error(
-      `FR-11 balance composition mismatch: A=${expectedA} B=${expectedB}`,
-    );
+    clients.push(...agentApps.clients);
+    applications.push(...agentApps.applications);
+    history.push(...agentApps.history);
+    ledger.push(...agentLedger);
   }
 
   return {
-    clients: [...agentA.clients, ...agentB.clients],
-    applications: [...agentA.applications, ...agentB.applications],
-    history: [...agentA.history, ...agentB.history],
-    ledger: [...ledgerA, ...ledgerB],
+    clients,
+    applications,
+    history,
+    ledger,
   };
 };

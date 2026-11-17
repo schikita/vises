@@ -5,9 +5,10 @@ import { throwForbiddenRole } from './throw-forbidden-role.util';
 import { throwIllegalTransition } from './throw-illegal-transition.util';
 
 /**
- * Enforce FR-7.4 matrix + owning-agent rule (AC-12 / AC-14).
+ * Enforce §4.C / FR-13 matrix + owning-agent rule (AC-3).
  * Missing matrix row or disallowed actor → `illegal_transition`.
  * Agent listed on matrix but not owner → `forbidden_role`.
+ * Actor `system` is allowed wherever the matrix lists it.
  */
 export const assertStatusTransitionAllowed = (
   input: AssertStatusTransitionAllowedInput,

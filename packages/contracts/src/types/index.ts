@@ -57,9 +57,15 @@ export type {
 } from './application-status-history.types';
 export type { UserMeDto } from './user-me.types';
 export type {
+  AnalyticsBookedVsUnpaidDto,
+  AnalyticsCityBucketDto,
   AnalyticsClientsPerAgentDto,
+  AnalyticsDateFilterDimension,
   AnalyticsDto,
   AnalyticsGlobalDto,
+  AnalyticsPaidVolumeAgentDto,
+  AnalyticsPaymentCompletenessDto,
   AnalyticsPerAgentDto,
+  AnalyticsQueryDto,
   AnalyticsStatusBucketDto,
 } from './analytics.types';

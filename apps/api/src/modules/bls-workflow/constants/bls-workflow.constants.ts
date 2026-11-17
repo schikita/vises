@@ -245,10 +245,10 @@ export const BLS_WORKFLOW_TASK_OPEN_STATUSES = [
 
 /** Russian operator-facing details for workflow control (NFR-001 / 03-workflow-api §5). */
 export const BLS_WORKFLOW_MSG_ACTIVE_EXISTS =
-  'Для этой заявки уже выполняется сценарий BLS';
+  'Для этой заявки уже выполняется заполнение BLS';
 
 /** Russian `{ detail }` when workflow missing (03-workflow-api §5). */
-export const BLS_WORKFLOW_MSG_NOT_FOUND = 'Сценарий не найден';
+export const BLS_WORKFLOW_MSG_NOT_FOUND = 'Заполнение не найдено';
 
 export const BLS_WORKFLOW_MSG_APP_NOT_FOUND = 'Заявка не найдена';
 
@@ -268,7 +268,7 @@ export const BLS_WORKFLOW_MSG_TERMINAL =
 export const BLS_WORKFLOW_MSG_SUPERSEDED = 'superseded_by_staff';
 
 /** Russian `{ detail }` when a live non-stale lock blocks concurrent claim (REQ-005). */
-export const BLS_WORKFLOW_MSG_LIVE_LOCK = 'Сценарий уже выполняется';
+export const BLS_WORKFLOW_MSG_LIVE_LOCK = 'Заполнение уже выполняется';
 
 /** Manual retry not allowed for current workflow/task state (03-workflow-api §5). */
 export const BLS_WORKFLOW_MSG_RETRY_NOT_ELIGIBLE =
@@ -288,7 +288,7 @@ export const BLS_WORKFLOW_MSG_CANCEL_NOT_ELIGIBLE =
 
 /** Reveal denied: workflow status not in mailbox-cleanup set (DEC-002). */
 export const BLS_WORKFLOW_MSG_PORTAL_CREDENTIALS_NOT_ELIGIBLE =
-  'Учётные данные портала недоступны для текущего состояния сценария';
+  'Учётные данные портала недоступны для текущего состояния заполнения';
 
 /** Reveal fail-closed: blank Application.portalFormEmail (REQ-011 / DEC-008). */
 export const BLS_WORKFLOW_MSG_PORTAL_CREDENTIALS_EMAIL_MISSING =

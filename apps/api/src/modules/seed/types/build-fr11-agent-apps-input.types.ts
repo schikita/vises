@@ -10,7 +10,8 @@ export type BuildFr11AgentAppsInput = {
   history: HistoryFactory;
   agentId: string;
   agentName: string;
-  agentKey: 'a' | 'b';
+  /** Stable short key for client/app/history ids (e.g. `01`). */
+  agentKey: string;
   statuses: readonly ApplicationStatus[];
   now: Date;
   encryptFields: (fields: PiiEncryptedFieldMap) => PiiEncryptedFieldMap;

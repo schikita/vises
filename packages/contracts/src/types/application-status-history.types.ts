@@ -12,7 +12,7 @@ export type ApplicationStatusHistoryActorRole =
   | 'unknown';
 
 /**
- * Append-only status history row (FR-7 / AC-12 / NFR-4).
+ * Append-only status history row (FR-11 / FR-13 / §4.C).
  * No passport or other plaintext PII; actor is id + role only.
  * `createdAt` is ISO-8601 on the wire (same convention as ApplicationDto).
  */
@@ -21,10 +21,10 @@ export type ApplicationStatusHistoryDto = {
   /** Null for the first history row when no prior status exists. */
   fromStatus: ApplicationStatus | null;
   toStatus: ApplicationStatus;
-  /** Staff user id, or null when actor is a system identity. */
+  /** Staff user id, or null when actor is a system identity (`system` / `visa_center_monitor`). */
   actorId: string | null;
   /**
-   * Staff matrix actor, system identity (`visa_center_monitor`), or `"unknown"`
+   * Staff matrix actor, system identity (`system` / `visa_center_monitor`), or `"unknown"`
    * when the persisted role is not a known ApplicationStatusTransitionActor.
    * Do not add `"unknown"` to the transition matrix.
    */
@@ -37,7 +37,7 @@ export type ApplicationStatusHistoryDto = {
 };
 
 /**
- * Status history list response (FR-7 / §6.6).
+ * Status history list response (FR-11 / §4.C).
  */
 export type ApplicationStatusHistoryResponseDto = {
   items: ApplicationStatusHistoryDto[];

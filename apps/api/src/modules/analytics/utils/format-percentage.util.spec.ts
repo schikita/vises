@@ -19,9 +19,10 @@ describe('formatPercentage (AC-15a / §6.7.1)', (): void => {
   });
 
   it('matches FR-11 Agent A status share formulas', (): void => {
-    // Agent A: 8 apps — 2 drafting → 25.00%
+    // Agent A: 8 apps — 2 draft → 25.00%
     expect(formatPercentage(2, 8)).toBe('25.00');
-    // 1 rejected → 12.50%
+    // 1 declined → 12.50%
     expect(formatPercentage(1, 8)).toBe('12.50');
   });
+
 });
