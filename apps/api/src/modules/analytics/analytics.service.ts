@@ -7,12 +7,14 @@ import { Application } from '../database/entities/application.entity';
 import { Client } from '../database/entities/client.entity';
 import { User } from '../database/entities/user.entity';
 import type { IAnalyticsService } from './interfaces';
-import type { AnalyticsAppOwnerRow, AnalyticsDateRange } from './types';
+import type { AnalyticsAppOwnerRawRow, AnalyticsDateRange } from './types';
 import {
   buildAnalyticsApplicationFacts,
   buildAnalyticsDto,
+  mapAppOwnerRow,
   mapClientRowToAgent,
   mapHistoryRowToEvent,
+  mapUserToAgentBalance,
   resolveAnalyticsAgentScopeId,
 } from './utils';
 
@@ -25,6 +27,8 @@ export class AnalyticsService implements IAnalyticsService {
     private readonly clients: Repository<Client>,
     @InjectRepository(ApplicationStatusHistory)
     private readonly history: Repository<ApplicationStatusHistory>,
+    @InjectRepository(User)
+    private readonly users: Repository<User>,
   ) {}
 
   async getRolesApplications(
@@ -33,12 +37,19 @@ export class AnalyticsService implements IAnalyticsService {
   ): Promise<AnalyticsDto> {
     const agentScopeId = resolveAnalyticsAgentScopeId(actor);
 
-    const owners: AnalyticsAppOwnerRow[] = await this.applications
+    const ownerRaws: AnalyticsAppOwnerRawRow[] = await this.applications
       .createQueryBuilder('app')
       .innerJoin(Client, 'client', 'client.id = app.client_id')
       .select('app.id', 'applicationId')
       .addSelect('client.agent_id', 'agentId')
-      .getRawMany<AnalyticsAppOwnerRow>();
+      .addSelect('app.payment_paid', 'paymentPaid')
+      .addSelect('app.payment_amount', 'paymentAmount')
+      .addSelect('app.submit_city', 'submitCity')
+      .addSelect('app.visit_date', 'visitDate')
+      .addSelect('app.created_at', 'createdAt')
+      .getRawMany<AnalyticsAppOwnerRawRow>();
+
+    const owners = ownerRaws.map(mapAppOwnerRow);
 
     const historyRows = await this.history.find({
       select: {
@@ -54,6 +65,17 @@ export class AnalyticsService implements IAnalyticsService {
       select: { agentId: true },
     });
 
+    const agentUserRows =
+      agentScopeId === null
+        ? await this.users.find({
+            where: { role: 'agent' },
+            select: { id: true, balance: true },
+          })
+        : await this.users.find({
+            where: { id: agentScopeId },
+            select: { id: true, balance: true },
+          });
+
     const facts = buildAnalyticsApplicationFacts(
       owners,
       historyRows.map(mapHistoryRowToEvent),
@@ -62,6 +84,7 @@ export class AnalyticsService implements IAnalyticsService {
     return buildAnalyticsDto({
       facts,
       clients: clientRows.map(mapClientRowToAgent),
+      agentBalances: agentUserRows.map(mapUserToAgentBalance),
       agentScopeId,
       dateRange,
     });

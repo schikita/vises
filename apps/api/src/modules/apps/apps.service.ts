@@ -24,7 +24,7 @@ import { ClientsService } from '../clients/clients.service';
 import { WorkflowBusPublisherService } from '../messaging';
 import { PortalAutofillService } from '../portal-scrape';
 import { UsersService } from '../users/users.service';
-import { DEFAULT_APP_STATUS, DEFAULT_PAYMENT_AMOUNT } from './constants';
+import { DEFAULT_APP_STATUS } from './constants';
 import { UpsertAppDto } from './dto/upsert-app.dto';
 import type { IAppsService } from './interfaces';
 import type {
@@ -46,10 +46,12 @@ import {
   applyAppsListSort,
   applyAppsVisibilityScope,
   applyClientPrivilegedCoerce,
+  applyPaymentsListSort,
+  applyVisitsDateRangeFilter,
   applyVisitsEligibilityFilter,
   applyVisitsListFilters,
   applyVisitsListSort,
-  applyVisitsModeFilter,
+  assertAgentCannotWritePayment,
   assertClientOwns,
   canSeeApp,
   copyPrimaryApplicantEmailIfBlank,
@@ -63,6 +65,7 @@ import {
   openAppDocumentStream,
   resolveAppDocumentPath,
   resolveUpsertCreateClientId,
+  resolveUpsertPaymentFields,
   resolveUploadDir,
   writeAppDocumentFile,
 } from './utils';
@@ -165,14 +168,14 @@ export class AppsService implements IAppsService {
     const countQb = this.apps.createQueryBuilder('a');
     applyVisitsEligibilityFilter(countQb);
     joinVisitsRelatedUser(countQb);
-    applyVisitsModeFilter(countQb, query.mode, query.todayIsoDate);
+    applyVisitsDateRangeFilter(countQb, query.from, query.to);
     applyVisitsListFilters(countQb, query);
     const total = await countQb.distinct(true).getCount();
 
     const qb = this.apps.createQueryBuilder('a');
     applyVisitsEligibilityFilter(qb);
     joinVisitsRelatedUser(qb);
-    applyVisitsModeFilter(qb, query.mode, query.todayIsoDate);
+    applyVisitsDateRangeFilter(qb, query.from, query.to);
     applyVisitsListFilters(qb, query);
     applyVisitsListSort(qb, query.sort, query.sortDir);
     const rows = await qb
@@ -214,9 +217,9 @@ export class AppsService implements IAppsService {
     };
 
     const total = await this.apps.createQueryBuilder('a').getCount();
-    const rows = await this.apps
-      .createQueryBuilder('a')
-      .orderBy('a.created_at', 'DESC')
+    const qb = this.apps.createQueryBuilder('a');
+    applyPaymentsListSort(qb, query.sort, query.sortDir);
+    const rows = await qb
       .skip((query.page - 1) * query.pageSize)
       .take(query.pageSize)
       .getMany();
@@ -290,13 +293,13 @@ export class AppsService implements IAppsService {
       ? await this.resolveClientIdForCreate(body, user, isStaff, clientEmail)
       : row!.clientId;
 
+    assertAgentCannotWritePayment(user, body);
+
     const privileged = isClient
       ? applyClientPrivilegedCoerce(body, row)
       : {
           status: body.status ?? DEFAULT_APP_STATUS,
-          paymentAmount: body.paymentAmount ?? DEFAULT_PAYMENT_AMOUNT,
-          paymentPaid: Boolean(body.paymentPaid),
-          paymentNote: body.paymentNote ?? '',
+          ...resolveUpsertPaymentFields(role, body, row),
           visitDate: body.visitDate ?? '',
           visitTime: body.visitTime ?? '',
           visitPlace: body.visitPlace ?? '',

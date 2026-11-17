@@ -16,5 +16,7 @@ web/dist
 specs
 *_pg
 logs
+uploads
 rabbitmq
 pg
+db

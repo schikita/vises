@@ -7,9 +7,9 @@
 #
 # Nginx runs inside the `web` container (apps/web/docker/nginx.conf).
 #
-# URLs:
-#   local:  http://localhost:8090/vises/
-#   remote: http://go-vises.top/vises/   (DNS A → server; host :80 published)
+# URLs (login / SPA at root):
+#   local:  http://localhost:8090/
+#   remote: http://go-vises.top/   (DNS A → server; host :80 published)
 
 services:
   db:

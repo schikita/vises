@@ -11,8 +11,6 @@ import { User } from '../database/entities/user.entity';
 import { clearAllOperationalTables } from '../database/utils';
 import { PiiCryptoService } from '../pii';
 import {
-  SEED_AGENT_A_NAME,
-  SEED_AGENT_B_NAME,
   SEED_CITIES,
   SEED_COMPANY,
   SEED_DEFAULT_PRICE,
@@ -78,10 +76,7 @@ export class SeedService implements OnModuleInit, IDemoDataSeeder {
       history: this.history,
       ledger: this.ledger,
       superadminId: seededUsers.superadminId,
-      agentAId: seededUsers.agentAId,
-      agentBId: seededUsers.agentBId,
-      agentAName: SEED_AGENT_A_NAME,
-      agentBName: SEED_AGENT_B_NAME,
+      agentPlans: seededUsers.agentPlans,
       now,
       encryptFields: (fields) => this.piiCrypto.encryptFields(fields),
     });
@@ -108,7 +103,7 @@ export class SeedService implements OnModuleInit, IDemoDataSeeder {
     );
 
     this.logger.log(
-      `Seeded FR-11 users=${seededUsers.users.length} clients=${dataset.clients.length} apps=${dataset.applications.length} history=${dataset.history.length} ledger=${dataset.ledger.length} price_per_client=${SEED_DEFAULT_PRICE}`,
+      `Seeded FR-11 users=${seededUsers.users.length} agents=${seededUsers.agentPlans.length} clients=${dataset.clients.length} apps=${dataset.applications.length} history=${dataset.history.length} ledger=${dataset.ledger.length} price_per_client=${SEED_DEFAULT_PRICE}`,
     );
   }
 

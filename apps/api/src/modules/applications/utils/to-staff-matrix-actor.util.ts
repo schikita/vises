@@ -2,7 +2,7 @@ import type { ApplicationStatusTransitionActor } from '@vises/contracts';
 import type { StaffTransitionActor } from '../types';
 import { throwForbiddenRole } from './throw-forbidden-role.util';
 
-/** Narrow staff JWT role to a matrix actor (FR-7.4). */
+/** Narrow staff JWT role to a matrix actor (§4.C / FR-13). */
 export const toStaffMatrixActor = (
   role: StaffTransitionActor['role'],
 ): ApplicationStatusTransitionActor => {

@@ -8,7 +8,7 @@ import { Client } from '../database/entities/client.entity';
 import { ApplicationsService } from './applications.service';
 import { VISA_CENTER_MONITOR_ACTOR } from './constants';
 
-describe('ApplicationsService (AC-12 / AC-13 / AC-14 / FR-7.4 / T14.2)', (): void => {
+describe('ApplicationsService (§4.C / FR-13 / ASAU-003)', (): void => {
   const ownerAgentId = 'agent-1';
   const otherAgentId = 'agent-2';
 
@@ -61,8 +61,8 @@ describe('ApplicationsService (AC-12 / AC-13 / AC-14 / FR-7.4 / T14.2)', (): voi
     Object.assign(new ApplicationStatusHistory(), {
       id: 'ash-1',
       applicationId: 'app-1',
-      fromStatus: 'pending',
-      toStatus: 'booked',
+      fromStatus: 'not_ready_for_appointment',
+      toStatus: 'ready_for_appointment',
       actorId: 'admin-1',
       actorRole: 'admin',
       trigger: null,
@@ -165,14 +165,14 @@ describe('ApplicationsService (AC-12 / AC-13 / AC-14 / FR-7.4 / T14.2)', (): voi
   };
 
   beforeEach((): void => {
-    lockedApp = makeApp('pending');
+    lockedApp = makeApp('ready_for_appointment');
     clientRow = makeClient(ownerAgentId);
     savedApps = [];
     savedHistory = [];
     historyRows = [];
   });
 
-  it('appends history and updates status in the same transaction (AC-12)', async (): Promise<void> => {
+  it('appends history and updates status in the same transaction', async (): Promise<void> => {
     const service = await createService();
     const dto = await service.changeStatus(
       'app-1',
@@ -184,55 +184,56 @@ describe('ApplicationsService (AC-12 / AC-13 / AC-14 / FR-7.4 / T14.2)', (): voi
     expect(savedApps).toHaveLength(1);
     expect(savedApps[0]?.status).toBe('booked');
     expect(savedHistory).toHaveLength(1);
-    expect(savedHistory[0]?.fromStatus).toBe('pending');
+    expect(savedHistory[0]?.fromStatus).toBe('ready_for_appointment');
     expect(savedHistory[0]?.toStatus).toBe('booked');
     expect(savedHistory[0]?.actorId).toBe('admin-1');
     expect(savedHistory[0]?.actorRole).toBe('admin');
     expect(savedHistory[0]?.trigger).toBe('staff booking');
   });
 
-  it('allows owning agent pending→rejected (AC-12)', async (): Promise<void> => {
+  it('allows owning agent not_ready→declined', async (): Promise<void> => {
+    lockedApp = makeApp('not_ready_for_appointment');
     const service = await createService();
     const dto = await service.changeStatus(
       'app-1',
-      { targetStatus: 'rejected' },
+      { targetStatus: 'declined' },
       { id: ownerAgentId, role: 'agent' },
     );
-    expect(dto.status).toBe('rejected');
+    expect(dto.status).toBe('declined');
     expect(savedHistory[0]?.actorRole).toBe('agent');
   });
 
-  it('allows booked→pending and rejected→pending for staff (AC-14)', async (): Promise<void> => {
+  it('allows booked→ready and declined→not_ready for staff', async (): Promise<void> => {
     lockedApp = makeApp('booked');
     const service = await createService();
     const dto = await service.changeStatus(
       'app-1',
-      { targetStatus: 'pending' },
+      { targetStatus: 'ready_for_appointment' },
       { id: 'admin-1', role: 'admin' },
     );
-    expect(dto.status).toBe('pending');
+    expect(dto.status).toBe('ready_for_appointment');
     expect(savedHistory[0]?.fromStatus).toBe('booked');
-    expect(savedHistory[0]?.toStatus).toBe('pending');
+    expect(savedHistory[0]?.toStatus).toBe('ready_for_appointment');
 
-    lockedApp = makeApp('rejected');
+    lockedApp = makeApp('declined');
     savedApps = [];
     savedHistory = [];
     const dto2 = await service.changeStatus(
       'app-1',
-      { targetStatus: 'pending' },
+      { targetStatus: 'not_ready_for_appointment' },
       { id: 'sa-1', role: 'superadmin' },
     );
-    expect(dto2.status).toBe('pending');
+    expect(dto2.status).toBe('not_ready_for_appointment');
   });
 
-  it('leaves history unchanged on illegal transition (AC-12)', async (): Promise<void> => {
-    lockedApp = makeApp('drafting');
+  it('leaves history unchanged on illegal transition', async (): Promise<void> => {
+    lockedApp = makeApp('draft');
     const service = await createService();
 
     try {
       await service.changeStatus(
         'app-1',
-        { targetStatus: 'pending' },
+        { targetStatus: 'booked' },
         { id: 'admin-1', role: 'admin' },
       );
       fail('expected throw');
@@ -246,7 +247,7 @@ describe('ApplicationsService (AC-12 / AC-13 / AC-14 / FR-7.4 / T14.2)', (): voi
 
     expect(savedHistory).toHaveLength(0);
     expect(savedApps).toHaveLength(0);
-    expect(lockedApp?.status).toBe('drafting');
+    expect(lockedApp?.status).toBe('draft');
   });
 
   it('rejects non-owning agent with forbidden_role', async (): Promise<void> => {
@@ -290,21 +291,33 @@ describe('ApplicationsService (AC-12 / AC-13 / AC-14 / FR-7.4 / T14.2)', (): voi
     }
   });
 
-  it('monitor drafting→pending records visa_center_monitor (AC-13)', async (): Promise<void> => {
-    lockedApp = makeApp('drafting');
+  it('monitor draft→not_ready_for_appointment records visa_center_monitor', async (): Promise<void> => {
+    lockedApp = makeApp('draft');
     const service = await createService();
     const dto = await service.markPendingByMonitor('app-1');
 
-    expect(dto.status).toBe('pending');
+    expect(dto.status).toBe('not_ready_for_appointment');
     expect(savedHistory).toHaveLength(1);
-    expect(savedHistory[0]?.fromStatus).toBe('drafting');
-    expect(savedHistory[0]?.toStatus).toBe('pending');
+    expect(savedHistory[0]?.fromStatus).toBe('draft');
+    expect(savedHistory[0]?.toStatus).toBe('not_ready_for_appointment');
     expect(savedHistory[0]?.actorId).toBeNull();
     expect(savedHistory[0]?.actorRole).toBe(VISA_CENTER_MONITOR_ACTOR);
   });
 
-  it('monitor rejects non-drafting without history append (AC-13)', async (): Promise<void> => {
-    lockedApp = makeApp('pending');
+  it('monitor filling→not_ready_for_appointment records visa_center_monitor', async (): Promise<void> => {
+    lockedApp = makeApp('filling');
+    const service = await createService();
+    const dto = await service.markPendingByMonitor('app-1');
+
+    expect(dto.status).toBe('not_ready_for_appointment');
+    expect(savedHistory).toHaveLength(1);
+    expect(savedHistory[0]?.fromStatus).toBe('filling');
+    expect(savedHistory[0]?.toStatus).toBe('not_ready_for_appointment');
+    expect(savedHistory[0]?.actorRole).toBe(VISA_CENTER_MONITOR_ACTOR);
+  });
+
+  it('monitor rejects non-remap source without history append', async (): Promise<void> => {
+    lockedApp = makeApp('booked');
     const service = await createService();
     try {
       await service.markPendingByMonitor('app-1');
@@ -324,14 +337,14 @@ describe('ApplicationsService (AC-12 / AC-13 / AC-14 / FR-7.4 / T14.2)', (): voi
         makeHistory({
           id: 'ash-old',
           fromStatus: null,
-          toStatus: 'drafting',
+          toStatus: 'draft',
           actorRole: 'visa_center_monitor',
           actorId: null,
           createdAt: new Date('2026-01-01T00:00:00.000Z'),
         }),
         makeHistory({
           id: 'ash-new',
-          fromStatus: 'pending',
+          fromStatus: 'ready_for_appointment',
           toStatus: 'booked',
           actorRole: 'admin',
           actorId: 'admin-1',
@@ -408,6 +421,25 @@ describe('ApplicationsService (AC-12 / AC-13 / AC-14 / FR-7.4 / T14.2)', (): voi
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.actorRole).toBe('unknown');
       expect(result.items[0]?.actorId).toBe('legacy-user');
+    });
+
+    it('maps system actorRole through without unknown', async (): Promise<void> => {
+      historyRows = [
+        makeHistory({
+          id: 'ash-system',
+          fromStatus: 'draft',
+          toStatus: 'filling',
+          actorRole: 'system',
+          actorId: null,
+        }),
+      ];
+      const service = await createService();
+      const result = await service.getHistory('app-1', {
+        id: 'admin-1',
+        role: 'admin',
+      });
+      expect(result.items[0]?.actorRole).toBe('system');
+      expect(result.items[0]?.actorId).toBeNull();
     });
 
     it('rejects non-owning agent with forbidden_role (cross-tenant)', async (): Promise<void> => {

@@ -6,7 +6,7 @@ describe('mapApplicationToDto (APF-TASK-003 / REQ-003)', (): void => {
     const row = Object.assign(new Application(), {
       id: 'app-1',
       clientId: 'cli-1',
-      status: 'drafting',
+      status: 'draft',
       visaSubType: 'Business',
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-02T00:00:00.000Z'),
@@ -20,7 +20,7 @@ describe('mapApplicationToDto (APF-TASK-003 / REQ-003)', (): void => {
     const row = Object.assign(new Application(), {
       id: 'app-1',
       clientId: 'cli-1',
-      status: 'drafting',
+      status: 'draft',
       visaSubType: null,
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-02T00:00:00.000Z'),

@@ -130,7 +130,7 @@ describe('AppsService (PF-TASK-007 / DEC-PF-011 + visaSubType)', (): void => {
       code: 'A1',
       clientEmail: 'c@example.com',
       portalFormEmail: null,
-      status: 'drafting',
+      status: 'draft',
       destination: '',
       visaType: '',
       visaSubType,
@@ -282,5 +282,166 @@ describe('AppsService (PF-TASK-007 / DEC-PF-011 + visaSubType)', (): void => {
     }
     expect(createClientWithDebit).not.toHaveBeenCalled();
     expect(appsSave).not.toHaveBeenCalled();
+  });
+
+  describe('ASAU-TASK-004 payment write ACL', (): void => {
+    const agent: User = Object.assign(new User(), {
+      id: 'agent-1',
+      name: 'Agent',
+      login: 'agent1',
+      email: 'agent@example.com',
+      passwordHash: 'x',
+      invitePassword: '',
+      role: 'agent' as const,
+      balance: null,
+      active: true,
+      inviteToken: 'tok-ag',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    const superadmin: User = Object.assign(new User(), {
+      ...admin,
+      id: 'sa-1',
+      role: 'superadmin' as const,
+      login: 'sa1',
+      email: 'sa@example.com',
+    });
+
+    it('rejects agent paymentPaid write with forbidden_role', async (): Promise<void> => {
+      const service = await createService();
+      const row = existingRow(null);
+      appsFindOne.mockResolvedValue(row);
+
+      expect.assertions(4);
+      try {
+        await service.upsert(
+          {
+            id: 'app-1',
+            paymentPaid: true,
+            portalWorkflowAction: 'none',
+          },
+          agent,
+        );
+      } catch (error: unknown) {
+        expect(error).toBeInstanceOf(HttpException);
+        if (error instanceof HttpException) {
+          expect(error.getStatus()).toBe(HttpStatus.FORBIDDEN);
+          expect(error.getResponse()).toEqual({ detail: 'forbidden_role' });
+        }
+      }
+      expect(appsSave).not.toHaveBeenCalled();
+    });
+
+    it('rejects agent paymentAmount write with forbidden_role', async (): Promise<void> => {
+      const service = await createService();
+      appsFindOne.mockResolvedValue(existingRow(null));
+
+      expect.assertions(2);
+      try {
+        await service.upsert(
+          {
+            id: 'app-1',
+            paymentAmount: 250,
+            portalWorkflowAction: 'none',
+          },
+          agent,
+        );
+      } catch (error: unknown) {
+        expect(error).toBeInstanceOf(HttpException);
+        if (error instanceof HttpException) {
+          expect(error.getResponse()).toEqual({ detail: 'forbidden_role' });
+        }
+      }
+    });
+
+    it('rejects agent paymentNote write with forbidden_role', async (): Promise<void> => {
+      const service = await createService();
+      appsFindOne.mockResolvedValue(existingRow(null));
+
+      expect.assertions(2);
+      try {
+        await service.upsert(
+          {
+            id: 'app-1',
+            paymentNote: 'wire',
+            portalWorkflowAction: 'none',
+          },
+          agent,
+        );
+      } catch (error: unknown) {
+        expect(error).toBeInstanceOf(HttpException);
+        if (error instanceof HttpException) {
+          expect(error.getResponse()).toEqual({ detail: 'forbidden_role' });
+        }
+      }
+    });
+
+    it('preserves payment fields when agent upserts without them', async (): Promise<void> => {
+      const service = await createService();
+      const row = existingRow(null);
+      row.paymentAmount = 220;
+      row.paymentPaid = true;
+      row.paymentNote = 'kept';
+      appsFindOne.mockResolvedValue(row);
+
+      const result = await service.upsert(
+        {
+          id: 'app-1',
+          destination: 'FR',
+          portalWorkflowAction: 'none',
+        },
+        agent,
+      );
+
+      const saved = appsSave.mock.calls[0][0] as Application;
+      expect(saved.paymentAmount).toBe(220);
+      expect(saved.paymentPaid).toBe(true);
+      expect(saved.paymentNote).toBe('kept');
+      expect(saved.destination).toBe('FR');
+      expect(result.application.destination).toBe('FR');
+    });
+
+    it('allows admin to write payment fields', async (): Promise<void> => {
+      const service = await createService();
+      appsFindOne.mockResolvedValue(existingRow(null));
+
+      await service.upsert(
+        {
+          id: 'app-1',
+          paymentPaid: true,
+          paymentAmount: 300,
+          paymentNote: 'admin set',
+          portalWorkflowAction: 'none',
+        },
+        admin,
+      );
+
+      const saved = appsSave.mock.calls[0][0] as Application;
+      expect(saved.paymentPaid).toBe(true);
+      expect(saved.paymentAmount).toBe(300);
+      expect(saved.paymentNote).toBe('admin set');
+    });
+
+    it('allows superadmin to write payment fields', async (): Promise<void> => {
+      const service = await createService();
+      appsFindOne.mockResolvedValue(existingRow(null));
+
+      await service.upsert(
+        {
+          id: 'app-1',
+          paymentPaid: true,
+          paymentAmount: 310,
+          paymentNote: 'sa set',
+          portalWorkflowAction: 'none',
+        },
+        superadmin,
+      );
+
+      const saved = appsSave.mock.calls[0][0] as Application;
+      expect(saved.paymentPaid).toBe(true);
+      expect(saved.paymentAmount).toBe(310);
+      expect(saved.paymentNote).toBe('sa set');
+    });
   });
 });

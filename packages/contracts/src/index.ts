@@ -6,10 +6,16 @@
  * with `payload.scheduledAt` + optional `payload.batchId`. No App3 impl here.
  */
 export type {
+  AnalyticsBookedVsUnpaidDto,
+  AnalyticsCityBucketDto,
   AnalyticsClientsPerAgentDto,
+  AnalyticsDateFilterDimension,
   AnalyticsDto,
   AnalyticsGlobalDto,
+  AnalyticsPaidVolumeAgentDto,
+  AnalyticsPaymentCompletenessDto,
   AnalyticsPerAgentDto,
+  AnalyticsQueryDto,
   AnalyticsStatusBucketDto,
   ApplicationDto,
   ApplicationStatus,

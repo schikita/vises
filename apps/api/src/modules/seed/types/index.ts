@@ -6,6 +6,7 @@ export type { HistoryFactory } from './history-factory.types';
 export type { SeedRng } from './seed-rng.types';
 export type { SeedApplicant } from './seed-applicant.types';
 export type { SeedStatusTransition } from './seed-status-transition.types';
+export type { SeedAgentPlan } from './seed-agent-plan.types';
 export type { BuildSeedUsersResult } from './build-seed-users-result.types';
 export type { BuildFr11SeedDatasetResult } from './build-fr11-seed-dataset-result.types';
 export type { BuildFr11SeedDatasetInput } from './build-fr11-seed-dataset-input.types';

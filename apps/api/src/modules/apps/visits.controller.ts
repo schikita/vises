@@ -19,12 +19,22 @@ export class VisitsController {
     @Query('pageSize') pageSize?: string,
     @Query('q') q?: string,
     @Query('city') city?: string,
-    @Query('mode') mode?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
     @Query('sort') sort?: string,
     @Query('sortDir') sortDir?: string,
   ): Promise<VisitsPaginatedList> {
     return this.apps.listVisits(
-      parseVisitsListQuery({ page, pageSize, q, city, mode, sort, sortDir }),
+      parseVisitsListQuery({
+        page,
+        pageSize,
+        q,
+        city,
+        from,
+        to,
+        sort,
+        sortDir,
+      }),
     );
   }
 }

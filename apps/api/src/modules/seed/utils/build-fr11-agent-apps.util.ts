@@ -49,13 +49,14 @@ export const buildFr11AgentApps = (
       mapSeedApplicantToPassportFields(applicant),
     );
     const createdAt = addSeedUtcDays(input.now, -(input.statuses.length - index));
-    const hasVisit = status === 'booked' || status === 'issued';
-    const paymentPaid = status === 'booked' || status === 'issued';
+    const hasVisit = status === 'booked';
+    const paymentPaid = status === 'booked';
     const travelDate = pickSeedDateString(2026, 2027, rng);
     const travelDay = Number(travelDate.slice(8, 10));
     const returnDay = Math.min(28, travelDay + pickSeedInt(5, 14, rng));
     const returnDate = `${travelDate.slice(0, 8)}${String(returnDay).padStart(2, '0')}`;
-    const docsCount = status === 'drafting' ? 0 : pickSeedInt(1, 3, rng);
+    const docsCount =
+      status === 'draft' || status === 'filling' ? 0 : pickSeedInt(1, 3, rng);
 
     clientIds.push(clientId);
     outClients.push(
@@ -97,7 +98,7 @@ export const buildFr11AgentApps = (
       input.applications.create({
         id: applicationId,
         clientId,
-        code: `VS-${input.agentKey === 'a' ? 2600 + n : 2700 + n}`,
+        code: `VS-${input.agentKey}${String(n).padStart(3, '0')}`,
         clientEmail: applicant.email,
         portalFormEmail: hasVisit
           ? `${SEED_PORTAL_FORM_EMAIL_LOCAL_PREFIX}${input.agentKey}-${n}@${SEED_PORTAL_FORM_EMAIL_DOMAIN}`

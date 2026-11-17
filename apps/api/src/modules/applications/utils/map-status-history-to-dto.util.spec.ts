@@ -6,7 +6,7 @@ describe('mapStatusHistoryToDto (T14.2 / T15.4)', (): void => {
     const row = Object.assign(new ApplicationStatusHistory(), {
       id: 'ash-1',
       applicationId: 'app-1',
-      fromStatus: 'pending',
+      fromStatus: 'ready_for_appointment',
       toStatus: 'booked',
       actorId: 'admin-1',
       actorRole: 'admin',
@@ -18,7 +18,7 @@ describe('mapStatusHistoryToDto (T14.2 / T15.4)', (): void => {
 
     expect(dto).toEqual({
       id: 'ash-1',
-      fromStatus: 'pending',
+      fromStatus: 'ready_for_appointment',
       toStatus: 'booked',
       actorId: 'admin-1',
       actorRole: 'admin',
@@ -33,8 +33,8 @@ describe('mapStatusHistoryToDto (T14.2 / T15.4)', (): void => {
     const row = Object.assign(new ApplicationStatusHistory(), {
       id: 'ash-2',
       applicationId: 'app-1',
-      fromStatus: 'drafting',
-      toStatus: 'pending',
+      fromStatus: 'draft',
+      toStatus: 'not_ready_for_appointment',
       actorId: null,
       actorRole: 'visa_center_monitor',
       trigger: null,
@@ -43,8 +43,8 @@ describe('mapStatusHistoryToDto (T14.2 / T15.4)', (): void => {
 
     expect(mapStatusHistoryToDto(row)).toEqual({
       id: 'ash-2',
-      fromStatus: 'drafting',
-      toStatus: 'pending',
+      fromStatus: 'draft',
+      toStatus: 'not_ready_for_appointment',
       actorId: null,
       actorRole: 'visa_center_monitor',
       trigger: null,
@@ -52,11 +52,26 @@ describe('mapStatusHistoryToDto (T14.2 / T15.4)', (): void => {
     });
   });
 
+  it('narrows system actorRole', (): void => {
+    const row = Object.assign(new ApplicationStatusHistory(), {
+      id: 'ash-sys',
+      applicationId: 'app-1',
+      fromStatus: 'draft',
+      toStatus: 'filling',
+      actorId: null,
+      actorRole: 'system',
+      trigger: 'portal_autofill',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    expect(mapStatusHistoryToDto(row).actorRole).toBe('system');
+  });
+
   it('maps unrecognized actorRole to unknown without throwing', (): void => {
     const row = Object.assign(new ApplicationStatusHistory(), {
       id: 'ash-3',
       applicationId: 'app-1',
-      fromStatus: 'pending',
+      fromStatus: 'ready_for_appointment',
       toStatus: 'booked',
       actorId: 'legacy-1',
       actorRole: 'client',
@@ -66,7 +81,7 @@ describe('mapStatusHistoryToDto (T14.2 / T15.4)', (): void => {
 
     expect(mapStatusHistoryToDto(row)).toEqual({
       id: 'ash-3',
-      fromStatus: 'pending',
+      fromStatus: 'ready_for_appointment',
       toStatus: 'booked',
       actorId: 'legacy-1',
       actorRole: 'unknown',

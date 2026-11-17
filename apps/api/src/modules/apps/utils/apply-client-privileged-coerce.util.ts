@@ -9,7 +9,7 @@ import type { PrivilegedAppFields } from '../types';
 
 /**
  * DEC-003 / REQ-011: clients cannot persist privileged payment/visit/manager
- * or statuses outside `{new, docs}`; staff unchanged.
+ * or statuses outside `{draft, not_ready_for_appointment}`; staff unchanged.
  */
 export const applyClientPrivilegedCoerce = (
   body: UpsertAppDto,

@@ -17,7 +17,11 @@ export class PaymentsController {
   list(
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('sort') sort?: string,
+    @Query('sortDir') sortDir?: string,
   ): Promise<PaymentsPaginatedList> {
-    return this.apps.listPayments(parsePaymentsListQuery({ page, pageSize }));
+    return this.apps.listPayments(
+      parsePaymentsListQuery({ page, pageSize, sort, sortDir }),
+    );
   }
 }

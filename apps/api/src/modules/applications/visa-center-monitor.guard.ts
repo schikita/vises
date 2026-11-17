@@ -15,7 +15,7 @@ import {
 } from './utils';
 
 /**
- * Static API-key gate for the monitor-only drafting→pending endpoint (AC-13).
+ * Static API-key gate for the monitor remap endpoint (FR-13).
  * Header: `X-Visa-Center-Monitor-Key` (see env examples). Missing/invalid → 401.
  */
 @Injectable()

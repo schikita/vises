@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { Application } from '../database/entities/application.entity';
+import { Client } from '../database/entities/client.entity';
 import { User } from '../database/entities/user.entity';
 import { userOut } from '../../shared/mappers';
 import {
@@ -13,6 +14,7 @@ import {
 import { DEFAULT_USER_ROLE } from '../auth/constants';
 import type { IUsersService } from './interfaces';
 import type {
+  AgentOwnedApplicationRow,
   EnsureClientResult,
   ManagerNamesOut,
   UserCredentialsOut,
@@ -26,6 +28,7 @@ import {
   applyUsersListSort,
   assertCanAssignStaffRole,
   assertCanMutateUser,
+  groupAgentOwnedApplications,
   isValidEmailFormat,
   mapToStaffRole,
   normalizeClientIdentity,
@@ -63,11 +66,20 @@ export class UsersService implements IUsersService {
       .getMany();
 
     const identityKeys = new Set<string>();
+    const agentIds: string[] = [];
     for (const row of rows) {
+      if (row.role === 'agent') {
+        agentIds.push(row.id);
+        continue;
+      }
       const email = row.email.trim().toLowerCase();
       const login = row.login.trim().toLowerCase();
-      if (email) identityKeys.add(email);
-      if (login) identityKeys.add(login);
+      if (email) {
+        identityKeys.add(email);
+      }
+      if (login) {
+        identityKeys.add(login);
+      }
     }
 
     const appsPool =
@@ -80,9 +92,29 @@ export class UsersService implements IUsersService {
             })
             .getMany();
 
+    const agentOwnedRows: AgentOwnedApplicationRow[] =
+      agentIds.length === 0
+        ? []
+        : await this.apps
+            .createQueryBuilder('a')
+            .innerJoin(Client, 'c', 'c.id = a.client_id')
+            .select('a.id', 'id')
+            .addSelect('c.agent_id', 'agentId')
+            .addSelect('a.updated_at', 'updatedAt')
+            .addSelect('a.created_at', 'createdAt')
+            .where('c.agent_id IN (:...agentIds)', { agentIds })
+            .getRawMany<AgentOwnedApplicationRow>();
+
+    const agentOwnedAppsByAgentId =
+      groupAgentOwnedApplications(agentOwnedRows);
+
     const items: UserListItemOut[] = rows.map((row) => ({
       ...userOut(row),
-      latestAppId: resolveLatestAppIdForUserIdentity(appsPool, row),
+      latestAppId: resolveLatestAppIdForUserIdentity(
+        appsPool,
+        row,
+        agentOwnedAppsByAgentId,
+      ),
     }));
 
     return buildPaginatedList({
@@ -250,6 +282,13 @@ export class UsersService implements IUsersService {
       actorRole: actor.role,
       targetRole: row.role,
     });
+
+    if (body.active === false && row.id === actor.id) {
+      throw new HttpException(
+        'Cannot disable yourself',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     if (body.active === false && row.role === 'admin') {
       const others = await this.users.count({

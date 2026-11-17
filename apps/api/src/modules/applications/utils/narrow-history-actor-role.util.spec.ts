@@ -5,6 +5,7 @@ describe('narrowHistoryActorRole (T14.2 / T15.4)', (): void => {
     'superadmin',
     'admin',
     'agent',
+    'system',
     'visa_center_monitor',
   ] as const)('accepts %s', (role): void => {
     expect(narrowHistoryActorRole(role)).toBe(role);
