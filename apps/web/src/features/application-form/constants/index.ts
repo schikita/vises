@@ -37,6 +37,7 @@ export {
 } from './belarus-phone.constants'
 export { APPLICANT_FIELDS_SECTIONS } from './applicant-fields-sections.constants'
 export { APPLICATION_FORM_MESSAGES } from './form-messages.constants'
+export { APPLICATION_ASSIGNEE_LABEL } from './application-assignee.constants'
 export {
   APPLICANT_DATE_MIN_VALIDITY_DAYS,
   APPLICANT_DATE_MAX_ISSUE_AGE_YEARS,

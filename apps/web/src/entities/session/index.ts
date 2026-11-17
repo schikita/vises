@@ -1,3 +1,10 @@
-﻿export type { Session } from './types'
+﻿export type { Session, SessionUserInput } from './types'
 export { TOKEN_KEY, SESSION_KEY } from './constants'
-export { homePath, staffBase, invitePath, inviteUrl, toSession } from './utils'
+export {
+  homePath,
+  isAdminStaffRole,
+  staffBase,
+  invitePath,
+  inviteUrl,
+  toSession,
+} from './utils'

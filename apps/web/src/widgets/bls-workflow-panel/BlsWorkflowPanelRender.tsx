@@ -53,8 +53,6 @@ export const BlsWorkflowPanelRender = ({
   return (
     <Card className="mb-5 lg:col-span-2">
       <p className="mb-1 font-bold">{copy.title}</p>
-      <p className="mb-4 text-xs text-muted">{copy.hint}</p>
-
       {/* Polite live region for poll / status / empty / error (NFR-004). */}
       <div className="sr-only" aria-live="polite" aria-atomic="true" role="status">
         {liveStatusText}

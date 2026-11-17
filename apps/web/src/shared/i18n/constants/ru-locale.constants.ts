@@ -27,6 +27,7 @@ export const RU_LOCALE = {
     submissionCardTitle: 'Параметры подачи',
     fields: {
       category: 'Категория',
+      destination: 'Направление',
       submitCountry: 'Страна подачи',
       submitCity: 'Город подачи',
       submitFrom: 'Подача клиента от',

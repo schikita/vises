@@ -1,0 +1,252 @@
+/* DateRangePicker — first-frontend tokens (ink/leaf/line/muted). */
+.vises-date-range-picker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: max-content;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.vises-date-range-picker-calendars {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 1rem;
+  align-items: start;
+  width: max-content;
+}
+
+.vises-date-range-picker-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: max-content;
+  max-width: 16.75rem;
+}
+
+@media (max-width: 40rem) {
+  .vises-date-range-picker-calendars {
+    grid-template-columns: max-content;
+  }
+}
+
+.vises-date-range-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.vises-date-range-picker-header__caption {
+  flex: 1;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: #f7f4ee;
+  color: var(--color-ink);
+  padding: 0.4rem 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+button.vises-date-range-picker-header__caption {
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+button.vises-date-range-picker-header__caption:hover {
+  background: #e4f3ea;
+  border-color: color-mix(in srgb, var(--color-leaf) 35%, var(--color-line));
+}
+
+button.vises-date-range-picker-header__caption:focus-visible {
+  outline: 2px solid var(--color-leaf);
+  outline-offset: 2px;
+}
+
+.vises-date-range-picker-header__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.vises-date-range-picker-header__nav:hover:not(:disabled) {
+  background: #e4f3ea;
+  color: var(--color-ink);
+}
+
+.vises-date-range-picker-header__nav:focus-visible {
+  outline: 2px solid var(--color-leaf);
+  outline-offset: 2px;
+}
+
+.vises-date-range-picker-header__nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.vises-date-range-picker-year-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  width: 16.75rem;
+  min-height: 12.5rem;
+  align-content: start;
+}
+
+.vises-date-range-picker-month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  width: 16.75rem;
+  min-height: 12.5rem;
+  align-content: start;
+}
+
+.vises-date-range-picker-grid-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.vises-date-range-picker-grid-cell:hover:not(:disabled) {
+  background: #e4f3ea;
+}
+
+.vises-date-range-picker-grid-cell:focus-visible {
+  outline: 2px solid var(--color-leaf);
+  outline-offset: 2px;
+}
+
+.vises-date-range-picker-grid-cell--active {
+  background: var(--color-leaf);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.vises-date-range-picker-grid-cell--active:hover:not(:disabled) {
+  background: var(--color-leaf);
+  color: #ffffff;
+}
+
+.vises-date-range-picker-grid-cell--disabled,
+.vises-date-range-picker-grid-cell:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.vises-date-range-picker-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.vises-date-range-picker-preset {
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: #f7f4ee;
+  color: var(--color-ink);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.vises-date-range-picker-preset:hover {
+  background: #e4f3ea;
+  border-color: color-mix(in srgb, var(--color-leaf) 35%, var(--color-line));
+  color: var(--color-leaf);
+}
+
+.vises-date-range-picker-preset:focus-visible {
+  outline: 2px solid var(--color-leaf);
+  outline-offset: 2px;
+}
+
+.vises-day-picker.rdp-root {
+  --rdp-accent-color: var(--color-leaf);
+  --rdp-accent-background-color: #e4f3ea;
+  --rdp-today-color: var(--color-leaf);
+  /* Transparent: library default paints a selected outline that caused the end-corner bug. */
+  --rdp-selected-border: 2px solid transparent;
+  --rdp-day-width: 2.25rem;
+  --rdp-day-height: 2.25rem;
+  --rdp-day_button-width: 2.125rem;
+  --rdp-day_button-height: 2.125rem;
+  --rdp-day_button-border-radius: 12px;
+  --rdp-nav-height: 0px;
+  color: var(--color-ink);
+  font-family: inherit;
+  margin: 0;
+  width: max-content;
+}
+
+.vises-day-picker .rdp-months {
+  width: max-content;
+}
+
+.vises-day-picker .rdp-month {
+  width: max-content;
+}
+
+.vises-day-picker .rdp-month_caption {
+  display: none;
+}
+
+.vises-day-picker .rdp-weekday {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.vises-day-picker .rdp-day_button {
+  color: var(--color-ink);
+}
+
+.vises-day-picker .rdp-day_button:hover:not([disabled]):not([aria-disabled='true']) {
+  background: #e4f3ea;
+}
+
+.vises-day-picker .rdp-outside .rdp-day_button {
+  color: var(--color-muted);
+}
+
+/* Solid leaf selected day (single mode) — readable white text, no dark outline. */
+.vises-day-picker .rdp-selected .rdp-day_button {
+  background-color: var(--color-leaf);
+  border: 2px solid transparent;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.vises-day-picker .rdp-selected .rdp-day_button:hover:not([disabled]):not([aria-disabled='true']) {
+  background-color: var(--color-leaf);
+  color: #ffffff;
+}
+
+.vises-day-picker .rdp-selected .rdp-day_button:focus-visible {
+  outline: 2px solid var(--color-leaf);
+  outline-offset: 2px;
+}

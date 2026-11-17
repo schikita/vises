@@ -1,50 +1,48 @@
-import { useEffect, useState } from 'react'
-import { money, type Status } from '@/entities/application'
-import type { OwnerDashboardStatsOut } from '@/features/owner-stats'
-import { staffBase } from '@/entities/session'
+import { useEffect, useState, type ReactElement } from 'react'
 import { useStore } from '@/app/providers'
+import { staffBase } from '@/entities/session'
+import type { OwnerDashboardStatsOut } from '@/features/owner-stats'
 import { apiRequest } from '@/shared/api'
+import { DASHBOARD_COPY } from './constants'
 import { DashboardRender } from './DashboardRender'
+import { mapDashboardStatusRows } from './utils'
 
-const statusCount = (stats: OwnerDashboardStatsOut | null, id: Status): number =>
-  stats?.appsByStatus.find((row) => row.status === id)?.count ?? 0
-
-export const Dashboard = () => {
+export const Dashboard = (): ReactElement => {
   const { session } = useStore()
   const [stats, setStats] = useState<OwnerDashboardStatsOut | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
+    setError('')
     void apiRequest<OwnerDashboardStatsOut>('/stats/dashboard')
       .then((next) => {
-        if (!cancelled) setStats(next)
+        if (cancelled) return
+        setStats(next)
+        setError('')
       })
       .catch(() => {
-        if (!cancelled) setStats(null)
+        if (cancelled) return
+        setStats(null)
+        setError(DASHBOARD_COPY.loadError)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
       })
     return () => {
       cancelled = true
     }
   }, [])
 
-  const visitCount =
-    statusCount(stats, 'booked') + statusCount(stats, 'done')
-
-  const kpis = [
-    ['Заявки', String(stats?.appsTotal ?? 0)],
-    ['Заявители', String(stats?.applicantsTotal ?? 0)],
-    ['Визиты', String(visitCount)],
-    ['Оплачено', money(stats?.paidTotal ?? 0)],
-    ['Не оплачено', money(stats?.unpaidTotal ?? 0)],
-  ]
-
   return (
     <DashboardRender
-      appsCount={stats?.appsTotal ?? 0}
-      kpis={kpis}
-      cities={stats?.cities ?? []}
+      loading={loading}
+      error={error}
       upcoming={stats?.upcomingVisits ?? []}
-      byStatus={(id) => statusCount(stats, id)}
+      statusRows={mapDashboardStatusRows(stats)}
+      cities={stats?.cities ?? []}
       appsBase={`${staffBase(session?.role)}/apps`}
     />
   )

@@ -14,7 +14,7 @@ RUN npm run build -w @vises/web
 
 FROM nginx:alpine AS runtime
 
-COPY --from=build /repo/apps/web/dist /usr/share/nginx/html/vises/
+COPY --from=build /repo/apps/web/dist /usr/share/nginx/html/
 COPY apps/web/docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

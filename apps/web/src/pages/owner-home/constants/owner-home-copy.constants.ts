@@ -1,0 +1,22 @@
+export const OWNER_HOME_COPY = {
+  title: 'Система',
+  subtitle:
+    'Операционный снимок: KPI, топ агентов, недавние пользователи и города.',
+  appsCta: 'Перейти к заявкам',
+  appsTotalLabel: 'Заявок всего',
+  agentsTotalLabel: 'Агентов',
+  recentUsersTitle: 'Последние пользователи',
+  recentUsersAll: 'Все',
+  recentUsersEmpty: 'Пока нет недавних пользователей.',
+  addUser: 'Добавить пользователя',
+  topAgentsTitle: 'Топ агентов',
+  topAgentsEmpty: 'Пока нет данных по агентам.',
+  topAgentsBalanceLabel: 'Баланс',
+  topAgentsRegisteredLabel: 'Зарегистрировано',
+  topAgentsPaidLabel: 'Оплачено',
+  citiesTitle: 'Города подачи',
+  citiesEmpty: 'Пока нет городов подачи.',
+  loading: 'Загрузка…',
+  loadError: 'Не удалось загрузить данные. Списки пусты.',
+  analyticsLoadError: 'Не удалось загрузить сводные показатели.',
+} as const

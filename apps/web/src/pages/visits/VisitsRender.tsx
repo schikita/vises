@@ -1,43 +1,26 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react'
-import type { Application } from '@/entities/application'
-import { statusLabel } from '@/entities/application'
-import { formatDate } from '@/shared/lib'
-import { Card, Empty, ListPager, StatusBadge } from '@/shared/ui'
-import { VISITS_FILTER_HELP, VISITS_FILTER_OPTIONS, VISITS_LIST_SORT_COLUMNS } from './constants'
-import type { VisitsFilterMode, VisitsListSortKey, VisitsListSortState } from './types'
+import type { ReactElement } from 'react'
+import { Search } from 'lucide-react'
+import { formatDate, formatDateTime } from '@/shared/lib'
+import { Card, DateRangePicker, Empty, ListPager } from '@/shared/ui'
+import {
+  VISITS_DATE_RANGE_ARIA_LABEL,
+  VISITS_DATE_RANGE_HELP,
+  VISITS_DATE_RANGE_PLACEHOLDER,
+  VISITS_DATE_RANGE_PRESET_LABELS,
+  VISITS_LIST_SORT_COLUMNS,
+} from './constants'
+import type { VisitsRenderProps } from './types'
 import { resolveVisitsApplicantName } from './utils'
-
-type VisitsRenderProps = {
-  visits: Application[]
-  total: number
-  cities: string[]
-  city: string
-  filterMode: VisitsFilterMode
-  q: string
-  sort: VisitsListSortState
-  page: number
-  pageSize: number
-  loading: boolean
-  error: string
-  onCityChange: (city: string) => void
-  onFilterModeChange: (mode: VisitsFilterMode) => void
-  onQueryChange: (q: string) => void
-  onSortChange: (key: VisitsListSortKey) => void
-  onPageChange: (page: number) => void
-  onRowActivate: (appId: string) => void
-}
-
-const SortIcon = ({ active, dir }: { active: boolean; dir: VisitsListSortState['dir'] }) => {
-  if (!active) return <ArrowUpDown size={12} className="opacity-40" />
-  return dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
-}
+import { VisitsSortIcon } from './VisitsSortIcon'
+import './visits-filters.css'
 
 export const VisitsRender = ({
   visits,
   total,
   cities,
   city,
-  filterMode,
+  from,
+  to,
   q,
   sort,
   page,
@@ -45,12 +28,13 @@ export const VisitsRender = ({
   loading,
   error,
   onCityChange,
-  onFilterModeChange,
+  onFromChange,
+  onToChange,
   onQueryChange,
   onSortChange,
   onPageChange,
   onRowActivate,
-}: VisitsRenderProps) => (
+}: VisitsRenderProps): ReactElement => (
   <div>
     <h1 className="text-2xl font-extrabold tracking-tight">Визиты</h1>
     <p className="mt-1 text-sm text-muted">
@@ -64,47 +48,41 @@ export const VisitsRender = ({
       </p>
     ) : null}
 
-    <div className="mt-5 flex flex-col gap-3 lg:flex-row">
-      <label className="field flex flex-1 items-center gap-2 py-0">
+    <div className="visits-filters mt-5 flex flex-col gap-3 lg:flex-row">
+      <label className="field visits-filters__control visits-filters__search flex-1">
         <Search size={16} className="shrink-0 text-muted" aria-hidden />
         <input
-          className="min-w-0 flex-1 border-0 bg-transparent py-[11px] outline-none"
+          className="visits-filters__search-input"
           placeholder="Имя заявителя, email, логин или код заявки"
           value={q}
           onChange={(e) => onQueryChange(e.target.value)}
           aria-label="Поиск визитов"
         />
       </label>
-      <select className="field lg:max-w-[220px]" value={city} onChange={(e) => onCityChange(e.target.value)}>
+      <select
+        className="field visits-filters__control visits-filters__city"
+        value={city}
+        onChange={(e) => onCityChange(e.target.value)}
+        aria-label="Город визита"
+      >
         <option value="all">Все города</option>
         {cities.map((c) => (
           <option key={c}>{c}</option>
         ))}
       </select>
-    </div>
-
-    <div className="mt-3">
-      <div
-        className="inline-flex flex-wrap gap-2"
-        role="group"
-        aria-label="Фильтр визитов"
-      >
-        {VISITS_FILTER_OPTIONS.map((opt) => (
-          <button
-            key={opt.mode}
-            type="button"
-            className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-              filterMode === opt.mode ? 'bg-forest text-white' : 'border border-line bg-white'
-            }`}
-            aria-pressed={filterMode === opt.mode}
-            onClick={() => onFilterModeChange(opt.mode)}
-          >
-            {opt.label}
-          </button>
-        ))}
+      <div className="visits-filters__range">
+        <DateRangePicker
+          from={from}
+          to={to}
+          onFromChange={onFromChange}
+          onToChange={onToChange}
+          placeholder={VISITS_DATE_RANGE_PLACEHOLDER}
+          ariaLabel={VISITS_DATE_RANGE_ARIA_LABEL}
+          presetLabels={VISITS_DATE_RANGE_PRESET_LABELS}
+        />
       </div>
-      <p className="mt-2 max-w-3xl text-xs text-muted">{VISITS_FILTER_HELP[filterMode]}</p>
     </div>
+    <p className="mt-2 max-w-3xl text-xs text-muted">{VISITS_DATE_RANGE_HELP}</p>
 
     <Card className="mt-5 overflow-hidden p-0">
       {loading && visits.length === 0 ? (
@@ -124,7 +102,7 @@ export const VisitsRender = ({
                       onClick={() => onSortChange(col.key)}
                     >
                       {col.label}
-                      <SortIcon active={sort.key === col.key} dir={sort.dir} />
+                      <VisitsSortIcon active={sort.key === col.key} dir={sort.dir} />
                     </button>
                   </th>
                 ))}
@@ -155,8 +133,8 @@ export const VisitsRender = ({
                     <td className="px-4 py-3 font-semibold">{formatDate(a.visitDate)}</td>
                     <td className="px-4 py-3">{a.visitTime || '—'}</td>
                     <td className="px-4 py-3 text-muted">{a.visitPlace || '—'}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={a.status} label={statusLabel(a.status)} />
+                    <td className="px-4 py-3 text-muted">
+                      {a.createdAt ? formatDateTime(a.createdAt) : '—'}
                     </td>
                   </tr>
                 )

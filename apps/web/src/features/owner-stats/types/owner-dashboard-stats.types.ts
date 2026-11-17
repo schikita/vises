@@ -1,5 +1,7 @@
+import type { ApplicationStatus } from '@vises/contracts'
+
 export type AppsByStatusRow = {
-  status: string
+  status: ApplicationStatus
   count: number
 }
 
@@ -33,7 +35,12 @@ export type DashboardUpcomingVisit = {
   primaryLastName: string
 }
 
-/** Payload from GET /stats/dashboard (DEC-005 + ISSUE-001 home KPIs). */
+/**
+ * Payload from GET /stats/dashboard.
+ * Do not render money/ledger fields (paidTotal, unpaidTotal, etc.).
+ * Система meaningful totals/agents/top-agents come from AnalyticsDto
+ * (`GET /stats/roles-applications`); this DTO still supplies operational lists.
+ */
 export type OwnerDashboardStatsOut = {
   rangeDays: number
   from: string
@@ -54,8 +61,3 @@ export type OwnerDashboardStatsOut = {
   upcomingVisits: DashboardUpcomingVisit[]
 }
 
-export type OwnerStatsChartsProps = {
-  stats: OwnerDashboardStatsOut | null
-  loading: boolean
-  error: string
-}

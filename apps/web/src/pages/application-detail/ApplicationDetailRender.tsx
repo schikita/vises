@@ -12,6 +12,7 @@ import {
   statusLabel,
 } from '@/entities/application'
 import {
+  APPLICATION_ASSIGNEE_LABEL,
   CATEGORIES,
   CITIES_BY_COUNTRY,
   SUBMIT_COUNTRIES,
@@ -20,13 +21,11 @@ import {
 import { Avatar, Btn, Card, Dialog, Empty, Field, StatusBadge } from '@/shared/ui'
 import { BlsWorkflowPanel } from '@/widgets/bls-workflow-panel'
 import { formatDateTime } from '@/shared/lib'
-import {
-  APPLICATION_DETAIL_START_VALIDATION_COPY,
-  APPLICATION_DETAIL_TABS,
-} from './constants'
+import { APPLICATION_DETAIL_START_VALIDATION_COPY } from './constants'
 import type { ApplicationDetailRenderProps } from './types'
 import {
   hasApplicationDetailTabErrors,
+  listVisibleApplicationDetailTabs,
   resolveApplicationDetailFieldControlName,
 } from './utils'
 
@@ -42,6 +41,8 @@ export const ApplicationDetailRender = ({
   managerNames,
   appsListPath,
   activeTab,
+  canDeleteApplication,
+  canAccessPaymentTab,
   startValidationOpen,
   startValidationIssues,
   startFormBlocked,
@@ -84,6 +85,7 @@ export const ApplicationDetailRender = ({
   const submitCity = watch('submitCity')
   const portalFormEmail = (form.portalFormEmail ?? '').trim()
   const applicantCount = form.applicants.length
+  const visibleTabs = listVisibleApplicationDetailTabs(canAccessPaymentTab)
 
   const handleStartRelevantBlur = (event: FocusEvent<HTMLDivElement>) => {
     const fieldName = resolveApplicationDetailFieldControlName(event.target)
@@ -108,10 +110,12 @@ export const ApplicationDetailRender = ({
         </Link>
         <div className="flex gap-2">
           <Btn onClick={onSave}>{saved ? 'Сохранено' : 'Сохранить'}</Btn>
-          <Btn variant="danger" onClick={onRemove}>
-            <Trash2 size={14} />
-            Удалить
-          </Btn>
+          {canDeleteApplication ? (
+            <Btn variant="danger" onClick={onRemove}>
+              <Trash2 size={14} />
+              Удалить
+            </Btn>
+          ) : null}
         </div>
       </div>
       {saveError && <p className="mb-4 text-sm font-semibold text-clay">{saveError}</p>}
@@ -147,7 +151,7 @@ export const ApplicationDetailRender = ({
         role="tablist"
         aria-label="Разделы заявки"
       >
-        {APPLICATION_DETAIL_TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const selected = activeTab === tab.id
           const tabHasError = hasApplicationDetailTabErrors(errors, tab.id, applicantCount)
           return (
@@ -240,7 +244,7 @@ export const ApplicationDetailRender = ({
               <Field label="Подача до">
                 <input type="date" className="field" {...register('submitTo')} />
               </Field>
-              <Field label="Агент">
+              <Field label={APPLICATION_ASSIGNEE_LABEL}>
                 <select className="field" {...register('manager')}>
                   {[...new Set([form.manager, ...managerNames].filter(Boolean))].map((x) => (
                     <option key={x}>{x}</option>
@@ -326,9 +330,21 @@ export const ApplicationDetailRender = ({
         </div>
       ) : null}
 
-      {activeTab === 'applicants' ? portalPanel : null}
+      {activeTab === 'applicants' ? (
+        <div className="space-y-5" role="tabpanel">
+          {portalPanel}
+          <BlsWorkflowPanel
+            applicationId={form.id}
+            applicants={form.applicants}
+            startFormBlocked={startFormBlocked}
+            onAutofillRunLinked={onAutofillRunLinked}
+            onBeforeStartBlsWorkflow={onBeforeStartBlsWorkflow}
+            onStartBlsWorkflowApiError={onStartBlsWorkflowApiError}
+          />
+        </div>
+      ) : null}
 
-      {activeTab === 'payment' ? (
+      {canAccessPaymentTab && activeTab === 'payment' ? (
         <div className="grid gap-5 lg:grid-cols-2" role="tabpanel">
           <Card>
             <p className="mb-4 font-bold">Оплата</p>
@@ -425,19 +441,6 @@ export const ApplicationDetailRender = ({
               <p className="mt-3 text-sm font-semibold text-leaf">Обязательные файлы на месте.</p>
             )}
           </Card>
-        </div>
-      ) : null}
-
-      {activeTab === 'autofill' ? (
-        <div role="tabpanel">
-          <BlsWorkflowPanel
-            applicationId={form.id}
-            applicants={form.applicants}
-            startFormBlocked={startFormBlocked}
-            onAutofillRunLinked={onAutofillRunLinked}
-            onBeforeStartBlsWorkflow={onBeforeStartBlsWorkflow}
-            onStartBlsWorkflowApiError={onStartBlsWorkflowApiError}
-          />
         </div>
       ) : null}
 

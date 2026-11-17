@@ -1,5 +1,6 @@
 ﻿export type {
   Status,
+  ApplicationStatusMeta,
   DocType,
   Applicant,
   DocFile,
@@ -18,6 +19,7 @@
 export { STATUSES, APPLICATION_STATUS_NEEDS_FIXES, DOC_TYPES } from './constants'
 export {
   statusLabel,
+  isApplicationStatus,
   money,
   requiredDocsOk,
   progress,

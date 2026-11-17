@@ -18,10 +18,12 @@ import { PortalPreviousSchengenVisaSection } from '../PortalPreviousSchengenVisa
  */
 export const PortalOnePageFormSections = ({
   title,
+  hideDestinationField = false,
 }: PortalOnePageFormSectionsProps): ReactElement => {
   return (
     <PortalFormShell title={title}>
       <PortalOnePageCoreSections
+        hideDestinationField={hideDestinationField}
         afterPersonal={<PortalMinorsSection />}
         afterAddress={<PortalOtherResidenceSection />}
         afterTravel={

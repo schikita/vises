@@ -5,12 +5,15 @@ import { PORTAL_FORM_LABELS } from '../../constants/portal-form-labels.constants
 import { PORTAL_FORM_SECTION_BANNERS } from '../../constants/portal-form-section-banners.constants'
 import { PURPOSES } from '../../constants/purposes.constants'
 import type { PortalOnePageFormValues } from '../../types/portal-one-page-form.types'
+import type { PortalTravelInformationSectionProps } from '../../types/portal-travel-information-section.types'
 import { getNestedFormError } from '../../utils/get-nested-form-error.util'
 import { registerLatinUppercaseField } from '../../utils/register-latin-uppercase-field.util'
 import { PortalFormSectionBanner } from '../PortalFormSectionBanner'
 import { PortalThemedField } from '../PortalThemedField'
 
-export const PortalTravelInformationSection = (): ReactElement => {
+export const PortalTravelInformationSection = ({
+  hideDestinationField = false,
+}: PortalTravelInformationSectionProps): ReactElement => {
   const {
     register,
     setValue,
@@ -44,13 +47,15 @@ export const PortalTravelInformationSection = (): ReactElement => {
             ))}
           </select>
         </PortalThemedField>
-        <PortalThemedField
-          label={PORTAL_FORM_LABELS.memberStateDestination}
-          required
-          error={fieldError('destination')}
-        >
-          <input className="portal-form-control uppercase" {...latin('destination')} />
-        </PortalThemedField>
+        {hideDestinationField ? null : (
+          <PortalThemedField
+            label={PORTAL_FORM_LABELS.memberStateDestination}
+            required
+            error={fieldError('destination')}
+          >
+            <input className="portal-form-control uppercase" {...latin('destination')} />
+          </PortalThemedField>
+        )}
         <PortalThemedField
           label={PORTAL_FORM_LABELS.memberStateSecondDestination}
           error={fieldError('memberStateSecondDestination')}

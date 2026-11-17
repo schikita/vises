@@ -16,7 +16,7 @@ import {
   statusLabel,
 } from '@/entities/application'
 import { fetchClientDetail } from '@/entities/client'
-import { staffBase } from '@/entities/session'
+import { isAdminStaffRole, staffBase } from '@/entities/session'
 import { fetchManagerNames } from '@/entities/user'
 import {
   applicationDetailFormSchema,
@@ -41,6 +41,7 @@ import {
   computeApplicationDetailStartFormBlocked,
   hasApplicationDetailStartPathErrors,
   isApplicationDetailStartRelevantPath,
+  isApplicationDetailTabAllowed,
   mapApplicationDetailStartApiDetailToIssues,
   resolveApplicationDetailStartFirstTab,
   syncApplicationDetailStartFormErrors,
@@ -63,6 +64,7 @@ export const ApplicationDetail = (): ReactElement => {
     cacheApp,
   } = useStore()
   const found = id ? apps.find((a) => a.id === id) : undefined
+  const isAdminStaff = isAdminStaffRole(session?.role)
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'missing'>(
     found ? 'ready' : 'loading',
   )
@@ -327,7 +329,7 @@ export const ApplicationDetail = (): ReactElement => {
     setStartValidationOpen(true)
   }, [])
 
-  /** Persist CRM status «Нужны правки» after Start validation failures. */
+  /** Persist BUSINESS `not_ready_for_appointment` after Start validation failures. */
   const markApplicationNeedsFixes = useCallback(async () => {
     const values = form.getValues()
     if (!values.id || values.status === APPLICATION_STATUS_NEEDS_FIXES) {
@@ -382,12 +384,17 @@ export const ApplicationDetail = (): ReactElement => {
     [hasKnownStartErrors, syncStartFormErrors],
   )
 
+  const visibleActiveTab = isApplicationDetailTabAllowed(activeTab, isAdminStaff)
+    ? activeTab
+    : APPLICATION_DETAIL_DEFAULT_TAB
+
   const onTabChange = useCallback(
     (tab: ApplicationDetailTabId) => {
+      if (!isApplicationDetailTabAllowed(tab, isAdminStaff)) return
       setActiveTab(tab)
       syncStartFormErrors()
     },
-    [syncStartFormErrors],
+    [isAdminStaff, syncStartFormErrors],
   )
 
   const onBeforeStartBlsWorkflow = useCallback(
@@ -484,7 +491,9 @@ export const ApplicationDetail = (): ReactElement => {
         cities={settings.cities}
         managerNames={managerNames}
         appsListPath={`${staffBase(session?.role)}/apps`}
-        activeTab={activeTab}
+        activeTab={visibleActiveTab}
+        canDeleteApplication={isAdminStaff}
+        canAccessPaymentTab={isAdminStaff}
         startValidationOpen={startValidationOpen}
         startValidationIssues={startValidationIssues}
         portalPanel={
@@ -515,6 +524,7 @@ export const ApplicationDetail = (): ReactElement => {
           void save()
         }}
         onRemove={() => {
+          if (!isAdminStaff) return
           const appId = form.getValues('id')
           if (!appId) return
           void remove(appId).then(() => nav(`${staffBase(session?.role)}/apps`))

@@ -36,3 +36,4 @@ export type {
   StartBlsWorkflowResult,
   BlsWorkflowControlResult,
 } from './bls-workflow'
+export type { AnalyticsQuery } from './analytics'

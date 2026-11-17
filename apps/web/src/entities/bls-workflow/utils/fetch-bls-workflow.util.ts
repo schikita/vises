@@ -4,7 +4,7 @@ import type { BlsWorkflowSnapshot } from '../types'
 
 /**
  * GET latest workflow snapshot for application.
- * Returns null when no workflow exists (404 «Сценарий не найден»).
+ * Returns null when no workflow exists (404 «Заполнение не найдено»).
  */
 export const fetchBlsWorkflow = async (
   applicationId: string,
@@ -14,7 +14,7 @@ export const fetchBlsWorkflow = async (
   >(`/apps/${encodeURIComponent(applicationId)}/bls-workflow`)
 
   if (networkError) {
-    throw new Error('Не удалось загрузить сценарий BLS (сеть или таймаут)')
+    throw new Error('Не удалось загрузить заполнение BLS (сеть или таймаут)')
   }
 
   if (status === 404) {
@@ -27,7 +27,7 @@ export const fetchBlsWorkflow = async (
 
   if (status < 200 || status >= 300) {
     throw new Error(
-      extractApiErrorDetail(data) ?? `Не удалось загрузить сценарий BLS (${status})`,
+      extractApiErrorDetail(data) ?? `Не удалось загрузить заполнение BLS (${status})`,
     )
   }
 

@@ -16,6 +16,7 @@ export type { PortalFormSectionBannerProps } from './portal-form-section-banner.
 export type { PortalThemedFieldProps } from './portal-themed-field.types'
 export type { PortalOnePageCoreSectionsProps } from './portal-one-page-core-sections.types'
 export type { PortalOnePageFormSectionsProps } from './portal-one-page-form-sections.types'
+export type { PortalTravelInformationSectionProps } from './portal-travel-information-section.types'
 export type { PortalFormToggleBannerProps } from './portal-form-toggle-banner.types'
 export type { LatinRegisterResult } from './register-latin-uppercase-field.types'
 export type { PortalApplicationUpsertFields } from './portal-application-upsert-fields.types'

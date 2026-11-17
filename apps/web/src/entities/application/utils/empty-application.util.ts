@@ -9,7 +9,7 @@ export const emptyApplication = (email: string): Application => {
     clientId: '',
     clientEmail: email,
     portalFormEmail: null,
-    status: 'new',
+    status: 'draft',
     destination: 'Испания',
     visaType: 'Туристическая',
     visaSubType: null,

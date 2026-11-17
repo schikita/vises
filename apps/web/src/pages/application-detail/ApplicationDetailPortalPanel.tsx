@@ -20,7 +20,7 @@ export const ApplicationDetailPortalPanel = ({
   }
 
   return (
-    <div className="space-y-4" role="tabpanel">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
           Одна страница BLS Edit Member. «Сохранить всё» пишет паспорт, портал-форму и заявку

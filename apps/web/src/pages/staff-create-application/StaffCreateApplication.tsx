@@ -30,15 +30,17 @@ export const StaffCreateApplication = (): ReactElement => {
   const [selectedClientId, setSelectedClientId] = useState('')
 
   const defaultValues = useMemo(() => {
+    const destination = settings.destinations[0] ?? 'Испания'
+    const submitCity = settings.cities[0] ?? 'Минск'
     return {
       ...createEmptyPortalOnePageFormValues(),
-      destination: 'Испания',
+      destination,
       visaType: 'Туристическая',
       category: 'Normal',
       submitCountry: 'Belarus',
-      submitCity: 'Minsk',
+      submitCity,
     }
-  }, [])
+  }, [settings.cities, settings.destinations])
 
   const form = useForm<PortalOnePageFormValues>({
     resolver: zodResolver(staffPortalCreateFormSchema) as Resolver<PortalOnePageFormValues>,
@@ -95,7 +97,7 @@ export const StaffCreateApplication = (): ReactElement => {
     draft.clientId = ''
     draft.paymentAmount = settings.defaultPrice
     draft.manager = session?.name ?? ''
-    draft.status = 'new'
+    draft.status = 'draft'
     draft.updatedAt = nowIso()
     draft.timeline = [
       {
@@ -141,6 +143,8 @@ export const StaffCreateApplication = (): ReactElement => {
         clientsLoading={clientsLoading}
         clientsError={clientsError}
         selectedClientId={selectedClientId}
+        destinations={settings.destinations}
+        cities={settings.cities}
         register={form.register}
         errors={form.formState.errors}
         onSelectedClientIdChange={setSelectedClientId}

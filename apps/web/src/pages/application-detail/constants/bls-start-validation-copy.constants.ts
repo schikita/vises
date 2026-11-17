@@ -1,6 +1,6 @@
 /** Russian chrome-only copy for Start pre-validation Dialog (DEC-009). */
 export const APPLICATION_DETAIL_START_VALIDATION_COPY = {
-  dialogTitle: 'Нельзя запустить сценарий',
+  dialogTitle: 'Нельзя запустить заполнение',
   dialogListFallback: 'Исправьте ошибки в форме заявки и попробуйте снова.',
   tabErrorCue: 'ошибка',
   /** Save-then-start failed (DEC-001); shown via saveError and/or Dialog. */

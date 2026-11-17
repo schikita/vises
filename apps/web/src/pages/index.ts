@@ -1,8 +1,5 @@
 ﻿export { Landing } from './landing'
 export { InvitePage } from './invite'
-export { ClientHome } from './client-home'
-export { NewApplication } from './new-application'
-export { ClientApplication } from './client-application'
 export { Dashboard } from './dashboard'
 export { Applications } from './applications'
 export { ApplicationDetail } from './application-detail'

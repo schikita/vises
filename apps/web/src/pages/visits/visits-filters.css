@@ -1,0 +1,53 @@
+/* Visits filter row — compact control height (DEC-ASAU-007). Scoped; does not change global .field. */
+
+.visits-filters__control.field {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  min-height: 2.25rem;
+  box-sizing: border-box;
+}
+
+.visits-filters__search.field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.visits-filters__search-input {
+  min-width: 0;
+  flex: 1 1 auto;
+  border: 0;
+  background: transparent;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  outline: none;
+  font: inherit;
+  color: inherit;
+}
+
+.visits-filters__city.field {
+  width: 100%;
+}
+
+.visits-filters__range {
+  width: 100%;
+}
+
+.visits-filters__range .field {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  min-height: 2.25rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .visits-filters__city.field {
+    max-width: 220px;
+  }
+
+  .visits-filters__range {
+    max-width: 260px;
+  }
+}

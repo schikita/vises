@@ -22,6 +22,8 @@ export const StaffCreateApplicationRender = ({
   clientsLoading,
   clientsError,
   selectedClientId,
+  destinations,
+  cities,
   register,
   errors,
   onSelectedClientIdChange,
@@ -128,7 +130,42 @@ export const StaffCreateApplicationRender = ({
           <p className="mt-2 text-xs text-muted">{t('staffCreate.fields.clientEmailHint')}</p>
         </Card>
 
-        <PortalOnePageFormSections title={t('staffCreate.portalFormTitle')} />
+        <Card>
+          <p className="mb-4 font-bold">{t('staffCreate.submissionCardTitle')}</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label={t('staffCreate.fields.submitCity')}
+              required
+              error={getNestedFormError(errors, 'submitCity')}
+            >
+              <select className="field" {...register('submitCity')}>
+                {(cities.length > 0 ? cities : ['Минск']).map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field
+              label={t('staffCreate.fields.destination')}
+              required
+              error={getNestedFormError(errors, 'destination')}
+            >
+              <select className="field" {...register('destination')}>
+                {(destinations.length > 0 ? destinations : ['Испания']).map((destination) => (
+                  <option key={destination} value={destination}>
+                    {destination}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </Card>
+
+        <PortalOnePageFormSections
+          title={t('staffCreate.portalFormTitle')}
+          hideDestinationField
+        />
 
         {error ? <p className="text-sm font-semibold text-clay">{error}</p> : null}
 

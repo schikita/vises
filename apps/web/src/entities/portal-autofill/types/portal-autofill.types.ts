@@ -97,12 +97,13 @@ export type PortalAutofillRunResult = {
 }
 
 /**
- * CRM status after staff portal autofill settles with a fill report.
- * Resolver returns `null` when CRM must stay unchanged (no report, or failure).
- * Success may nudge `review` only — never auto-`declined` (REQ-012 / DEC-003).
+ * BUSINESS status after staff portal autofill settles with a fill report.
+ * Resolver returns `null` when BUSINESS must stay unchanged (no report, or failure).
+ * Success maps legacy CRM `review` → `not_ready_for_appointment` (§4.D);
+ * never auto-`declined` (REQ-012 / DEC-003).
  */
 export type PortalAutofillCrmOutcome = {
-  status: 'review'
+  status: 'not_ready_for_appointment'
   note: string
 }
 

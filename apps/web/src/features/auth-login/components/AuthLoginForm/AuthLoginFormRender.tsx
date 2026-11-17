@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import type { FieldErrors, UseFormRegister } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { Btn, Field } from '@/shared/ui'
 import { AUTH_LOGIN_MESSAGES } from '../../constants'
 import type { AuthLoginFormValues } from '../../types'
@@ -42,5 +43,11 @@ export const AuthLoginFormRender = ({
         Войти
       </Btn>
     </div>
+    <p className="mt-3 text-center text-sm text-muted">
+      {AUTH_LOGIN_MESSAGES.noAccountPrompt}{' '}
+      <Link className="font-semibold text-leaf" to="/register">
+        {AUTH_LOGIN_MESSAGES.registerLinkLabel}
+      </Link>
+    </p>
   </form>
 )

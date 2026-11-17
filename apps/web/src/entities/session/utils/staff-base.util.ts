@@ -1,3 +1,5 @@
 import type { Role } from '@/entities/user'
 
-export const staffBase = (role?: Role | null) => (role === 'admin' ? '/owner' : '/admin')
+/** Path prefix for staff list/detail links (`/app` agent, `/admin` admin tiers). */
+export const staffBase = (role?: Role | null): string =>
+  role === 'admin' || role === 'superadmin' ? '/admin' : '/app'

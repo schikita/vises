@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 
-export type ShellKind = 'owner' | 'office' | 'client'
+export type ShellKind = 'owner' | 'office'
 
 export type ShellNavItem = {
   to: string

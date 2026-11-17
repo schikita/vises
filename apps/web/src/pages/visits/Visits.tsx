@@ -5,14 +5,16 @@ import type { Application } from '@/entities/application'
 import { fetchVisitsPage } from '@/entities/application'
 import { staffBase } from '@/entities/session'
 import { STAFF_LIST_PAGE_SIZE, staffListPageCount } from '@/shared/lib'
-import type { VisitsFilterMode, VisitsListSortKey, VisitsListSortState } from './types'
+import type { VisitsListSortKey, VisitsListSortState } from './types'
+import { todayIsoDate } from './utils'
 import { VisitsRender } from './VisitsRender'
 
 export const Visits = () => {
   const { session } = useStore()
   const navigate = useNavigate()
   const [city, setCity] = useState('all')
-  const [filterMode, setFilterMode] = useState<VisitsFilterMode>('upcoming')
+  const [from, setFrom] = useState(todayIsoDate)
+  const [to, setTo] = useState('')
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<VisitsListSortState>({ key: 'date', dir: 'asc' })
   const [page, setPage] = useState(1)
@@ -32,7 +34,8 @@ export const Visits = () => {
       pageSize: STAFF_LIST_PAGE_SIZE,
       q,
       city,
-      mode: filterMode,
+      from,
+      to,
       sort: sort.key,
       sortDir: sort.dir,
     })
@@ -56,7 +59,7 @@ export const Visits = () => {
     return () => {
       cancelled = true
     }
-  }, [page, q, city, filterMode, sort])
+  }, [page, q, city, from, to, sort])
 
   const onSortChange = (key: VisitsListSortKey) => {
     setSort((prev) =>
@@ -73,7 +76,8 @@ export const Visits = () => {
       total={total}
       cities={cities}
       city={city}
-      filterMode={filterMode}
+      from={from}
+      to={to}
       q={q}
       sort={sort}
       page={page}
@@ -84,8 +88,12 @@ export const Visits = () => {
         setCity(value)
         setPage(1)
       }}
-      onFilterModeChange={(mode) => {
-        setFilterMode(mode)
+      onFromChange={(value) => {
+        setFrom(value)
+        setPage(1)
+      }}
+      onToChange={(value) => {
+        setTo(value)
         setPage(1)
       }}
       onQueryChange={(value) => {

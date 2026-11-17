@@ -1,26 +1,21 @@
-import type { ReactNode } from 'react'
+import type { ReactElement } from 'react'
 import { FileCheck, Shield, Timer } from 'lucide-react'
-import { homePath, type Session } from '@/entities/session'
+import { homePath } from '@/entities/session'
 import { Btn, Logo } from '@/shared/ui'
+import type { LandingRenderProps } from './types'
 
-type LandingRenderProps = {
-  session: Session | null
-  loginForm: ReactNode
-}
-
-export const LandingRender = ({ session, loginForm }: LandingRenderProps) => (
+export const LandingRender = ({
+  session,
+  loginForm,
+}: LandingRenderProps): ReactElement => (
   <div className="min-h-screen">
     <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-      <Logo />
+      <Logo to="/" />
       {session ? (
         <Btn to={homePath(session.role)} variant="ghost" className="bg-white">
           В кабинет
         </Btn>
-      ) : (
-        <p className="hidden text-sm text-muted sm:block">
-          Вход по логину или по ссылке от админа/менеджера
-        </p>
-      )}
+      ) : null}
     </header>
 
     <section className="mx-auto grid max-w-6xl gap-12 px-5 pb-16 pt-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:pt-10">
@@ -34,7 +29,7 @@ export const LandingRender = ({ session, loginForm }: LandingRenderProps) => (
           Статус — в кабинете.
         </h1>
         <p className="mt-5 max-w-lg text-base leading-relaxed text-muted">
-          Клиент заполняет анкету и загружает файлы. Агент ведёт заявки. Админ или менеджер выдаёт
+          Клиент заполняет анкету и загружает файлы. Агент ведёт заявки. Админ или агент выдаёт
           доступы логином и паролем.
         </p>
       </div>

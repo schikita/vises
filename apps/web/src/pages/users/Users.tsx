@@ -1,23 +1,25 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '@/app/providers'
 import { inviteUrl, staffBase } from '@/entities/session'
 import type { IssuedAccess, Role, UserListItem } from '@/entities/user'
 import { fetchUsersPage } from '@/entities/user'
-import { CreateUserForm } from '@/features/users-admin'
+import { CreateUserForm, USER_DETAIL_STATUS_ACTION_ERROR } from '@/features/users-admin'
 import { STAFF_LIST_PAGE_SIZE, staffListPageCount } from '@/shared/lib'
+import { USERS_PROFILE_USER_ID_QUERY } from './constants'
 import type { UsersListSortKey, UsersListSortState } from './types'
-import { USERS_NO_APPS_MESSAGE } from './constants'
 import { UsersRender } from './UsersRender'
 
-export const UsersPage = () => {
-  const { createUser, updateUser, reissueAccess, removeUser, session } = useStore()
+export const UsersPage = (): ReactElement => {
+  const { createUser, updateUser, session } = useStore()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const profileUserId = searchParams.get(USERS_PROFILE_USER_ID_QUERY)
   const [error, setError] = useState('')
-  const [rowMessage, setRowMessage] = useState('')
+  const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null)
   const [issued, setIssued] = useState<IssuedAccess | null>(null)
   const [copied, setCopied] = useState(false)
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(profileUserId ?? '')
   const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all')
   const [createOpen, setCreateOpen] = useState(false)
   const [sort, setSort] = useState<UsersListSortState>({ key: 'created', dir: 'desc' })
@@ -27,7 +29,16 @@ export const UsersPage = () => {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState('')
+  const [statusBusy, setStatusBusy] = useState(false)
+  const [statusError, setStatusError] = useState('')
   const appsBase = `${staffBase(session?.role)}/apps`
+
+  useEffect(() => {
+    if (!profileUserId) return
+    setQ(profileUserId)
+    setRoleFilter('all')
+    setPage(1)
+  }, [profileUserId])
 
   useEffect(() => {
     let cancelled = false
@@ -62,6 +73,16 @@ export const UsersPage = () => {
     }
   }, [page, q, roleFilter, sort, reloadNonce])
 
+  useEffect(() => {
+    if (!profileUserId || loading) return
+    const found = pageItems.find((user) => user.id === profileUserId) ?? null
+    if (!found) return
+    setSelectedUser(found)
+    const next = new URLSearchParams(searchParams)
+    next.delete(USERS_PROFILE_USER_ID_QUERY)
+    setSearchParams(next, { replace: true })
+  }, [profileUserId, loading, pageItems, searchParams, setSearchParams])
+
   const refreshList = () => setReloadNonce((n) => n + 1)
 
   const copyLink = (token: string) => {
@@ -89,13 +110,21 @@ export const UsersPage = () => {
     setPage(1)
   }
 
-  const onRowActivate = (user: UserListItem) => {
-    if (!user.latestAppId) {
-      setRowMessage(USERS_NO_APPS_MESSAGE)
+  const onSetActive = async (userId: string, active: boolean): Promise<void> => {
+    setStatusBusy(true)
+    setStatusError('')
+    const err = await updateUser(userId, { active })
+    if (err) {
+      setStatusError(err || USER_DETAIL_STATUS_ACTION_ERROR)
+      setStatusBusy(false)
       return
     }
-    setRowMessage('')
-    navigate(`${appsBase}/${user.latestAppId}`)
+    setPageItems((cur) =>
+      cur.map((user) => (user.id === userId ? { ...user, active } : user)),
+    )
+    setSelectedUser((cur) => (cur && cur.id === userId ? { ...cur, active } : cur))
+    setStatusBusy(false)
+    refreshList()
   }
 
   const createForm: ReactNode = (
@@ -128,49 +157,45 @@ export const UsersPage = () => {
       listError={listError}
       createForm={createForm}
       createOpen={createOpen}
+      selectedUser={selectedUser}
       issued={issued}
       copied={copied}
       q={q}
       roleFilter={roleFilter}
       sort={sort}
-      rowMessage={rowMessage}
-      sessionUserId={session?.userId}
       onOpenCreate={() => {
         setError('')
         setCreateOpen(true)
       }}
       onCloseCreate={() => setCreateOpen(false)}
+      onCloseUserDetail={() => {
+        setStatusError('')
+        setSelectedUser(null)
+      }}
       onQueryChange={onQueryChange}
       onRoleFilterChange={onRoleFilterChange}
       onSortChange={onSortChange}
       onPageChange={setPage}
-      onRowActivate={onRowActivate}
+      onRowActivate={(user) => {
+        setStatusError('')
+        setSelectedUser(user)
+      }}
+      onOpenLatestApp={(appId) => {
+        setSelectedUser(null)
+        navigate(`${appsBase}/${appId}`)
+      }}
       onCopyLink={copyLink}
       onCopyCredentials={(issuedAccess) => {
         void navigator.clipboard.writeText(
           `Vises\nЛогин: ${issuedAccess.user.login}\nПароль: ${issuedAccess.password}\nСсылка: ${inviteUrl(issuedAccess.token)}`,
         )
       }}
-      onReissue={(userId) => {
-        void reissueAccess(userId).then((result) => {
-          if (typeof result === 'string') setError(result)
-          else {
-            setError('')
-            setIssued(result)
-          }
-        })
-      }}
-      onToggleActive={(userId, active) => {
-        void updateUser(userId, { active: !active }).then((err) => {
-          if (err) setError(err)
-          else refreshList()
-        })
-      }}
-      onRemove={(userId) => {
-        void removeUser(userId).then((err) => {
-          if (err) setError(err)
-          else refreshList()
-        })
+      actorRole={session?.role}
+      actorId={session?.userId}
+      statusBusy={statusBusy}
+      statusError={statusError}
+      onSetActive={(userId, active) => {
+        void onSetActive(userId, active)
       }}
     />
   )

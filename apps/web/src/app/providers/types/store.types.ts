@@ -17,6 +17,12 @@ export type Store = {
   settings: SystemSettings
   login: (role: Role) => Promise<true | string>
   loginWithPassword: (login: string, password: string) => Promise<User | string>
+  registerWithPassword: (input: {
+    name: string
+    login: string
+    password: string
+    email?: string
+  }) => Promise<User | string>
   loginByInvite: (token: string) => Promise<User | null>
   logout: () => void
   upsert: (app: AppUpsertWrite) => Promise<UpsertAppResult>

@@ -1,4 +1,6 @@
 ﻿export { genLogin } from './gen-login.util'
 export { genPassword } from './gen-password.util'
 export { fetchUsersPage } from './fetch-users-page.util'
+export { fetchUserListItemById } from './fetch-user-list-item-by-id.util'
 export { fetchManagerNames } from './fetch-manager-names.util'
+export { toStaffRole } from './to-staff-role.util'

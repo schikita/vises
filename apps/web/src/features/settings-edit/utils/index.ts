@@ -1,2 +1,1 @@
-﻿// FSD skeleton barrel (Batch A). Public exports added in later batches.
-export {}
+﻿export { addUniqueTrimmedValue } from './add-unique-trimmed-value.util'

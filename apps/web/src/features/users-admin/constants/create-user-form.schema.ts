@@ -5,5 +5,5 @@ export const createUserFormSchema = z.object({
   name: z.string().trim().min(1, CREATE_USER_MESSAGES.nameRequired),
   email: z.string().trim(),
   login: z.string().trim(),
-  role: z.enum(['client', 'manager', 'admin']),
+  role: z.enum(['agent', 'admin']),
 })

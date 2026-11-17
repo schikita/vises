@@ -1,16 +1,12 @@
-import type { VisitsFilterMode } from '../types'
+export const VISITS_DATE_RANGE_HELP =
+  'По умолчанию показаны визиты с датой сегодня или позже. Можно выбрать любой диапазон дат визита. Фильтр действует только на этот список.'
 
-export const VISITS_FILTER_OPTIONS: Array<{
-  mode: VisitsFilterMode
-  label: string
-}> = [
-  { mode: 'upcoming', label: 'Ближайшие' },
-  { mode: 'all', label: 'Все визиты' },
-]
+export const VISITS_DATE_RANGE_PLACEHOLDER = 'Выберите период'
 
-export const VISITS_FILTER_HELP = {
-  upcoming:
-    'В таблице только визиты с датой сегодня или позже и статусом не «Завершена». Фильтр действует только на этот список визитов.',
-  all: 'В таблице все заявки с датой визита или статусом «Визит назначен» / «Завершена». Фильтр действует только на этот список визитов.',
-} as const satisfies Record<VisitsFilterMode, string>
+export const VISITS_DATE_RANGE_ARIA_LABEL = 'Период дат визита'
 
+export const VISITS_DATE_RANGE_PRESET_LABELS = {
+  last7Days: '7 дней',
+  thisMonth: 'Этот месяц',
+  thisYear: 'Этот год',
+} as const

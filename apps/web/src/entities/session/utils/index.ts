@@ -1,4 +1,5 @@
 ﻿export { homePath } from './home-path.util'
+export { isAdminStaffRole } from './is-admin-staff-role.util'
 export { staffBase } from './staff-base.util'
 export { invitePath } from './invite-path.util'
 export { inviteUrl } from './invite-url.util'

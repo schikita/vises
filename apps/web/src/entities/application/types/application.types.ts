@@ -1,16 +1,8 @@
+import type { ApplicationStatus } from '@vises/contracts'
 import type { PortalClientPortalProgress } from '@/entities/portal-autofill'
 
-export type Status =
-  | 'new'
-  | 'docs'
-  | 'review'
-  | 'ready'
-  | 'booked'
-  | 'done'
-  | 'fixes'
-  | 'autofill_ok'
-  | 'autofill_failed'
-  | 'declined'
+/** BUSINESS application status — SoT is `@vises/contracts` `ApplicationStatus`. */
+export type Status = ApplicationStatus
 
 export type DocType =
   | 'selfie'

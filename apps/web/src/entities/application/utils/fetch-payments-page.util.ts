@@ -11,5 +11,7 @@ export const fetchPaymentsPage = (
     `/payments${buildStaffListQuery({
       page: params.page,
       pageSize: params.pageSize,
+      sort: params.sort,
+      sortDir: params.sortDir,
     })}`,
   )

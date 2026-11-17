@@ -1,6 +1,10 @@
-export type VisitsFilterMode = 'upcoming' | 'all'
-
-export type VisitsListSortKey = 'applicant' | 'city' | 'date' | 'time' | 'place' | 'status'
+export type VisitsListSortKey =
+  | 'applicant'
+  | 'city'
+  | 'date'
+  | 'time'
+  | 'place'
+  | 'created'
 
 export type VisitsListSortDir = 'asc' | 'desc'
 

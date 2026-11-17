@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react'
 import type {
   AppUpsertWrite,
   Application,
@@ -9,7 +15,7 @@ import type {
 import { toAppUpsertPayload } from '@/entities/application'
 import { SESSION_KEY, TOKEN_KEY, toSession } from '@/entities/session'
 import type { Session } from '@/entities/session'
-import { DEFAULT_SETTINGS } from '@/entities/settings'
+import { DEFAULT_SETTINGS, mapSettingsDtoToSystemSettings } from '@/entities/settings'
 import type { SystemSettings } from '@/entities/settings'
 import type { IssuedAccess, Role, User } from '@/entities/user'
 import {
@@ -19,10 +25,11 @@ import {
   setApiTokenProvider,
 } from '@/shared/api'
 import { StoreContext } from './store-context'
+import type { StoreProviderProps } from './types'
 
 setApiTokenProvider(() => sessionStorage.getItem(TOKEN_KEY))
 
-export const StoreProvider = ({ children }: { children: ReactNode }) => {
+export const StoreProvider = ({ children }: StoreProviderProps): ReactElement => {
   const [ready, setReady] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
   const [apps, setApps] = useState<Application[]>([])
@@ -36,19 +43,14 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     setSession(next)
   }, [])
 
-  const loadAll = useCallback(async (role?: Role) => {
-    const effectiveRole = role ?? session?.role
-    const nextSettings = await apiRequest<SystemSettings>('/settings')
-    setSettings(nextSettings)
-    // DEC-007: client keeps full GET /apps array; staff lists self-fetch paged APIs.
-    if (effectiveRole === 'client') {
-      setApps(await apiRequest<Application[]>('/apps'))
-    } else {
-      setApps([])
-    }
+  const loadAll = useCallback(async (_role?: Role) => {
+    const nextSettings = await apiRequest<Record<string, unknown>>('/settings')
+    setSettings(mapSettingsDtoToSystemSettings(nextSettings))
+    // Staff lists self-fetch paged APIs; no client cabinet bootstrap.
+    setApps([])
     // Staff users admin is page-local; do not download full /users for bootstrap.
     setUsers([])
-  }, [session?.role])
+  }, [])
 
   useEffect(() => {
     const token = sessionStorage.getItem(TOKEN_KEY)
@@ -85,6 +87,33 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
         return data.user
       } catch (err) {
         return err instanceof Error ? err.message : 'Ошибка входа'
+      }
+    },
+    [applyAuth, loadAll],
+  )
+
+  const registerWithPassword = useCallback(
+    async (input: {
+      name: string
+      login: string
+      password: string
+      email?: string
+    }): Promise<User | string> => {
+      try {
+        const data = await apiRequest<{ token: string; user: User }>('/auth/register', {
+          method: 'POST',
+          data: {
+            name: input.name,
+            login: input.login,
+            password: input.password,
+            ...(input.email ? { email: input.email } : {}),
+          },
+        })
+        applyAuth(data.token, data.user)
+        await loadAll(data.user.role)
+        return data.user
+      } catch (err) {
+        return err instanceof Error ? err.message : 'Ошибка регистрации'
       }
     },
     [applyAuth, loadAll],
@@ -284,11 +313,19 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const refreshUsers = useCallback(async () => {}, [])
 
   const saveSettings = useCallback(async (patch: Partial<SystemSettings>) => {
-    const saved = await apiRequest<SystemSettings>('/settings', {
+    const data: Record<string, unknown> = {}
+    if (patch.company !== undefined) data.company = patch.company
+    if (patch.defaultPrice !== undefined) {
+      data.price_per_client = String(Math.max(0, Math.trunc(patch.defaultPrice)))
+    }
+    if (patch.cities !== undefined) data.cities = patch.cities
+    if (patch.destinations !== undefined) data.destinations = patch.destinations
+    if (patch.emailOtpEnabled !== undefined) data.emailOtpEnabled = patch.emailOtpEnabled
+    const saved = await apiRequest<Record<string, unknown>>('/settings', {
       method: 'PATCH',
-      data: patch,
+      data,
     })
-    setSettings(saved)
+    setSettings(mapSettingsDtoToSystemSettings(saved))
   }, [])
 
   const resetDemo = useCallback(async () => {
@@ -305,6 +342,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       settings,
       login,
       loginWithPassword,
+      registerWithPassword,
       loginByInvite,
       logout,
       upsert,
@@ -330,6 +368,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       settings,
       login,
       loginWithPassword,
+      registerWithPassword,
       loginByInvite,
       logout,
       upsert,

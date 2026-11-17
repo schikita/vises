@@ -1,4 +1,5 @@
 ﻿export { statusLabel } from './status-label.util'
+export { isApplicationStatus } from './is-application-status.util'
 export { money } from './money.util'
 export { requiredDocsOk } from './required-docs-ok.util'
 export { progress } from './progress.util'

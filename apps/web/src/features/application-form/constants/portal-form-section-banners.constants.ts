@@ -1,54 +1,49 @@
 /**
- * Numbered section banners matching manage_applicant(form).html (REQ-002).
- * Core (005a) + conditional / inviting / cost / EU (005b).
+ * Numbered section banners for Анкета портала (staff RU labels).
+ * Order matches manage_applicant(form).html (REQ-002).
  */
 export const PORTAL_FORM_SECTION_BANNERS = {
-  personalDetails: { number: 1, title: 'Personal Details' },
+  personalDetails: { number: 1, title: 'Личные данные' },
   minors: {
     number: 2,
-    title:
-      'In the case of minors, details of parental authority/legal guardian',
+    title: 'Для несовершеннолетних — данные родителя / законного представителя',
   },
-  passportDetails: { number: 3, title: 'Passport Details' },
-  addressContact: { number: 4, title: 'Address & Contact Details' },
+  passportDetails: { number: 3, title: 'Паспортные данные' },
+  addressContact: { number: 4, title: 'Адрес и контакты' },
   otherResidence: {
     number: 5,
-    title:
-      'Residence in a country other than the country of current nationality',
+    title: 'Проживание в стране, отличной от страны текущего гражданства',
   },
   employerDetails: {
     number: 6,
-    title: 'Employer Details. For Students, details of educational establishment',
+    title: 'Данные работодателя. Для студентов — учебное заведение',
   },
-  travelInformation: { number: 7, title: 'Travel Information' },
-  previousSchengenVisa: { number: 8, title: 'Previous Schengen Visa Details' },
+  travelInformation: { number: 7, title: 'Информация о поездке' },
+  previousSchengenVisa: { number: 8, title: 'Предыдущая шенгенская виза' },
   fingerprints: {
     number: 9,
-    title:
-      'Fingerprints collected previously for the purpose of applying for a schengen visa',
+    title: 'Отпечатки пальцев, ранее снятые для шенгенской визы',
   },
   entryPermit: {
     number: 10,
-    title: 'Entry Permit for the final country of destination, where applicable',
+    title: 'Разрешение на въезд в конечную страну назначения (если применимо)',
   },
   inviting: {
     number: 11,
     title:
-      'Details of the inviting person(s) in the member state(s). If not applicable, details of hotel(s) or temporary accommodation(s) in the member state(s)',
+      'Данные приглашающего лица в государстве-члене. Если не применимо — отель или временное проживание',
   },
   costOfTravelling: {
     number: 12,
-    title:
-      "Cost of travelling and living during the applicant's stay is covered",
+    title: 'Расходы на поездку и проживание во время пребывания',
   },
   euFamilyPersonalData: {
     number: 13,
-    title:
-      'Personal data of the family member who is an EU, EEA or CH citizen',
+    title: 'Личные данные члена семьи — гражданина ЕС, ЕЭЗ или Швейцарии',
   },
   euFamilyRelationship: {
     number: 14,
-    title: 'Family relationship with an EU, EEA or CH citizen',
+    title: 'Родство с гражданином ЕС, ЕЭЗ или Швейцарии',
   },
-  booking: { number: 0, title: 'Booking — Location & Visa Type' },
+  booking: { number: 0, title: 'Бронирование — город подачи и тип визы' },
 } as const

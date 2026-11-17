@@ -24,6 +24,10 @@ export type ApplicationDetailRenderProps = {
   managerNames: string[]
   appsListPath: string
   activeTab: ApplicationDetailTabId
+  /** Delete control — admin|superadmin only (REQ-014 / AC-011). */
+  canDeleteApplication: boolean
+  /** «Оплата и документы» tab — admin|superadmin only (REQ-016 / AC-012). */
+  canAccessPaymentTab: boolean
   startValidationOpen: boolean
   startValidationIssues: ApplicationDetailStartIssue[]
   /** Detail-owned Start disable signal for BLS panel (DEC-003). */

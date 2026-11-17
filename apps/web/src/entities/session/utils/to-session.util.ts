@@ -1,10 +1,12 @@
-import type { Session } from '../types'
-import type { User } from '@/entities/user'
+import type { Session, SessionUserInput } from '../types'
 
-export const toSession = (user: User): Session => ({
-  userId: user.id,
-  role: user.role,
-  name: user.name,
-  email: user.email || user.login,
-  login: user.login,
-})
+export const toSession = (user: SessionUserInput): Session => {
+  const email = user.email || user.login || ''
+  return {
+    userId: user.id,
+    role: user.role,
+    name: user.name || email,
+    email,
+    login: user.login || email,
+  }
+}

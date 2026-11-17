@@ -3,7 +3,8 @@ export type FetchVisitsPageParams = {
   pageSize: number
   q?: string
   city?: string
-  mode?: string
+  from?: string
+  to?: string
   sort?: string
   sortDir?: string
 }

@@ -6,12 +6,14 @@ import { defineConfig } from 'vite'
 
 const rootDir = dirname(fileURLToPath(import.meta.url))
 
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/vises/' : '/',
+export default defineConfig({
+  base: '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@': resolve(rootDir, 'src'),
+      // CJS dist named re-exports break Vite ESM import analysis (white screen).
+      '@vises/contracts': resolve(rootDir, '../../packages/contracts/src/index.ts'),
     },
   },
   server: {
@@ -21,4 +23,4 @@ export default defineConfig(({ command }) => ({
       '/api': 'http://127.0.0.1:8100',
     },
   },
-}))
+})

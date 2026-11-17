@@ -1,95 +1,106 @@
+import type { ReactElement } from 'react'
 import { Link } from 'react-router-dom'
-import type { Status } from '@/entities/application'
 import { statusLabel } from '@/entities/application'
-import type { DashboardCityCount, DashboardUpcomingVisit } from '@/features/owner-stats'
 import { Card, StatusBadge } from '@/shared/ui'
-
-type DashboardRenderProps = {
-  appsCount: number
-  kpis: string[][]
-  cities: DashboardCityCount[]
-  upcoming: DashboardUpcomingVisit[]
-  byStatus: (id: Status) => number
-  appsBase: string
-}
+import { DASHBOARD_COPY } from './constants'
+import type { DashboardRenderProps } from './types'
+import { resolveDashboardStatusLabel } from './utils'
 
 export const DashboardRender = ({
-  appsCount,
-  kpis,
-  cities,
+  loading,
+  error,
   upcoming,
-  byStatus,
+  statusRows,
+  cities,
   appsBase,
-}: DashboardRenderProps) => (
+}: DashboardRenderProps): ReactElement => (
   <div>
-    <h1 className="text-2xl font-extrabold tracking-tight">Дашборд</h1>
-    <p className="mt-1 text-sm text-muted">Сводка по заявкам. Без лишней вложенности.</p>
+    <h1 className="text-2xl font-extrabold tracking-tight">
+      {DASHBOARD_COPY.title}
+    </h1>
+    <p className="mt-1 text-sm text-muted">{DASHBOARD_COPY.subtitle}</p>
 
-    <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      {kpis.map(([label, value]) => (
-        <Card key={label} className="py-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted">{label}</p>
-          <p className="mt-1 text-2xl font-extrabold">{value}</p>
-        </Card>
-      ))}
+    <div className="mt-5">
+      <Link
+        to={appsBase}
+        className="inline-flex rounded-xl bg-forest px-4 py-2.5 text-sm font-bold text-white"
+      >
+        {DASHBOARD_COPY.appsCta}
+      </Link>
     </div>
+
+    {loading ? (
+      <p className="mt-6 text-sm text-muted" role="status">
+        {DASHBOARD_COPY.loading}
+      </p>
+    ) : null}
+
+    {error ? (
+      <p className="mt-6 text-sm font-semibold text-clay" role="alert">
+        {error}
+      </p>
+    ) : null}
 
     <div className="mt-5 grid gap-5 lg:grid-cols-2">
       <Card>
-        <p className="font-bold">По статусам</p>
-        <ul className="mt-4 space-y-3">
-          {(
-            [
-              'new',
-              'docs',
-              'review',
-              'ready',
-              'booked',
-              'done',
-              'fixes',
-              'autofill_ok',
-              'autofill_failed',
-              'declined',
-            ] as Status[]
-          ).map((id) => {
-            const n = byStatus(id)
-            const max = Math.max(appsCount, 1)
-            return (
-              <li key={id}>
-                <div className="mb-1 flex items-center justify-between text-sm">
-                  <StatusBadge status={id} label={statusLabel(id)} />
-                  <span className="font-bold">{n}</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-line">
-                  <div
-                    className="h-full rounded-full bg-leaf"
-                    style={{ width: `${(n / max) * 100}%` }}
+        <p className="font-bold">{DASHBOARD_COPY.statusTitle}</p>
+        {statusRows.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">{DASHBOARD_COPY.statusEmpty}</p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {statusRows.map((row) => (
+              <li key={row.status}>
+                <Link
+                  to={appsBase}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <StatusBadge
+                    status={row.status}
+                    label={statusLabel(row.status)}
                   />
-                </div>
+                  <span className="font-bold text-forest">{row.count}</span>
+                </Link>
               </li>
-            )
-          })}
-        </ul>
+            ))}
+          </ul>
+        )}
       </Card>
+
       <Card>
-        <p className="font-bold">Города подачи</p>
-        <ul className="mt-4 space-y-3">
-          {cities.map((row) => (
-            <li key={row.city} className="flex items-center justify-between text-sm">
-              <span className="font-semibold">{row.city}</span>
-              <span className="text-muted">{row.count} заявок</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-6 font-bold">Ближайшие визиты</p>
+        <p className="font-bold">{DASHBOARD_COPY.citiesTitle}</p>
+        {cities.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">{DASHBOARD_COPY.citiesEmpty}</p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {cities.map((row) => (
+              <li
+                key={row.city}
+                className="flex items-center justify-between text-sm"
+              >
+                <Link to={appsBase} className="font-semibold text-forest">
+                  {row.city}
+                </Link>
+                <span className="text-muted">{row.count} заявок</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="mt-6 font-bold">{DASHBOARD_COPY.upcomingTitle}</p>
         {upcoming.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">Пока нет назначенных дат.</p>
+          <p className="mt-2 text-sm text-muted">
+            {DASHBOARD_COPY.upcomingEmpty}
+          </p>
         ) : (
           <ul className="mt-3 space-y-2">
             {upcoming.map((a) => (
               <li key={a.id}>
-                <Link to={`${appsBase}/${a.id}`} className="text-sm font-semibold text-forest">
-                  {a.visitDate} {a.visitTime} · {a.primaryLastName} · {statusLabel(a.status as Status)}
+                <Link
+                  to={`${appsBase}/${a.id}`}
+                  className="text-sm font-semibold text-forest"
+                >
+                  {a.visitDate} {a.visitTime} · {a.primaryLastName} ·{' '}
+                  {resolveDashboardStatusLabel(a.status)}
                 </Link>
               </li>
             ))}

@@ -14,7 +14,7 @@ export const resolveVisitsListSortValue = (app: Application, key: VisitsListSort
       return app.visitTime || ''
     case 'place':
       return app.visitPlace || ''
-    case 'status':
-      return app.status || ''
+    case 'created':
+      return app.createdAt || ''
   }
 }

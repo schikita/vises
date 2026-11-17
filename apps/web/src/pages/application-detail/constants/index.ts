@@ -1,3 +1,4 @@
+export { APPLICATION_DETAIL_ADMIN_ONLY_TAB_IDS } from './application-detail-admin-only-tabs.constants'
 export {
   APPLICATION_DETAIL_TABS,
   APPLICATION_DETAIL_DEFAULT_TAB,

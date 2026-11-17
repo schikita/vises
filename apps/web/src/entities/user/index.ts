@@ -7,4 +7,11 @@
   FetchUsersPageParams,
 } from './types'
 export { ROLE_LABEL } from './constants'
-export { genLogin, genPassword, fetchUsersPage, fetchManagerNames } from './utils'
+export {
+  genLogin,
+  genPassword,
+  fetchUsersPage,
+  fetchUserListItemById,
+  fetchManagerNames,
+  toStaffRole,
+} from './utils'

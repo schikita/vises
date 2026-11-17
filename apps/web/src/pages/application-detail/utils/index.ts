@@ -6,6 +6,8 @@ export { hasApplicationDetailApplicantErrors } from './has-application-detail-ap
 export { hasApplicationDetailStartPathErrors } from './has-application-detail-start-path-errors.util'
 export { hasApplicationDetailTabErrors } from './has-application-detail-tab-errors.util'
 export { isApplicationDetailApplicantsEmpty } from './is-application-detail-applicants-empty.util'
+export { isApplicationDetailTabAllowed } from './is-application-detail-tab-allowed.util'
+export { listVisibleApplicationDetailTabs } from './list-visible-application-detail-tabs.util'
 export { isApplicationDetailStartOwnedZodPath } from './is-application-detail-start-owned-zod-path.util'
 export { isApplicationDetailStartRelevantPath } from './is-application-detail-start-relevant-path.util'
 export { listApplicationDetailStartFieldPaths } from './list-application-detail-start-field-paths.util'

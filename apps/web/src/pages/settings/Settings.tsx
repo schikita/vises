@@ -1,18 +1,17 @@
-import { useState, type ReactNode } from 'react'
+import { useState, type ReactElement, type ReactNode } from 'react'
 import { useStore } from '@/app/providers'
-import { LOCKED_SUBMIT_CITIES } from '@/entities/settings'
 import { Proxy6ProxiesPanel } from '@/features/proxy6-proxies'
 import { SettingsEditForm } from '@/features/settings-edit'
 import { SettingsRender } from './SettingsRender'
 
-export const SettingsPage = () => {
+export const SettingsPage = (): ReactElement => {
   const { session, settings, saveSettings, resetDemo } = useStore()
-  const isAdmin = session?.role === 'admin'
+  const isAdmin = session?.role === 'admin' || session?.role === 'superadmin'
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [editFormKey, setEditFormKey] = useState(0)
 
-  const onResetDemo = async () => {
+  const onResetDemo = async (): Promise<void> => {
     setError('')
     try {
       await resetDemo()
@@ -26,29 +25,27 @@ export const SettingsPage = () => {
   const settingsForm: ReactNode = isAdmin ? (
     <SettingsEditForm
       key={editFormKey}
-      lockedCitiesLabel={LOCKED_SUBMIT_CITIES.join(', ')}
       defaultValues={{
         company: settings.company,
         price: String(settings.defaultPrice),
-        destinations: settings.destinations.join(', '),
+        cities: [...settings.cities],
+        destinations: [...settings.destinations],
       }}
       saved={saved}
-      onValidSubmit={async ({ company, price, destinations }) => {
+      onValidSubmit={async ({ company, price, cities, destinations }) => {
         setError('')
         setSaved(false)
         try {
           await saveSettings({
             company: company.trim() || 'Vises',
             defaultPrice: Number(price) || 0,
-            cities: [...LOCKED_SUBMIT_CITIES],
-            destinations: destinations
-              .split(',')
-              .map((x) => x.trim())
-              .filter(Boolean),
+            cities,
+            destinations,
           })
           setSaved(true)
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Не удалось сохранить настройки')
+          throw err
         }
       }}
     />
@@ -64,6 +61,7 @@ export const SettingsPage = () => {
       error={error}
       settingsCompany={settings.company}
       settingsCities={settings.cities}
+      settingsDestinations={settings.destinations}
       demoControlsEnabled={Boolean(settings.demoControlsEnabled)}
       onResetDemo={() => void onResetDemo()}
     />

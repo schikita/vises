@@ -6,6 +6,7 @@ import { formatDate } from '@/shared/lib'
 import { Avatar, Btn, Card, Empty, ListPager, StatusBadge } from '@/shared/ui'
 import { APPS_LIST_SORT_COLUMNS } from './constants'
 import type { AppsListSortKey, AppsListSortState } from './types'
+import './apps-filters.css'
 
 type ApplicationsRenderProps = {
   filteredCount: number
@@ -76,18 +77,23 @@ export const ApplicationsRender = ({
         </p>
       ) : null}
 
-      <div className="mt-5 flex flex-col gap-3 lg:flex-row">
-        <label className="field flex flex-1 items-center gap-2 py-0">
+      <div className="apps-filters mt-5 flex flex-col gap-3 lg:flex-row">
+        <label className="field apps-filters__control apps-filters__search flex-1">
           <Search size={16} className="shrink-0 text-muted" aria-hidden />
           <input
-            className="min-w-0 flex-1 border-0 bg-transparent py-[11px] outline-none"
+            className="apps-filters__search-input"
             placeholder="Имя, фамилия, паспорт, номер заявки"
             value={q}
             onChange={(e) => onQueryChange(e.target.value)}
             aria-label="Поиск заявок"
           />
         </label>
-        <select className="field lg:max-w-[180px]" value={city} onChange={(e) => onCityChange(e.target.value)}>
+        <select
+          className="field apps-filters__control apps-filters__city"
+          value={city}
+          onChange={(e) => onCityChange(e.target.value)}
+          aria-label="Город подачи"
+        >
           <option value="all">Все города</option>
           {cities.map((c) => (
             <option key={c}>{c}</option>

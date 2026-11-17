@@ -15,6 +15,7 @@ export const PortalOnePageCoreSections = ({
   afterPersonal,
   afterAddress,
   afterTravel,
+  hideDestinationField = false,
 }: PortalOnePageCoreSectionsProps): ReactElement => {
   return (
     <div className="portal-form-core-sections">
@@ -24,7 +25,7 @@ export const PortalOnePageCoreSections = ({
       <PortalAddressContactSection />
       {afterAddress}
       <PortalEmployerDetailsSection />
-      <PortalTravelInformationSection />
+      <PortalTravelInformationSection hideDestinationField={hideDestinationField} />
       {afterTravel}
       <PortalBookingBlockSection />
     </div>

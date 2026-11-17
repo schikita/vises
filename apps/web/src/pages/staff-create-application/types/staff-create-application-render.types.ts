@@ -18,6 +18,8 @@ export type StaffCreateApplicationRenderProps = {
   clientsLoading: boolean
   clientsError: string
   selectedClientId: string
+  destinations: string[]
+  cities: string[]
   register: UseFormRegister<PortalOnePageFormValues>
   errors: FieldErrors<PortalOnePageFormValues>
   onSelectedClientIdChange: (clientId: string) => void

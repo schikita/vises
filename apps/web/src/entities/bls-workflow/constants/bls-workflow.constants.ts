@@ -64,4 +64,4 @@ export const BLS_WORKFLOW_EVENT_TYPE = {
 } as const
 
 /** Backend 404 detail when no workflow exists for the application. */
-export const BLS_WORKFLOW_MSG_NOT_FOUND = 'Сценарий не найден'
+export const BLS_WORKFLOW_MSG_NOT_FOUND = 'Заполнение не найдено'

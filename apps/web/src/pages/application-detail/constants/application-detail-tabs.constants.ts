@@ -7,7 +7,6 @@ export const APPLICATION_DETAIL_TABS: Array<{
   { id: 'applicants', label: 'Анкета портала' },
   { id: 'trip', label: 'Поездка и статус' },
   { id: 'payment', label: 'Оплата и документы' },
-  { id: 'autofill', label: 'Автозаполнение' },
   { id: 'history', label: 'История' },
 ]
 

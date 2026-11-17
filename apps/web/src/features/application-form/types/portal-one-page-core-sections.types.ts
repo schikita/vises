@@ -14,4 +14,6 @@ export type PortalOnePageCoreSectionsProps = {
    * Optional slot rendered after Travel Information (site sections 8–14).
    */
   afterTravel?: ReactNode
+  /** Hide portal free-text destination when staff Settings select owns the field. */
+  hideDestinationField?: boolean
 }

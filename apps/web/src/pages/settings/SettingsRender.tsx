@@ -8,6 +8,7 @@ type SettingsRenderProps = {
   error: string
   settingsCompany: string
   settingsCities: string[]
+  settingsDestinations: string[]
   demoControlsEnabled: boolean
   onResetDemo: () => void
 }
@@ -19,6 +20,7 @@ export const SettingsRender = ({
   error,
   settingsCompany,
   settingsCities,
+  settingsDestinations,
   demoControlsEnabled,
   onResetDemo,
 }: SettingsRenderProps) => (
@@ -33,7 +35,8 @@ export const SettingsRender = ({
       <Card className="mt-5">
         <p className="font-bold">{settingsCompany}</p>
         <p className="mt-1 text-sm text-muted">
-          Города: {settingsCities.join(', ')}. Изменить может только админ.
+          Города подачи → Направления: {settingsCities.join(', ')} →{' '}
+          {settingsDestinations.join(', ') || '—'}. Изменить может только админ.
         </p>
       </Card>
     )}

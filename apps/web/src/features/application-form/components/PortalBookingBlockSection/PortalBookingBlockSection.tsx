@@ -24,7 +24,15 @@ export const PortalBookingBlockSection = (): ReactElement => {
     getNestedFormError(errors, key)
   const banner = PORTAL_FORM_SECTION_BANNERS.booking
   const submitCountry = watch('submitCountry')
-  const cities = CITIES_BY_COUNTRY[submitCountry] ?? CITIES_BY_COUNTRY.Belarus ?? []
+  const submitCity = watch('submitCity')
+  const cities = [
+    ...new Set(
+      [
+        submitCity,
+        ...(CITIES_BY_COUNTRY[submitCountry] ?? CITIES_BY_COUNTRY.Belarus ?? []),
+      ].filter(Boolean),
+    ),
+  ]
 
   const onSubmitCountryChange = (e: ChangeEvent<HTMLSelectElement>): void => {
     const country = e.target.value

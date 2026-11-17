@@ -9,15 +9,13 @@ export const BLS_WORKFLOW_POLL_SLOW_INDICATOR_MS = 3_000
 
 /** Russian copy for BLS workflow staff panel (REQ-024 / NFR-001 / REQ-015). */
 export const BLS_WORKFLOW_PANEL_COPY = {
-  title: 'Сценарий BLS',
-  /** Workflow-only registration SoT (portal-autofill-workflow-cutover DEC-001 / REQ-001). */
-  hint: 'Источник правды по многоэтапному сценарию портала (регистрация → вход → статус → запись). Регистрация запускается только через «Запустить» здесь.',
-  loading: 'Загружаем сценарий…',
-  emptyTitle: 'Сценарий ещё не запускался',
+  title: 'Заполнение BLS',
+  loading: 'Загружаем заполнение…',
+  emptyTitle: 'Заполнение ещё не запускалось',
   emptyText:
-    'Нажмите «Запустить», чтобы создать долговечный сценарий для этой заявки.',
+    'Нажмите «Запустить», чтобы создать долговечное заполнение для этой заявки.',
   /** Fallback when GET snapshot fails without a message (REQ-015). */
-  loadErrorFallback: 'Не удалось загрузить сценарий BLS',
+  loadErrorFallback: 'Не удалось загрузить заполнение BLS',
   /** Fallback when a control POST fails without a message (REQ-015). */
   actionErrorFallback: 'Не удалось выполнить команду',
   /**
@@ -25,7 +23,7 @@ export const BLS_WORKFLOW_PANEL_COPY = {
    * Fail closed: never call start API without a full form check.
    */
   startFormGateMissing:
-    'Нельзя запустить сценарий: проверка формы заявки недоступна.',
+    'Нельзя запустить заполнение: проверка формы заявки недоступна.',
   /** Fallback when AUTOFILL_RUN_LINKED screenshot open fails (DEC-007). */
   screenshotOpenErrorFallback: 'Не удалось открыть скриншот',
   polling: 'Обновляем статус…',
@@ -37,7 +35,7 @@ export const BLS_WORKFLOW_PANEL_COPY = {
    * Shown when status is PAUSED and lockHeld is still true.
    */
   pauseCooperativeHint:
-    'Пауза применена. Текущая попытка на сервере завершится, после чего сценарий останется на паузе.',
+    'Пауза применена. Текущая попытка на сервере завершится, после чего заполнение останется на паузе.',
   currentStep: 'Текущий шаг',
   currentTask: 'Текущая задача',
   status: 'Статус',

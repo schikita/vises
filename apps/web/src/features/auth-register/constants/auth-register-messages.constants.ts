@@ -1,0 +1,15 @@
+export const AUTH_REGISTER_MESSAGES = {
+  nameRequired: 'Укажите имя',
+  loginRequired: 'Укажите логин',
+  emailInvalid: 'Укажите корректный email',
+  passwordRequired: 'Укажите пароль',
+  subtitle: 'Создайте аккаунт агента, чтобы работать с заявками.',
+  title: 'Регистрация',
+  nameLabel: 'Имя',
+  loginLabel: 'Логин',
+  emailLabel: 'Email (необязательно)',
+  passwordLabel: 'Пароль',
+  submit: 'Создать аккаунт',
+  hasAccount: 'Уже есть аккаунт?',
+  signIn: 'Войти',
+} as const
