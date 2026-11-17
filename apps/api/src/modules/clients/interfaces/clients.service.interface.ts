@@ -1,7 +1,7 @@
 import type {
   ClientDto,
+  ClientListDto,
   ClientPortalFormDetailDto,
-  ClientsListDto,
 } from '@vises/contracts';
 import type { User } from '../../database/entities/user.entity';
 import type { ClientCreateDto } from '../dto/client-create.dto';
@@ -11,7 +11,6 @@ import type { Client } from '../../database/entities/client.entity';
 import type {
   ClientDetailWithPortalFormDto,
   ClientPassportPlainOut,
-  ClientsListQueryParsed,
   CreateClientWithDebitInput,
 } from '../types';
 
@@ -29,10 +28,7 @@ export interface IClientsService {
 
   findClientById(clientId: string): Promise<Client | null>;
 
-  list(
-    actor: User,
-    query: ClientsListQueryParsed,
-  ): Promise<ClientsListDto>;
+  list(actor: User): Promise<ClientListDto[]>;
 
   getById(
     clientId: string,

@@ -21,7 +21,7 @@ export class AuthController {
 
   @Post('login')
   login(@Body() body: LoginDto): Promise<AuthSession> {
-    return this.auth.login(body.identifier, body.password);
+    return this.auth.login(body.login, body.password);
   }
 
   @Post('register')

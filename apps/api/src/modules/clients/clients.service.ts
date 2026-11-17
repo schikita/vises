@@ -4,9 +4,8 @@ import type {
   ClientDto,
   ClientListDto,
   ClientPortalFormDetailDto,
-  ClientsListDto,
 } from '@vises/contracts';
-import { DataSource, type EntityManager, In, Repository } from 'typeorm';
+import { DataSource, type EntityManager, Repository } from 'typeorm';
 import { uid } from '../../shared/utils';
 import { BalanceService } from '../balance/balance.service';
 import { ApplicationStatusHistory } from '../database/entities/application-status-history.entity';
@@ -27,7 +26,6 @@ import type { IClientsService } from './interfaces';
 import type {
   ClientDetailWithPortalFormDto,
   ClientPassportPlainOut,
-  ClientsListQueryParsed,
   CreateClientWithDebitInput,
 } from './types';
 import {
@@ -38,20 +36,15 @@ import {
   buildNewClientRow,
   buildPassportPlainOut,
   extractPassportCiphertextFields,
-  filterClientsListBySearch,
   generateClientAppCode,
   mapClientToDetailDto,
   mapClientToDto,
   mapClientToListDto,
   mapClientToPortalFormDetailDto,
-  normalizeRouteCity,
-  paginateClientsList,
   parsePricePerClientWholeUnits,
   pickMostRecentlyUpdatedApplication,
   pickPassportUpdateFields,
   pickPortalFormUpdateFields,
-  resolveAgentDisplayName,
-  sortClientsList,
   throwClientNotFound,
   throwPassportNotUnlocked,
 } from './utils';
@@ -65,7 +58,6 @@ export class ClientsService implements IClientsService {
     private readonly applications: Repository<Application>,
     @InjectRepository(BalanceTransaction)
     private readonly ledger: Repository<BalanceTransaction>,
-    @InjectRepository(User) private readonly users: Repository<User>,
     private readonly balance: BalanceService,
     private readonly pii: PiiCryptoService,
     private readonly settings: SettingsService,
@@ -130,11 +122,10 @@ export class ClientsService implements IClientsService {
     return this.clients.findOne({ where: { id: clientId } });
   }
 
-  async list(
-    actor: User,
-    query: ClientsListQueryParsed,
-  ): Promise<ClientsListDto> {
-    const qb = this.clients.createQueryBuilder('c');
+  async list(actor: User): Promise<ClientListDto[]> {
+    const qb = this.clients
+      .createQueryBuilder('c')
+      .orderBy('c.created_at', 'DESC');
 
     if (actor.role === 'agent') {
       qb.andWhere('c.agent_id = :agentId', { agentId: actor.id });
@@ -142,26 +133,18 @@ export class ClientsService implements IClientsService {
 
     const rows = await qb.getMany();
     if (rows.length === 0) {
-      return paginateClientsList({
-        rows: [],
-        page: query.page,
-        pageSize: query.pageSize,
-      });
+      return [];
     }
 
     const appByClientId = await this.loadApplicationsByClientId(
       rows.map((row) => row.id),
     );
-    const agentById = await this.loadAgentsById(
-      rows.map((row): string => row.agentId),
-    );
 
-    const mapped: ClientListDto[] = rows.map((row): ClientListDto => {
+    return rows.map((row): ClientListDto => {
       const application = appByClientId.get(row.id);
       if (!application) {
         return throwClientNotFound();
       }
-      const agent = agentById.get(row.agentId);
       const plaintext = this.pii.decryptFields(
         {
           firstName: row.firstName,
@@ -181,20 +164,7 @@ export class ClientsService implements IClientsService {
         firstName: plaintext.firstName ?? null,
         lastName: plaintext.lastName ?? null,
         passportNumber: plaintext.passportNumber ?? null,
-        agentName: agent
-          ? resolveAgentDisplayName(agent)
-          : row.agentId,
-        routeFrom: normalizeRouteCity(application.submitCity),
-        routeTo: normalizeRouteCity(application.destination),
       });
-    });
-
-    const filtered = filterClientsListBySearch(mapped, query.search);
-    const sorted = sortClientsList(filtered, query.sortBy, query.sortDir);
-    return paginateClientsList({
-      rows: sorted,
-      page: query.page,
-      pageSize: query.pageSize,
     });
   }
 
@@ -392,24 +362,6 @@ export class ClientsService implements IClientsService {
         app.clientId,
         pickMostRecentlyUpdatedApplication(map.get(app.clientId), app),
       );
-    }
-    return map;
-  }
-
-  private async loadAgentsById(
-    agentIds: string[],
-  ): Promise<Map<string, User>> {
-    const uniqueIds = [...new Set(agentIds.filter((id): boolean => Boolean(id)))];
-    if (uniqueIds.length === 0) {
-      return new Map();
-    }
-    const agents = await this.users.find({
-      where: { id: In(uniqueIds) },
-      select: { id: true, name: true, login: true },
-    });
-    const map = new Map<string, User>();
-    for (const agent of agents) {
-      map.set(agent.id, agent);
     }
     return map;
   }

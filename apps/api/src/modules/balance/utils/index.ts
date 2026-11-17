@@ -4,7 +4,6 @@ export { throwNotAgent } from './throw-not-agent.util';
 export { throwForbiddenRole } from './throw-forbidden-role.util';
 export { throwInsufficientBalance } from './throw-insufficient-balance.util';
 export { parseMoneyDecimalString } from './parse-money-decimal-string.util';
-export { parseBalanceTransactionsQuery } from './parse-balance-transactions-query.util';
 export { formatMoneyCents } from './format-money-cents.util';
 export { assertNonEmptyReason } from './assert-non-empty-reason.util';
 export { assertCanReadLedger } from './assert-can-read-ledger.util';

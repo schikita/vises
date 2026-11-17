@@ -22,7 +22,6 @@ export const applyUsersListSort = <T extends ObjectLiteral>(
 
   switch (sort) {
     case 'user':
-    case 'name':
       qb.addSelect(
         `LOWER(COALESCE(NULLIF(TRIM(${alias}.name), ''), ${alias}.login))`,
         'users_sort_user',
@@ -56,26 +55,6 @@ export const applyUsersListSort = <T extends ObjectLiteral>(
     case 'created':
       return qb
         .orderBy(`${alias}.createdAt`, dir)
-        .addOrderBy(`${alias}.id`, dir);
-    case 'currentBalance':
-      return qb
-        .orderBy(`COALESCE(CAST(${alias}.balance AS numeric), 0)`, dir)
-        .addOrderBy(`${alias}.id`, dir);
-    case 'clientsCount':
-      qb.addSelect(
-        `(SELECT COUNT(*)::int FROM clients c WHERE c.agent_id = ${alias}.id)`,
-        'users_sort_clients_count',
-      );
-      return qb
-        .orderBy('users_sort_clients_count', dir)
-        .addOrderBy(`${alias}.id`, dir);
-    case 'totalRevenue':
-      qb.addSelect(
-        `(SELECT COALESCE(SUM(ABS(bt.amount)), 0) FROM balance_transactions bt WHERE bt.agent_id = ${alias}.id AND bt.type = 'client_creation_debit')`,
-        'users_sort_total_revenue',
-      );
-      return qb
-        .orderBy('users_sort_total_revenue', dir)
         .addOrderBy(`${alias}.id`, dir);
     default:
       return qb

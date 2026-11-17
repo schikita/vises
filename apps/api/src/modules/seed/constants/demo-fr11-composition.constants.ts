@@ -8,7 +8,7 @@ export const SEED_CLIENT_CREATION_DEBIT_REASON = 'client_creation';
 /** Decimal-string form of {@link SEED_DEFAULT_PRICE} (single source of truth). */
 export const SEED_PRICE_PER_CLIENT_AMOUNT = `${SEED_DEFAULT_PRICE.toFixed(2)}`;
 
-/** Status pool for random per-application draws (BUSINESS status union). */
+/** Status pool for random per-application draws (BUSINESS six-value union). */
 export const SEED_APPLICATION_STATUS_POOL = APPLICATION_STATUSES;
 
 /** History actor for draft → not_ready_for_appointment (FR-13 monitor path). */

@@ -6,8 +6,6 @@ import { formatIso } from '../utils';
 export const userOut = (user: User, withPassword = false): UserOut => ({
   id: user.id,
   name: user.name,
-  firstName: user.firstName ?? null,
-  lastName: user.lastName ?? null,
   login: user.login,
   email: user.email,
   role: user.role,

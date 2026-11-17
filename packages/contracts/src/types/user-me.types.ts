@@ -10,6 +10,4 @@ export type UserMeDto = {
   role: StaffRole;
   active: boolean;
   balance: string | null;
-  firstName: string | null;
-  lastName: string | null;
 };

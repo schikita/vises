@@ -17,9 +17,6 @@ export const pickLatestApplicationId = (
   let latest = apps[0];
   for (let i = 1; i < apps.length; i += 1) {
     const candidate = apps[i];
-    if (candidate === undefined || latest === undefined) {
-      continue;
-    }
     const latestUpdated = applicationRecencyTime(latest.updatedAt);
     const candidateUpdated = applicationRecencyTime(candidate.updatedAt);
     if (candidateUpdated !== latestUpdated) {
@@ -36,5 +33,5 @@ export const pickLatestApplicationId = (
     }
   }
 
-  return latest?.id ?? null;
+  return latest.id;
 };

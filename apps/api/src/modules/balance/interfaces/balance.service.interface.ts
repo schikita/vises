@@ -1,15 +1,9 @@
-import type {
-  BalanceTransactionDto,
-  BalanceTransactionsListDto,
-} from '@vises/contracts';
+import type { BalanceTransactionDto } from '@vises/contracts';
 import type { EntityManager } from 'typeorm';
 import type { User } from '../../database/entities/user.entity';
 import type { BalanceAdjustDto } from '../dto/balance-adjust.dto';
 import type { BalanceTopUpDto } from '../dto/balance-top-up.dto';
-import type {
-  BalanceTransactionsQueryParsed,
-  DebitWithLockInput,
-} from '../types';
+import type { DebitWithLockInput } from '../types';
 
 export interface IBalanceService {
   topUp(
@@ -27,8 +21,7 @@ export interface IBalanceService {
   listTransactions(
     agentId: string,
     actor: User,
-    query: BalanceTransactionsQueryParsed,
-  ): Promise<BalanceTransactionsListDto>;
+  ): Promise<BalanceTransactionDto[]>;
 
   /**
    * Row-locked debit for client create (AC-6a). Caller owns the transaction.

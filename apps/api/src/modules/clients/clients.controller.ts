@@ -8,13 +8,12 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import type {
   ClientDto,
+  ClientListDto,
   ClientPortalFormDetailDto,
-  ClientsListDto,
 } from '@vises/contracts';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
@@ -30,12 +29,10 @@ import { ClientsService } from './clients.service';
 import { ClientCreateDto } from './dto/client-create.dto';
 import { ClientPassportUpdateDto } from './dto/client-passport-update.dto';
 import { ClientPortalFormUpdateDto } from './dto/client-portal-form-update.dto';
-import { ClientsListQueryDto } from './dto/clients-list-query.dto';
 import type {
   ClientDetailWithPortalFormDto,
   ClientPassportPlainOut,
 } from './types';
-import { parseClientsListQuery } from './utils';
 
 @Controller('clients')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -55,15 +52,12 @@ export class ClientsController {
 
   /**
    * Agent: own clients. Admin/superadmin: all.
-   * Paginated envelope (DEC-P3). Decision 2A maskedPassport only (no plaintext).
+   * Decision 2A `ClientListDto` — maskedPassport string only (no plaintext passport).
    */
   @Get()
   @Roles(ADMIN_ROLE, SUPERADMIN_ROLE, AGENT_ROLE)
-  list(
-    @Query() query: ClientsListQueryDto,
-    @CurrentUser() actor: User,
-  ): Promise<ClientsListDto> {
-    return this.clients.list(actor, parseClientsListQuery(query));
+  list(@CurrentUser() actor: User): Promise<ClientListDto[]> {
+    return this.clients.list(actor);
   }
 
   /**

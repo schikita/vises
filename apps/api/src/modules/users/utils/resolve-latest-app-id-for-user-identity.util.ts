@@ -7,8 +7,7 @@ import { pickLatestApplicationId } from './pick-latest-application-id.util';
  * Resolve `latestAppId` for a users-list row.
  *
  * - `role === 'agent'`: apps owned via `Client.agentId` (DEC-ASAU-005 / REQ-013).
- * - Otherwise: match `application.clientEmail` to user email/login
- *   (parity with non-agent staff DEC-P6).
+ * - Otherwise: match `application.clientEmail` to user email/login.
  * Latest = max `updatedAt`, then `createdAt`. Null only when zero matches.
  */
 export const resolveLatestAppIdForUserIdentity = (
@@ -32,9 +31,7 @@ export const resolveLatestAppIdForUserIdentity = (
     if (!client) {
       return false;
     }
-    const emailMatch = Boolean(email) && client === email;
-    const loginMatch = Boolean(login) && client === login;
-    return emailMatch || loginMatch;
+    return (email !== '' && client === email) || (login !== '' && client === login);
   });
 
   return pickLatestApplicationId(matched);

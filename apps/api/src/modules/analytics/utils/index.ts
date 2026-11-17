@@ -10,7 +10,6 @@ export { filterFactsByCreatedAt } from './filter-facts-by-created-at.util';
 export { buildStatusBuckets } from './build-status-buckets.util';
 export { countFactsByStatus } from './count-facts-by-status.util';
 export { buildAnalyticsDto } from './build-analytics-dto.util';
-export { parseAnalyticsPagination } from './parse-analytics-pagination.util';
 export { buildClientsPerAgent } from './build-clients-per-agent.util';
 export { buildBookedVsUnpaid } from './build-booked-vs-unpaid.util';
 export { buildCityDistribution } from './build-city-distribution.util';
@@ -20,7 +19,6 @@ export { resolveAnalyticsAgentScopeId } from './resolve-analytics-agent-scope.ut
 export { throwForbiddenRole } from './throw-forbidden-role.util';
 export { mapHistoryRowToEvent } from './map-history-row-to-event.util';
 export { mapClientRowToAgent } from './map-client-row-to-agent.util';
-export { agentMatchesAnalyticsQ } from './agent-matches-analytics-q.util';
 export { mapAppOwnerRow } from './map-app-owner-row.util';
 export { mapUserToAgentBalance } from './map-user-to-agent-balance.util';
 export { normalizeAgentBalance } from './normalize-agent-balance.util';

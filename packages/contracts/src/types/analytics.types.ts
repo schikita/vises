@@ -1,5 +1,4 @@
 import type { ApplicationStatus } from './application-status.types';
-import type { PaginatedList } from './paginated-list.types';
 
 /**
  * Analytics date-range filter dimension.
@@ -8,28 +7,16 @@ import type { PaginatedList } from './paginated-list.types';
 export type AnalyticsDateFilterDimension = 'createdAt';
 
 /**
- * Query for `GET /stats/roles-applications` (qa-polish DEC-P2 / DEC-P14 / DEC-P15
- * + FR-15 / DEC-ASAU-009).
- * Both date bounds omitted → current totals. Either/both → filter metrics by
- * application `createdAt`.
- * `page`/`pageSize` paginate only `perAgent` (defaults when omitted: page 1,
- * API default page size). QA “limit” ≡ `pageSize` — no separate `limit` param.
- * Optional `q` filters the pre-pagination `perAgent` universe by agent
- * display name / login / id (case-insensitive contains).
- * `global` and `clientsPerAgent` stay unpaginated.
+ * Query for `GET /stats/roles-applications`.
+ * Both omitted → current totals. Either/both → filter metrics by application
+ * `createdAt` (includes all applications created in the period).
  */
-export type AnalyticsQuery = {
+export type AnalyticsQueryDto = {
   /** Inclusive lower bound (calendar `YYYY-MM-DD` or ISO-8601). Filters by `createdAt`. */
   from?: string;
   /** Inclusive upper bound (calendar `YYYY-MM-DD` or ISO-8601). Filters by `createdAt`. */
   to?: string;
-  page?: number;
-  pageSize?: number;
-  q?: string;
 };
-
-/** Alias used by Nest query DTO / FR-15 docs; same shape as `AnalyticsQuery`. */
-export type AnalyticsQueryDto = AnalyticsQuery;
 
 /**
  * Per-status count + percentage bucket (§6.7.1 / FR-15).
@@ -45,9 +32,6 @@ export type AnalyticsStatusBucketDto = {
 /**
  * Per-agent application status distribution (§6.7.1 / FR-15).
  * percentage = count / total applications of that agent × 100.
- * Sort key for the paginated `perAgent` list is client count descending
- * (tie-break `agentId`); see `clientsPerAgent` for per-agent client counts
- * (qa-polish DEC-P2).
  */
 export type AnalyticsPerAgentDto = {
   agentId: string;
@@ -138,17 +122,15 @@ export type AnalyticsPaidVolumeAgentDto = {
 };
 
 /**
- * Analytics REST response (FR-15 / amends FR-9 / DEC-ASAU-009 / qa-polish DEC-P2).
+ * Analytics REST response (FR-15 / amends FR-9 / DEC-ASAU-009).
  * Status buckets use BUSINESS ids only.
- * Optional query `from`/`to` filter by application `createdAt` (see `AnalyticsQuery`).
+ * Optional query `from`/`to` filter by application `createdAt` (see `AnalyticsQueryDto`).
  * All percentage fields are decimal strings.
- * `perAgent` is sorted by client count descending (tie-break `agentId`) and
- * paginated; use `clientsPerAgent` for the client-count values used to sort.
  * §5.1 admin fields: `bookedVsUnpaid`, `cityDistribution`,
  * `paymentCompleteness`, `paidVolumeByAgent` (status mix via `global.byStatus`).
  */
 export type AnalyticsDto = {
-  perAgent: PaginatedList<AnalyticsPerAgentDto>;
+  perAgent: AnalyticsPerAgentDto[];
   global: AnalyticsGlobalDto;
   clientsPerAgent: AnalyticsClientsPerAgentDto[];
   bookedVsUnpaid: AnalyticsBookedVsUnpaidDto;

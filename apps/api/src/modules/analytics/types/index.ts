@@ -5,6 +5,4 @@ export type { AnalyticsAgentBalanceRow } from './analytics-agent-balance-row.typ
 export type { AnalyticsHistoryEvent } from './analytics-history-event.types';
 export type { AnalyticsApplicationFact } from './analytics-application-fact.types';
 export type { AnalyticsClientAgentRow } from './analytics-client-agent-row.types';
-export type { AnalyticsPagination } from './analytics-pagination.types';
-export type { AnalyticsAgentLookup } from './analytics-agent-lookup.types';
 export type { BuildAnalyticsDtoInput } from './build-analytics-dto-input.types';

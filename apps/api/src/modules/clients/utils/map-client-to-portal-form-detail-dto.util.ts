@@ -7,7 +7,6 @@ export const mapClientToPortalFormDetailDto = (
 ): ClientPortalFormDetailDto => {
   return {
     address: client.address,
-    phone: client.phone,
     homeAddressLine2: client.homeAddressLine2,
     homeCountry: client.homeCountry,
     homeCity: client.homeCity,
@@ -16,10 +15,6 @@ export const mapClientToPortalFormDetailDto = (
     employerPhone: client.employerPhone,
     employerAddress: client.employerAddress,
     occupation: client.occupation,
-    purpose: client.purpose,
-    firstEntry: client.firstEntry,
-    entries: client.entries,
-    durationDays: client.durationDays,
     previousFingerPrintStatus: client.previousFingerPrintStatus,
     previousFingerPrintDate: client.previousFingerPrintDate,
     blsInvitingAuthority: client.blsInvitingAuthority,
@@ -43,11 +38,6 @@ export const mapClientToPortalFormDetailDto = (
     costCoveredBy: client.costCoveredBy,
     meansOfSupport: client.meansOfSupport,
     memberStateSecondDestination: client.memberStateSecondDestination,
-    phone: client.phone,
-    purpose: client.purpose,
-    firstEntry: client.firstEntry,
-    entries: client.entries,
-    durationDays: client.durationDays,
     portalFormConditionals: client.portalFormConditionals,
   };
 };

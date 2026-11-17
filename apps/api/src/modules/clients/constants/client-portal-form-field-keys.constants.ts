@@ -4,7 +4,6 @@
  */
 export const CLIENT_PORTAL_FORM_STRING_FIELD_KEYS = [
   'address',
-  'phone',
   'homeAddressLine2',
   'homeCountry',
   'homeCity',
@@ -13,10 +12,6 @@ export const CLIENT_PORTAL_FORM_STRING_FIELD_KEYS = [
   'employerPhone',
   'employerAddress',
   'occupation',
-  'purpose',
-  'firstEntry',
-  'entries',
-  'durationDays',
   'previousFingerPrintStatus',
   'previousFingerPrintDate',
   'blsInvitingAuthority',

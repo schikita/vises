@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import type {
-  BalanceTransactionDto,
-  BalanceTransactionsListDto,
-} from '@vises/contracts';
+import type { BalanceTransactionDto } from '@vises/contracts';
 import { DataSource, type EntityManager, Repository } from 'typeorm';
-import { buildPaginatedList, uid } from '../../shared/utils';
+import { uid } from '../../shared/utils';
 import { BalanceTransaction } from '../database/entities/balance-transaction.entity';
 import { User } from '../database/entities/user.entity';
 import { BalanceAuditService } from './balance-audit.service';
@@ -13,10 +10,7 @@ import { TOP_UP_DEFAULT_REASON } from './constants';
 import type { BalanceAdjustDto } from './dto/balance-adjust.dto';
 import type { BalanceTopUpDto } from './dto/balance-top-up.dto';
 import type { IBalanceService } from './interfaces';
-import type {
-  BalanceTransactionsQueryParsed,
-  DebitWithLockInput,
-} from './types';
+import type { DebitWithLockInput } from './types';
 import {
   applyBalanceDelta,
   assertCanReadLedger,
@@ -124,27 +118,18 @@ export class BalanceService implements IBalanceService {
   async listTransactions(
     agentId: string,
     actor: User,
-    query: BalanceTransactionsQueryParsed,
-  ): Promise<BalanceTransactionsListDto> {
+  ): Promise<BalanceTransactionDto[]> {
     assertCanReadLedger({
       actorRole: actor.role,
       actorId: actor.id,
       agentId,
     });
 
-    const [rows, total] = await this.ledger.findAndCount({
+    const rows = await this.ledger.find({
       where: { agentId },
       order: { createdAt: 'DESC' },
-      skip: (query.page - 1) * query.pageSize,
-      take: query.pageSize,
     });
-
-    return buildPaginatedList({
-      items: rows.map((row) => mapBalanceTransactionToDto(row)),
-      total,
-      page: query.page,
-      pageSize: query.pageSize,
-    });
+    return rows.map((row) => mapBalanceTransactionToDto(row));
   }
 
   async debitWithLock(

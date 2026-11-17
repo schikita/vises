@@ -53,7 +53,6 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
   const applicationsFindOne = jest.fn();
   const applicationsCreateQueryBuilder = jest.fn();
   const ledgerFindOne = jest.fn();
-  const usersFind = jest.fn();
 
   let savedClients: Client[];
   let savedApplications: Application[];
@@ -148,16 +147,8 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     applicationsFindOne.mockReset();
     applicationsCreateQueryBuilder.mockReset();
     ledgerFindOne.mockReset();
-    usersFind.mockReset();
 
     settingsGet.mockResolvedValue({ price_per_client: '180.00' });
-    usersFind.mockResolvedValue([
-      Object.assign(new User(), {
-        id: 'agent-1',
-        name: 'Agent',
-        login: 'agent1',
-      }),
-    ]);
     debitWithLock.mockResolvedValue({
       id: 'btx-1',
       type: 'client_creation_debit',
@@ -221,10 +212,6 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
         {
           provide: getRepositoryToken(BalanceTransaction),
           useValue: { findOne: ledgerFindOne },
-        },
-        {
-          provide: getRepositoryToken(User),
-          useValue: { find: usersFind },
         },
         {
           provide: BalanceService,
@@ -551,15 +538,7 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     expect(deletedEntities.some((d) => d.entity === Client)).toBe(true);
   });
 
-  const defaultListQuery = {
-    page: 1,
-    pageSize: 20,
-    search: '',
-    sortBy: 'createdAt' as const,
-    sortDir: 'desc' as const,
-  };
-
-  it('list returns paginated ClientListDto with maskedPassport only (Decision 2A / DEC-P3)', async (): Promise<void> => {
+  it('list returns ClientListDto with maskedPassport only (Decision 2A)', async (): Promise<void> => {
     const service = await createService();
     const client = Object.assign(new Client(), {
       id: 'cli-1',
@@ -596,6 +575,7 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
 
     const qb = {
       andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn(async (): Promise<Client[]> => [client]),
     };
     clientsCreateQueryBuilder.mockReturnValue(qb);
@@ -608,22 +588,15 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
             id: 'app-1',
             clientId: 'cli-1',
             status: 'drafting',
-            submitCity: 'Warsaw',
-            destination: 'Berlin',
             updatedAt: new Date('2026-01-01T00:00:00.000Z'),
           }),
         ],
       ),
     });
 
-    const result = await service.list(agent, defaultListQuery);
-    expect(result).toMatchObject({
-      total: 1,
-      page: 1,
-      pageSize: 20,
-    });
-    expect(result.items).toHaveLength(1);
-    const row = result.items[0];
+    const rows = await service.list(agent);
+    expect(rows).toHaveLength(1);
+    const row = rows[0];
     expect(row).toBeDefined();
     if (!row) {
       return;
@@ -631,14 +604,11 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     expect(Object.keys(row).sort()).toEqual(
       [
         'agentId',
-        'agentName',
         'createdAt',
         'firstName',
         'id',
         'lastName',
         'maskedPassport',
-        'routeFrom',
-        'routeTo',
         'status',
       ].sort(),
     );
@@ -646,15 +616,11 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     expect(row.lastName).toBe('Lovelace');
     expect(row.maskedPassport).toBe('AB****67');
     expect(row.status).toBe('drafting');
-    expect(row.agentName).toBe('Agent');
-    expect(row.routeFrom).toBe('Warsaw');
-    expect(row.routeTo).toBe('Berlin');
     expect(row).not.toHaveProperty('passport');
     expect(row).not.toHaveProperty('passportNumber');
-    expect(JSON.stringify(result.items)).not.toContain('AB1234567');
-    expect(JSON.stringify(result.items)).not.toContain('enc:');
+    expect(JSON.stringify(rows)).not.toContain('AB1234567');
+    expect(JSON.stringify(rows)).not.toContain('enc:');
     expect(decryptFields).toHaveBeenCalled();
-    expect(usersFind).toHaveBeenCalled();
   });
 
   it('list uses empty-string defaults when names/passport missing', async (): Promise<void> => {
@@ -694,6 +660,7 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
 
     clientsCreateQueryBuilder.mockReturnValue({
       andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn(async (): Promise<Client[]> => [client]),
     });
     applicationsCreateQueryBuilder.mockReturnValue({
@@ -711,188 +678,10 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
       ),
     });
 
-    const result = await service.list(agent, defaultListQuery);
-    expect(result.items[0]?.firstName).toBe('');
-    expect(result.items[0]?.lastName).toBe('');
-    expect(result.items[0]?.maskedPassport).toBe('');
-  });
-
-  it('list filters by search and paginates (DEC-P3)', async (): Promise<void> => {
-    const service = await createService();
-    const ada = Object.assign(new Client(), {
-      id: 'cli-ada',
-      agentId: 'agent-1',
-      email: null,
-      phone: null,
-      address: null,
-      purpose: null,
-      firstEntry: null,
-      entries: null,
-      durationDays: null,
-      relationship: null,
-      passportNumber: 'enc:AB1234567',
-      passportIssued: null,
-      passportExpires: null,
-      passportType: null,
-      passportIssueCountry: null,
-      passportIssuedBy: null,
-      firstName: 'enc:Ada',
-      lastName: 'enc:Lovelace',
-      lastNameAtBirth: null,
-      dob: null,
-      placeOfBirth: null,
-      countryOfBirth: null,
-      nationality: null,
-      nationalityAtBirth: null,
-      nationalId: null,
-      otherNames: null,
-      gender: null,
-      maritalStatus: null,
-      createdAt: new Date('2026-01-02T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-02T00:00:00.000Z'),
-    });
-    const bob = Object.assign(new Client(), {
-      id: 'cli-bob',
-      agentId: 'agent-1',
-      email: null,
-      phone: null,
-      address: null,
-      purpose: null,
-      firstEntry: null,
-      entries: null,
-      durationDays: null,
-      relationship: null,
-      passportNumber: null,
-      passportIssued: null,
-      passportExpires: null,
-      passportType: null,
-      passportIssueCountry: null,
-      passportIssuedBy: null,
-      firstName: 'enc:Bob',
-      lastName: 'enc:Builder',
-      lastNameAtBirth: null,
-      dob: null,
-      placeOfBirth: null,
-      countryOfBirth: null,
-      nationality: null,
-      nationalityAtBirth: null,
-      nationalId: null,
-      otherNames: null,
-      gender: null,
-      maritalStatus: null,
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-    });
-
-    clientsCreateQueryBuilder.mockReturnValue({
-      andWhere: jest.fn().mockReturnThis(),
-      getMany: jest.fn(async (): Promise<Client[]> => [ada, bob]),
-    });
-    applicationsCreateQueryBuilder.mockReturnValue({
-      where: jest.fn().mockReturnThis(),
-      getMany: jest.fn(
-        async (): Promise<Application[]> => [
-          Object.assign(new Application(), {
-            id: 'app-ada',
-            clientId: 'cli-ada',
-            status: 'drafting',
-          }),
-          Object.assign(new Application(), {
-            id: 'app-bob',
-            clientId: 'cli-bob',
-            status: 'pending',
-          }),
-        ],
-      ),
-    });
-    decryptFields.mockImplementation(
-      (fields: {
-        firstName: string | null;
-        lastName: string | null;
-        passportNumber: string | null;
-      }) => ({
-        firstName: fields.firstName?.replace(/^enc:/, '') ?? null,
-        lastName: fields.lastName?.replace(/^enc:/, '') ?? null,
-        passportNumber: fields.passportNumber?.replace(/^enc:/, '') ?? null,
-      }),
-    );
-
-    const result = await service.list(agent, {
-      page: 1,
-      pageSize: 20,
-      search: 'ada',
-      sortBy: 'firstName',
-      sortDir: 'asc',
-    });
-    expect(result.total).toBe(1);
-    expect(result.items.map((row) => row.id)).toEqual(['cli-ada']);
-  });
-
-  it('list falls back agentName to login and nulls empty route cities (DEC-P11 / DEC-P12)', async (): Promise<void> => {
-    const service = await createService();
-    usersFind.mockResolvedValue([
-      Object.assign(new User(), {
-        id: 'agent-1',
-        name: '   ',
-        login: 'agent1',
-      }),
-    ]);
-    const client = Object.assign(new Client(), {
-      id: 'cli-1',
-      agentId: 'agent-1',
-      email: null,
-      phone: null,
-      address: null,
-      purpose: null,
-      firstEntry: null,
-      entries: null,
-      durationDays: null,
-      relationship: null,
-      passportNumber: null,
-      passportIssued: null,
-      passportExpires: null,
-      passportType: null,
-      passportIssueCountry: null,
-      passportIssuedBy: null,
-      firstName: null,
-      lastName: null,
-      lastNameAtBirth: null,
-      dob: null,
-      placeOfBirth: null,
-      countryOfBirth: null,
-      nationality: null,
-      nationalityAtBirth: null,
-      nationalId: null,
-      otherNames: null,
-      gender: null,
-      maritalStatus: null,
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-    });
-    clientsCreateQueryBuilder.mockReturnValue({
-      andWhere: jest.fn().mockReturnThis(),
-      getMany: jest.fn(async (): Promise<Client[]> => [client]),
-    });
-    applicationsCreateQueryBuilder.mockReturnValue({
-      where: jest.fn().mockReturnThis(),
-      getMany: jest.fn(
-        async (): Promise<Application[]> => [
-          Object.assign(new Application(), {
-            id: 'app-1',
-            clientId: 'cli-1',
-            status: 'drafting',
-            submitCity: '',
-            destination: '  ',
-          }),
-        ],
-      ),
-    });
-
-    const result = await service.list(agent, defaultListQuery);
-    const row = result.items[0];
-    expect(row?.agentName).toBe('agent1');
-    expect(row?.routeFrom).toBeNull();
-    expect(row?.routeTo).toBeNull();
+    const rows = await service.list(agent);
+    expect(rows[0]?.firstName).toBe('');
+    expect(rows[0]?.lastName).toBe('');
+    expect(rows[0]?.maskedPassport).toBe('');
   });
 
   it('getById returns ClientDetailDto plaintext and audits decrypt (Decision 2A)', async (): Promise<void> => {

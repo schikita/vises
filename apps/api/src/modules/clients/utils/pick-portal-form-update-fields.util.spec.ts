@@ -6,22 +6,12 @@ describe('pickPortalFormUpdateFields (APF-TASK-003 / REQ-004 / PF-TASK-002)', ()
     const body = Object.assign(new ClientPortalFormUpdateDto(), {
       employerName: 'Acme',
       homeCity: 'Cairo',
-      phone: '+201000000000',
-      purpose: 'Tourism',
-      firstEntry: 'FR',
-      entries: 'Multiple',
-      durationDays: '15',
       portalFormConditionals: { isMinor: false },
     });
 
     expect(pickPortalFormUpdateFields(body)).toEqual({
       employerName: 'Acme',
       homeCity: 'Cairo',
-      phone: '+201000000000',
-      purpose: 'Tourism',
-      firstEntry: 'FR',
-      entries: 'Multiple',
-      durationDays: '15',
       portalFormConditionals: { isMinor: false },
     });
   });
@@ -34,8 +24,6 @@ describe('pickPortalFormUpdateFields (APF-TASK-003 / REQ-004 / PF-TASK-002)', ()
     const picked = pickPortalFormUpdateFields(body);
     expect(picked).toEqual({ occupation: 'Engineer' });
     expect('address' in picked).toBe(false);
-    expect('phone' in picked).toBe(false);
-    expect('purpose' in picked).toBe(false);
     expect('portalFormConditionals' in picked).toBe(false);
   });
 

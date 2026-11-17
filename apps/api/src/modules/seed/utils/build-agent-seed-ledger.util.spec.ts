@@ -8,23 +8,22 @@ describe('buildAgentSeedLedger', (): void => {
 
   it('builds seed top_up then client_creation_debit rows with resulting balances', (): void => {
     const clientIds = [
-      'c-01-1',
-      'c-01-2',
-      'c-01-3',
-      'c-01-4',
-      'c-01-5',
-      'c-01-6',
-      'c-01-7',
-      'c-01-8',
+      'c-a-1',
+      'c-a-2',
+      'c-a-3',
+      'c-a-4',
+      'c-a-5',
+      'c-a-6',
+      'c-a-7',
+      'c-a-8',
     ];
-    // balance_slots = 8 clients + 2 extra → top_up 1800; remaining 360
     const rows = buildAgentSeedLedger({
       ledger: { create },
-      agentId: 'u-agent-01',
+      agentId: 'u-agent-a',
       topUpActorId: 'u-superadmin',
       topUpAmountWhole: 1800,
       clientIds,
-      idPrefix: 'btx-01',
+      idPrefix: 'btx-a',
       baseTime: new Date('2026-01-01T10:00:00.000Z'),
     });
 
@@ -55,15 +54,14 @@ describe('buildAgentSeedLedger', (): void => {
     ]);
   });
 
-  it('ends at unused-slots balance after top_up minus client debits', (): void => {
-    // 5 clients + 0 extra → top_up 900; remaining 0
+  it('ends Agent B at 0.00 after 900 top_up and 5×180 debits', (): void => {
     const rows = buildAgentSeedLedger({
       ledger: { create },
-      agentId: 'u-agent-02',
+      agentId: 'u-agent-b',
       topUpActorId: 'u-superadmin',
       topUpAmountWhole: 900,
-      clientIds: ['c-02-1', 'c-02-2', 'c-02-3', 'c-02-4', 'c-02-5'],
-      idPrefix: 'btx-02',
+      clientIds: ['c-b-1', 'c-b-2', 'c-b-3', 'c-b-4', 'c-b-5'],
+      idPrefix: 'btx-b',
       baseTime: new Date('2026-01-01T10:00:00.000Z'),
     });
 

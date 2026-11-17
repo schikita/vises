@@ -13,13 +13,7 @@ import type { RegisterDto } from './dto/register.dto';
 import type { IAuthService } from './interfaces';
 import { JwtTokenService } from './jwt.service';
 import type { AuthSession } from './types';
-import {
-  deriveRegisterDisplayName,
-  formatAgentBalance,
-  isDemoAuthEnabled,
-  isStaffRole,
-  normalizeOptionalName,
-} from './utils';
+import { formatAgentBalance, isDemoAuthEnabled, isStaffRole } from './utils';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -29,8 +23,8 @@ export class AuthService implements IAuthService {
     private readonly config: ConfigService<AppEnv, true>,
   ) {}
 
-  async login(identifier: string, password: string): Promise<AuthSession> {
-    const needle = identifier.trim().toLowerCase();
+  async login(login: string, password: string): Promise<AuthSession> {
+    const needle = login.trim().toLowerCase();
     const user = await this.users
       .createQueryBuilder('u')
       .where('LOWER(u.login) = :needle OR LOWER(u.email) = :needle', { needle })
@@ -61,14 +55,14 @@ export class AuthService implements IAuthService {
       );
     }
 
+    const name = body.name.trim();
+    if (!name) {
+      throw new HttpException('Name is required', HttpStatus.BAD_REQUEST);
+    }
+
     const login = body.login.trim().toLowerCase();
     if (!login) {
       throw new HttpException('Login is required', HttpStatus.BAD_REQUEST);
-    }
-
-    const email = body.email.trim().toLowerCase();
-    if (!email) {
-      throw new HttpException('Email is required', HttpStatus.BAD_REQUEST);
     }
 
     const password = body.password;
@@ -81,20 +75,12 @@ export class AuthService implements IAuthService {
       throw new HttpException('Login already exists', HttpStatus.BAD_REQUEST);
     }
 
-    const firstName = normalizeOptionalName(body.firstName);
-    const lastName = normalizeOptionalName(body.lastName);
-    const name = deriveRegisterDisplayName({
-      firstName: firstName ?? undefined,
-      lastName: lastName ?? undefined,
-      login,
-    });
-
+    const email =
+      (body.email ?? '').trim().toLowerCase() || login;
     const now = new Date();
     const row = this.users.create({
       id: uid('u'),
       name,
-      firstName,
-      lastName,
       login,
       email,
       passwordHash: hashPassword(password),
@@ -147,8 +133,6 @@ export class AuthService implements IAuthService {
       role: user.role,
       active: user.active,
       balance,
-      firstName: user.firstName ?? null,
-      lastName: user.lastName ?? null,
     };
   }
 

@@ -39,7 +39,7 @@ describe('BalanceService (AC-8 / FR-4 / NFR-1 / NFR-4)', (): void => {
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   });
 
-  const ledgerFindAndCount = jest.fn();
+  const ledgerFind = jest.fn();
   const loggerLog = jest.fn();
   let lockedUser: User;
   let savedUsers: User[];
@@ -121,7 +121,7 @@ describe('BalanceService (AC-8 / FR-4 / NFR-1 / NFR-4)', (): void => {
     lockedUser = Object.assign(new User(), { ...agent, balance: '100.00' });
     savedUsers = [];
     savedLedger = [];
-    ledgerFindAndCount.mockReset();
+    ledgerFind.mockReset();
     loggerLog.mockReset();
 
     const manager = createManager();
@@ -143,7 +143,7 @@ describe('BalanceService (AC-8 / FR-4 / NFR-1 / NFR-4)', (): void => {
         },
         {
           provide: getRepositoryToken(BalanceTransaction),
-          useValue: { findAndCount: ledgerFindAndCount },
+          useValue: { find: ledgerFind },
         },
         {
           provide: APP_LOGGER,
@@ -237,7 +237,7 @@ describe('BalanceService (AC-8 / FR-4 / NFR-1 / NFR-4)', (): void => {
     }
   });
 
-  it('listTransactions returns paginated newest-first ledger rows (DEC-P4)', async (): Promise<void> => {
+  it('listTransactions returns newest-first ledger rows', async (): Promise<void> => {
     const service = await createService();
     const older = Object.assign(new BalanceTransaction(), {
       id: 'btx-1',
@@ -261,24 +261,14 @@ describe('BalanceService (AC-8 / FR-4 / NFR-1 / NFR-4)', (): void => {
       clientId: null,
       createdAt: new Date('2026-01-02T00:00:00.000Z'),
     });
-    ledgerFindAndCount.mockResolvedValue([[newer, older], 2]);
+    ledgerFind.mockResolvedValue([newer, older]);
 
-    const result = await service.listTransactions('agent-1', admin, {
-      page: 1,
-      pageSize: 20,
-    });
-    expect(ledgerFindAndCount).toHaveBeenCalledWith({
+    const rows = await service.listTransactions('agent-1', admin);
+    expect(ledgerFind).toHaveBeenCalledWith({
       where: { agentId: 'agent-1' },
       order: { createdAt: 'DESC' },
-      skip: 0,
-      take: 20,
     });
-    expect(result).toMatchObject({
-      total: 2,
-      page: 1,
-      pageSize: 20,
-    });
-    expect(result.items.map((r) => r.id)).toEqual(['btx-2', 'btx-1']);
+    expect(rows.map((r) => r.id)).toEqual(['btx-2', 'btx-1']);
   });
 
   it('debitWithLock uses FOR UPDATE path and appends client_creation_debit', async (): Promise<void> => {
