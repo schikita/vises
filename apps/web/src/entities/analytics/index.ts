@@ -15,6 +15,7 @@ export {
   fetchRolesApplicationsAnalytics,
   formatAnalyticsPercentageDisplay,
   isAnalyticsDtoEmpty,
+  mapAnalyticsStatusBuckets,
   sliceAnalyticsClientsPage,
 } from './utils'
 export {

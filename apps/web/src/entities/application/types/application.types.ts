@@ -1,14 +1,7 @@
-export type Status =
-  | 'new'
-  | 'docs'
-  | 'review'
-  | 'ready'
-  | 'booked'
-  | 'done'
-  | 'fixes'
-  | 'autofill_ok'
-  | 'autofill_failed'
-  | 'declined'
+import type { ApplicationStatus } from '@vises/contracts'
+
+/** BUSINESS application status — SoT is `@vises/contracts` `ApplicationStatus`. */
+export type Status = ApplicationStatus
 
 export type DocType =
   | 'selfie'

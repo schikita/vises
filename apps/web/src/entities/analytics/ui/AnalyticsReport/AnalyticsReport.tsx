@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Card, ListPager } from '@/shared/ui'
 import { ANALYTICS_CLIENTS_PER_AGENT_PAGE_SIZE } from '../../constants'
 import type { AnalyticsReportProps } from '../../types'
-import { sliceAnalyticsClientsPage } from '../../utils'
+import {
+  mapAnalyticsStatusBuckets,
+  sliceAnalyticsClientsPage,
+} from '../../utils'
 import { AnalyticsClientsPerAgentTable } from '../AnalyticsClientsPerAgentTable'
 import { AnalyticsPerAgentList } from '../AnalyticsPerAgentList'
 import { AnalyticsStatusBucketsTable } from '../AnalyticsStatusBucketsTable'
@@ -41,7 +44,7 @@ export const AnalyticsReport = ({
         </div>
         <Card className="space-y-3">
           <AnalyticsStatusBucketsTable
-            buckets={data.global.byStatus}
+            buckets={mapAnalyticsStatusBuckets(data.global.byStatus)}
             emptyTitle={t('analytics.empty.bucketsTitle')}
             emptyText={t('analytics.empty.bucketsText')}
           />

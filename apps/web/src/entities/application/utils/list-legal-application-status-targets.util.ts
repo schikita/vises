@@ -5,8 +5,8 @@ import {
 } from '@vises/contracts'
 
 /**
- * Matrix-legal targets for the current status + actor (FR-6 / AC-9).
- * Never includes drafting→pending for staff (monitor-only actors).
+ * Matrix-legal targets for the current status + actor (FR-6 / AC-9 / §4.C).
+ * Staff never receive system-only edges; monitor is limited to the matrix row.
  */
 export const listLegalApplicationStatusTargets = (
   source: ApplicationStatus,

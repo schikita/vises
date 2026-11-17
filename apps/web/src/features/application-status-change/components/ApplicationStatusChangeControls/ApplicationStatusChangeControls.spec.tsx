@@ -7,11 +7,11 @@ describe('ApplicationStatusChangeControls (FE10 / AC-9)', (): void => {
     cleanup()
   })
 
-  it('does not offer drafting → pending for admin', (): void => {
+  it('does not offer staff transitions for visa_center_monitor from filling', (): void => {
     render(
       <ApplicationStatusChangeControls
-        currentStatus="drafting"
-        actor="admin"
+        currentStatus="filling"
+        actor="visa_center_monitor"
         pending={false}
         apiError=""
         onChangeStatus={vi.fn()}
@@ -21,13 +21,13 @@ describe('ApplicationStatusChangeControls (FE10 / AC-9)', (): void => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('offers only matrix-legal pending targets for agent', async (): Promise<void> => {
+  it('offers only matrix-legal ready_for_appointment targets for agent', async (): Promise<void> => {
     const onChangeStatus = vi.fn()
     const user = userEvent.setup()
 
     render(
       <ApplicationStatusChangeControls
-        currentStatus="pending"
+        currentStatus="ready_for_appointment"
         actor="agent"
         pending={false}
         apiError=""
@@ -35,19 +35,24 @@ describe('ApplicationStatusChangeControls (FE10 / AC-9)', (): void => {
       />,
     )
 
-    expect(screen.getAllByRole('button')).toHaveLength(2)
+    expect(screen.getAllByRole('button')).toHaveLength(3)
 
-    await user.click(screen.getByRole('button', { name: 'Set Rejected' }))
-    expect(onChangeStatus).toHaveBeenCalledWith('rejected')
+    await user.click(
+      screen.getByRole('button', { name: 'Set Not ready for appointment' }),
+    )
+    expect(onChangeStatus).toHaveBeenCalledWith('not_ready_for_appointment')
 
     await user.click(screen.getByRole('button', { name: 'Set Booked' }))
     expect(onChangeStatus).toHaveBeenCalledWith('booked')
+
+    await user.click(screen.getByRole('button', { name: 'Set Declined' }))
+    expect(onChangeStatus).toHaveBeenCalledWith('declined')
   })
 
   it('surfaces illegal_transition api error', (): void => {
     render(
       <ApplicationStatusChangeControls
-        currentStatus="pending"
+        currentStatus="ready_for_appointment"
         actor="admin"
         pending={false}
         apiError="This status change is not allowed"

@@ -6,6 +6,7 @@
   TimelineItem,
   Application,
 } from './application.types'
+export type { ApplicationStatusMeta } from './application-status-meta.types'
 export type {
   AppUpsertWrite,
   AppsUpsertArmPayload,

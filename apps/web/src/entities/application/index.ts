@@ -5,6 +5,7 @@
   DocFile,
   TimelineItem,
   Application,
+  ApplicationStatusMeta,
   AppUpsertWrite,
   UpsertAppResult,
   AppsPaginatedList,
@@ -14,6 +15,7 @@
 export {
   STATUSES,
   APPLICATION_STATUS_NEEDS_FIXES,
+  APPLICATION_STATUS_PROGRESS_ORDER,
   DOC_TYPES,
   APPLICATION_QUERY_KEYS,
 } from './constants'

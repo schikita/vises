@@ -1,26 +1,19 @@
 import type { StatusBadgeTone } from './status-badge.types'
 
+/** Tone map for BUSINESS `ApplicationStatus` ids (§4.A). */
 export const resolveStatusBadgeTone = (status: string): StatusBadgeTone => {
   switch (status) {
-    case 'drafting':
-    case 'new':
+    case 'draft':
       return 'neutral'
-    case 'docs':
-    case 'review':
+    case 'not_ready_for_appointment':
       return 'info'
-    case 'pending':
-    case 'fixes':
+    case 'filling':
       return 'warning'
-    case 'ready':
-    case 'done':
-    case 'issued':
-    case 'autofill_ok':
+    case 'ready_for_appointment':
       return 'success'
     case 'booked':
       return 'accent'
-    case 'rejected':
     case 'declined':
-    case 'autofill_failed':
       return 'danger'
     default:
       return 'neutral'

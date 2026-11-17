@@ -1,33 +1,51 @@
+import type { ApplicationStatusMeta } from '../types/application-status-meta.types'
 import type { Status } from '../types'
 
-/** CRM status id for «Нужны правки». */
-export const APPLICATION_STATUS_NEEDS_FIXES: Status = 'fixes'
+/**
+ * BUSINESS status used when Start validation leaves the case not appointment-ready
+ * (legacy CRM `fixes` → §4.D `not_ready_for_appointment`).
+ */
+export const APPLICATION_STATUS_NEEDS_FIXES: Status = 'not_ready_for_appointment'
 
-export const STATUSES: { id: Status; label: string; hint: string }[] = [
-  { id: 'new', label: 'Новая', hint: 'Заявка только создана' },
-  { id: 'docs', label: 'Документы', hint: 'Ждём файлы от клиента' },
+/** Pipeline order for progress % (excludes terminal `declined`). */
+export const APPLICATION_STATUS_PROGRESS_ORDER: readonly Status[] = [
+  'draft',
+  'filling',
+  'not_ready_for_appointment',
+  'ready_for_appointment',
+  'booked',
+]
+
+/** Six BUSINESS filter/detail statuses (§4.A). Labels are primary RU display strings. */
+export const STATUSES: ApplicationStatusMeta[] = [
   {
-    id: 'review',
-    label: 'На рассмотрении',
-    hint: 'Агент смотрит комплект / автозаполнение прошло успешно (не «одобрено порталом»)',
+    id: 'filling',
+    label: 'Заполнение',
+    hint: 'Идёт заполнение / обработка workflow',
   },
-  { id: 'ready', label: 'Готова', hint: 'Можно записывать на визит' },
-  { id: 'booked', label: 'Визит назначен', hint: 'Дата и время известны' },
-  { id: 'done', label: 'Завершена', hint: 'Клиент сходил в центр' },
-  { id: 'fixes', label: 'Нужны правки', hint: 'Клиенту надо что-то исправить' },
   {
-    id: 'autofill_ok',
-    label: 'Автозаполнение успешно',
-    hint: 'Ручной статус: автозаполнение прошло успешно (не решение сайта)',
+    id: 'draft',
+    label: 'Черновик',
+    hint: 'Заявка создана, анкета ещё не готова',
   },
   {
-    id: 'autofill_failed',
-    label: 'Ошибка автозаполнения',
-    hint: 'Ручной статус: сбой автозаполнения — не путать с отклонением сайта',
+    id: 'not_ready_for_appointment',
+    label: 'Не готова к записи',
+    hint: 'Данные в портале есть, к записи ещё не готова',
+  },
+  {
+    id: 'ready_for_appointment',
+    label: 'Готова к записи',
+    hint: 'Все нужные данные заполнены, визит ещё не забронирован',
+  },
+  {
+    id: 'booked',
+    label: 'Забронирована',
+    hint: 'Запись на визит оформлена',
   },
   {
     id: 'declined',
     label: 'Отклонено',
-    hint: 'Офисное или подтверждённое отклонение; не путать с ошибкой автозаполнения',
+    hint: 'Офисное или подтверждённое отклонение записи',
   },
 ]

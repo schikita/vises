@@ -5,11 +5,11 @@ import { cleanup, render, screen } from '@/shared/testing'
 import { AnalyticsStatusBucketsTable } from './AnalyticsStatusBucketsTable'
 
 const buckets: AnalyticsStatusBucketDto[] = [
-  { status: 'drafting', count: 1, percentage: '16.67' },
-  { status: 'pending', count: 2, percentage: '33.33' },
-  { status: 'rejected', count: 0, percentage: '0.00' },
+  { status: 'draft', count: 1, percentage: '16.67' },
+  { status: 'filling', count: 2, percentage: '33.33' },
+  { status: 'declined', count: 0, percentage: '0.00' },
   { status: 'booked', count: 2, percentage: '33.33' },
-  { status: 'issued', count: 1, percentage: '16.67' },
+  { status: 'ready_for_appointment', count: 1, percentage: '16.67' },
 ]
 
 describe('AnalyticsStatusBucketsTable', (): void => {
@@ -30,17 +30,17 @@ describe('AnalyticsStatusBucketsTable', (): void => {
       />,
     )
 
-    expect(screen.getByTestId('analytics-percentage-pending').textContent).toBe(
+    expect(screen.getByTestId('analytics-percentage-filling').textContent).toBe(
       '33.33%',
     )
     expect(screen.getByTestId('analytics-percentage-booked').textContent).toBe(
       '33.33%',
     )
-    expect(screen.getByTestId('analytics-percentage-drafting').textContent).toBe(
+    expect(screen.getByTestId('analytics-percentage-draft').textContent).toBe(
       '16.67%',
     )
     expect(
-      screen.getByTestId('analytics-percentage-rejected').textContent,
+      screen.getByTestId('analytics-percentage-declined').textContent,
     ).toBe('0.00%')
   })
 })

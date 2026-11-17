@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import type { SettingsDto } from '@vises/contracts'
-import { SETTINGS_QUERY_KEYS, fetchSettings } from '@/entities/settings'
+import {
+  SETTINGS_QUERY_KEYS,
+  fetchSettings,
+  type SettingsDetailDto,
+} from '@/entities/settings'
 import { resolveApiErrorI18nKey } from '@/shared/api'
 import type { PricePerClientHintProps } from '../../types'
 import { PricePerClientHintRender } from './PricePerClientHintRender'
@@ -17,7 +20,7 @@ export const PricePerClientHint = ({
   const { t } = useTranslation()
   const query = useQuery({
     queryKey: SETTINGS_QUERY_KEYS.detail(),
-    queryFn: (): Promise<SettingsDto> => fetchSettings(),
+    queryFn: (): Promise<SettingsDetailDto> => fetchSettings(),
   })
 
   const error = query.isError ? t(resolveApiErrorI18nKey(query.error)) : ''

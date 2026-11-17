@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Card, Empty } from '@/shared/ui'
 import type { AnalyticsPerAgentListProps } from '../../types'
+import { mapAnalyticsStatusBuckets } from '../../utils'
 import { AnalyticsStatusBucketsTable } from '../AnalyticsStatusBucketsTable'
 
 /** Per-agent application status breakdowns. */
@@ -31,7 +32,7 @@ export const AnalyticsPerAgentList = ({
               </p>
             </div>
             <AnalyticsStatusBucketsTable
-              buckets={item.byStatus}
+              buckets={mapAnalyticsStatusBuckets(item.byStatus)}
               emptyTitle={emptyTitle}
               emptyText={emptyText}
             />
