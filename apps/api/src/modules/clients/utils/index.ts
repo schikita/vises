@@ -9,6 +9,7 @@ export { mapClientToListDto } from './map-client-to-list-dto.util';
 export { mapClientToDetailDto } from './map-client-to-detail-dto.util';
 export { assertCanAccessClient } from './assert-can-access-client.util';
 export { assertAgentCreate } from './assert-agent-create.util';
+export { isOfficeStaffRole } from './is-office-staff-role.util';
 export { extractPassportCiphertextFields } from './extract-passport-ciphertext-fields.util';
 export { applyEncryptedPassportFields } from './apply-encrypted-passport-fields.util';
 export { buildPassportPlainOut } from './build-passport-plain-out.util';
