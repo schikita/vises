@@ -279,7 +279,7 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
     );
   });
 
-  it('createClientWithDebit allows staff actor without assertAgentCreate', async (): Promise<void> => {
+  it('createClientWithDebit allows office staff without an agent balance debit', async (): Promise<void> => {
     const service = await createService();
     const client = await service.createClientWithDebit(admin, {
       email: 'staff-created@example.com',
@@ -287,7 +287,19 @@ describe('ClientsService (T8 / FR-5–FR-8 / AC-5–AC-7 / AC-10 / AC-17)', (): 
 
     expect(client.agentId).toBe('admin-1');
     expect(savedApplications).toHaveLength(0);
-    expect(debitWithLock).toHaveBeenCalledTimes(1);
+    expect(debitWithLock).not.toHaveBeenCalled();
+    const ledgerCall = (
+      txnManager.save as jest.Mock
+    ).mock.calls.find((call: unknown[]) => call[0] === BalanceTransaction);
+    expect(ledgerCall?.[1]).toEqual(
+      expect.objectContaining({
+        type: 'client_creation_debit',
+        amount: '0.00',
+        resultingBalance: '0.00',
+        agentId: 'admin-1',
+        clientId: client.id,
+      }),
+    );
   });
 
   it('create with insufficient balance surfaces insufficient_balance (AC-5)', async (): Promise<void> => {

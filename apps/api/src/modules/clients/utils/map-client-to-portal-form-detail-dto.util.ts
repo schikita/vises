@@ -38,6 +38,11 @@ export const mapClientToPortalFormDetailDto = (
     costCoveredBy: client.costCoveredBy,
     meansOfSupport: client.meansOfSupport,
     memberStateSecondDestination: client.memberStateSecondDestination,
+    phone: client.phone,
+    purpose: client.purpose,
+    firstEntry: client.firstEntry,
+    entries: client.entries,
+    durationDays: client.durationDays,
     portalFormConditionals: client.portalFormConditionals,
   };
 };
