@@ -1,16 +1,12 @@
 import { useState, type ReactNode } from 'react'
 import {
-  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type {
-  BalanceTransactionDto,
-  BalanceTransactionsListDto,
-} from '@vises/contracts'
+import type { BalanceTransactionDto } from '@vises/contracts'
 import {
   BALANCE_QUERY_KEYS,
   BalanceLedgerTable,
@@ -18,6 +14,7 @@ import {
   postBalanceAdjust,
   postBalanceTopUp,
   resolveCurrentBalanceFromLedger,
+  sliceBalanceTransactionsPage,
 } from '@/entities/balance'
 import { homePath, useSession } from '@/entities/session'
 import { BalanceAdjustForm } from '@/features/balance-adjust'
@@ -33,7 +30,7 @@ import { STAFF_LIST_PAGE_SIZE } from '@/shared/lib'
 import { AgentBalanceRender } from './AgentBalanceRender'
 import type { AgentBalanceLocationState } from './types'
 
-/** Staff per-agent balance: top-up, adjust, ledger (FE8 / AC-10 / FE17). */
+/** Staff per-agent balance: top-up, adjust, ledger (FE8 / AC-10). */
 export const AgentBalancePage = (): React.ReactElement => {
   const { agentId = '' } = useParams<{ agentId: string }>()
   const location = useLocation()
@@ -47,33 +44,21 @@ export const AgentBalancePage = (): React.ReactElement => {
   const [adjustError, setAdjustError] = useState('')
   const [adjustSaved, setAdjustSaved] = useState(false)
   const [ledgerPage, setLedgerPage] = useState(1)
+  const pageSize = STAFF_LIST_PAGE_SIZE
 
   const role = session?.role
   const listPath = role ? `${homePath(role)}/agents` : '/admin/agents'
-  const ledgerParams = {
-    page: ledgerPage,
-    pageSize: STAFF_LIST_PAGE_SIZE,
-  }
-  const balanceHeadParams = { page: 1, pageSize: 1 }
-
-  const balanceHeadQuery = useQuery({
-    queryKey: BALANCE_QUERY_KEYS.transactions(agentId, balanceHeadParams),
-    queryFn: (): Promise<BalanceTransactionsListDto> =>
-      fetchBalanceTransactions(agentId, balanceHeadParams),
-    enabled: Boolean(agentId),
-  })
 
   const ledgerQuery = useQuery({
-    queryKey: BALANCE_QUERY_KEYS.transactions(agentId, ledgerParams),
-    queryFn: (): Promise<BalanceTransactionsListDto> =>
-      fetchBalanceTransactions(agentId, ledgerParams),
+    queryKey: BALANCE_QUERY_KEYS.transactions(agentId),
+    queryFn: (): Promise<BalanceTransactionDto[]> =>
+      fetchBalanceTransactions(agentId),
     enabled: Boolean(agentId),
-    placeholderData: keepPreviousData,
   })
 
   useEntityGoneRedirect({
-    error: ledgerQuery.error ?? balanceHeadQuery.error,
-    enabled: ledgerQuery.isError || balanceHeadQuery.isError,
+    error: ledgerQuery.error,
+    enabled: ledgerQuery.isError,
     queryKey: BALANCE_QUERY_KEYS.all,
     listPath,
     noticeI18nKey: ENTITY_GONE_I18N_KEYS.agent,
@@ -141,18 +126,15 @@ export const AgentBalancePage = (): React.ReactElement => {
   })
 
   const loadError =
-    (ledgerQuery.isError && !isEntityGoneError(ledgerQuery.error)) ||
-    (balanceHeadQuery.isError && !isEntityGoneError(balanceHeadQuery.error))
-      ? t(
-          resolveApiErrorI18nKey(
-            ledgerQuery.error ?? balanceHeadQuery.error ?? new Error('unknown'),
-          ),
-        )
+    ledgerQuery.isError && !isEntityGoneError(ledgerQuery.error)
+      ? t(resolveApiErrorI18nKey(ledgerQuery.error))
       : ''
 
+  const allItems = ledgerQuery.data ?? []
+  const pageItems = sliceBalanceTransactionsPage(allItems, ledgerPage, pageSize)
   const currentBalance =
-    balanceHeadQuery.data !== undefined
-      ? resolveCurrentBalanceFromLedger(balanceHeadQuery.data.items)
+    ledgerQuery.data !== undefined
+      ? resolveCurrentBalanceFromLedger(ledgerQuery.data)
       : null
 
   const topUpForm: ReactNode = (
@@ -194,7 +176,7 @@ export const AgentBalancePage = (): React.ReactElement => {
   const ledger: ReactNode =
     ledgerQuery.data !== undefined ? (
       <BalanceLedgerTable
-        items={ledgerQuery.data.items}
+        items={pageItems}
         emptyTitle={t('balance.ledger.emptyTitle')}
         emptyText={t('balance.ledger.emptyText')}
       />
@@ -206,18 +188,15 @@ export const AgentBalancePage = (): React.ReactElement => {
         locationState?.agentName?.trim() || t('balance.agentDetail.unknownName')
       }
       agentLogin={locationState?.agentLogin?.trim() || agentId}
-      loading={
-        (ledgerQuery.isLoading && ledgerQuery.data === undefined) ||
-        (balanceHeadQuery.isLoading && balanceHeadQuery.data === undefined)
-      }
+      loading={ledgerQuery.isLoading && ledgerQuery.data === undefined}
       loadError={loadError}
       currentBalance={currentBalance}
       topUpForm={topUpForm}
       adjustForm={adjustForm}
       ledger={ledger}
-      ledgerPage={ledgerQuery.data?.page ?? ledgerPage}
-      ledgerPageSize={ledgerQuery.data?.pageSize ?? STAFF_LIST_PAGE_SIZE}
-      ledgerTotal={ledgerQuery.data?.total ?? 0}
+      ledgerPage={ledgerPage}
+      ledgerPageSize={pageSize}
+      ledgerTotal={allItems.length}
       onLedgerPageChange={setLedgerPage}
     />
   )

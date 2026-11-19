@@ -67,8 +67,7 @@ describe('RegisterPage (AC-5)', (): void => {
 
     await waitFor((): void => {
       expect(register).toHaveBeenCalledWith({
-        firstName: 'New',
-        lastName: 'Agent',
+        name: 'New Agent',
         login: 'newagent',
         email: 'new@example.com',
         password: 'secret1',

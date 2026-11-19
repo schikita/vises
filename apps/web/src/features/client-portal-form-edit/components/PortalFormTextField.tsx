@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react'
 import { Field } from '@/shared/ui'
+import { usePortalFormLabels } from '../model/use-portal-form-labels.hook'
 import type { PortalFormTextFieldProps } from '../types'
 import { toUppercaseInputValue } from '../utils'
 
@@ -12,8 +13,9 @@ export const PortalFormTextField = ({
   errors,
   uppercase = true,
 }: PortalFormTextFieldProps): React.ReactElement => {
+  const { issueMessage } = usePortalFormLabels()
   const registration = register(name)
-  const errorMessage = errors[name]?.message
+  const errorMessage = issueMessage(errors[name]?.message)
 
   return (
     <Field label={label} required={required} error={errorMessage}>

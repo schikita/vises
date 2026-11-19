@@ -1,0 +1,3 @@
+export const PORTAL_FORM_SELECT_PLACEHOLDER_VALUE = ''
+
+export const PORTAL_FORM_SELECT_PLACEHOLDER_LABEL = '--Select--'

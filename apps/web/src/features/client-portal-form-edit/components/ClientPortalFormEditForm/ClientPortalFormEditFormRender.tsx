@@ -31,7 +31,7 @@ export const ClientPortalFormEditFormRender = ({
   onSubmit,
 }: ClientPortalFormEditFormRenderProps): React.ReactElement => {
   const { t } = useTranslation()
-  const sectionProps = { register, errors, setValue, pending }
+  const sectionProps = { register, errors, setValue, watch, pending }
   const isMinor = watch('isMinor') === 'true'
   const hasOtherResidenceship = watch('hasOtherResidenceship') === 'true'
   const isVisaIssuedBefore = watch('isVisaIssuedBefore') === 'true'
@@ -50,7 +50,7 @@ export const ClientPortalFormEditFormRender = ({
         enabled={hasOtherResidenceship}
       />
       <PortalFormEmployerSection {...sectionProps} />
-      <PortalFormTravelSection {...sectionProps} />
+      <PortalFormTravelSection {...sectionProps} tripDisabled={tripDisabled} />
       <PortalFormPreviousVisaSection
         {...sectionProps}
         enabled={isVisaIssuedBefore}

@@ -10,6 +10,7 @@ import { readListNoticeI18nKey, resolveApiErrorI18nKey } from '@/shared/api'
 import { AGENTS_LIST_PAGE_SIZE } from './constants'
 import { AgentsRender } from './AgentsRender'
 import type { AgentsListSortKey, AgentsListSortState } from './types/agents-list-sort.types'
+import { mapAgentsListSortToApi } from './utils/map-agents-list-sort-to-api.util'
 
 /** Staff agents list → per-agent balance entry (FE8 / AC-10 / FE18 / DEC-P17 / FE24). */
 export const AgentsPage = (): React.ReactElement => {
@@ -30,7 +31,7 @@ export const AgentsPage = (): React.ReactElement => {
       pageSize: AGENTS_LIST_PAGE_SIZE,
       q,
       role: 'agent' as const,
-      sort: sort.key,
+      sort: mapAgentsListSortToApi(sort.key),
       sortDir: sort.dir,
     }),
     [page, q, sort],

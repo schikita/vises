@@ -1,12 +1,9 @@
 /**
- * Login / register / demo wire response.
- * Not yet in `@vises/contracts`; local transport shape only (plan contracts gaps).
+ * Login / register / demo wire response (API `UserOut` + token).
  */
 export type AuthSessionUserDto = {
   id: string
   name: string
-  firstName: string | null
-  lastName: string | null
   login: string
   email: string
   role: string
@@ -14,7 +11,7 @@ export type AuthSessionUserDto = {
   inviteToken: string
   createdAt: string
   updatedAt: string
-  password: string
+  password?: string
 }
 
 export type AuthSessionDto = {

@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
+import type { ClientListDto } from '@vises/contracts'
 import type {
-  ClientListDto,
   ClientsListSortBy,
   ClientsListSortDir,
-} from '@vises/contracts'
+} from '@/entities/client'
 
 export type ClientsRenderProps = {
   items: ClientListDto[]

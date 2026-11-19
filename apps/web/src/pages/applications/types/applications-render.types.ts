@@ -17,6 +17,8 @@ export type ApplicationsRenderProps = {
   notice: string
   appsBase: string
   clientsBase: string
+  createCtaTo: string | null
+  createCtaLabel: string
   onQueryChange: (q: string) => void
   onStatusChange: (status: ApplicationStatus | 'all') => void
   onCityChange: (city: string) => void

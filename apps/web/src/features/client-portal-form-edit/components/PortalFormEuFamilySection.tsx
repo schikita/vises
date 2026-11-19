@@ -1,58 +1,63 @@
-import {
-  PORTAL_FORM_EU_FAMILY_CITIZEN_FIELD_KEYS,
-  PORTAL_FORM_FIELD_LABELS,
-  PORTAL_FORM_SECTION_LABELS,
-} from '../constants'
+import { PORTAL_FORM_EU_FAMILY_CITIZEN_FIELD_KEYS } from '../constants'
+import { usePortalFormLabels } from '../model/use-portal-form-labels.hook'
 import type { PortalFormSectionProps } from '../types'
 import { isPortalFormFieldRequired } from '../utils'
+import { PortalFormControl } from './PortalFormControl'
 import { PortalFormSectionHeader } from './PortalFormSectionHeader'
-import { PortalFormTextField } from './PortalFormTextField'
 
 export const PortalFormEuFamilySection = ({
   register,
   errors,
+  setValue,
+  watch,
   pending,
-}: PortalFormSectionProps): React.ReactElement => (
-  <section className="space-y-6" aria-labelledby="portal-form-eu-family-heading">
-    <div className="space-y-3">
-      <PortalFormSectionHeader
-        title={PORTAL_FORM_SECTION_LABELS.euFamilyCitizen}
-      />
-      <h2 id="portal-form-eu-family-heading" className="sr-only">
-        {PORTAL_FORM_SECTION_LABELS.euFamilyCitizen}
-      </h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {PORTAL_FORM_EU_FAMILY_CITIZEN_FIELD_KEYS.map(
-          (field): React.ReactElement => (
-            <PortalFormTextField
-              key={field}
-              name={field}
-              label={PORTAL_FORM_FIELD_LABELS[field]}
-              required={isPortalFormFieldRequired(field)}
-              pending={pending}
-              register={register}
-              errors={errors}
-            />
-          ),
-        )}
-      </div>
-    </div>
-    <div className="space-y-3">
-      <PortalFormSectionHeader
-        title={PORTAL_FORM_SECTION_LABELS.euFamilyRelationship}
-      />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <PortalFormTextField
-          name="otherCitizenFamilyRelationship"
-          label={PORTAL_FORM_FIELD_LABELS.otherCitizenFamilyRelationship}
-          required={isPortalFormFieldRequired(
-            'otherCitizenFamilyRelationship',
+}: PortalFormSectionProps): React.ReactElement => {
+  const { fieldLabel, sectionLabel } = usePortalFormLabels()
+  const citizenTitle = sectionLabel('euFamilyCitizen')
+  const relationshipTitle = sectionLabel('euFamilyRelationship')
+
+  return (
+    <section className="space-y-6" aria-labelledby="portal-form-eu-family-heading">
+      <div className="space-y-3">
+        <PortalFormSectionHeader title={citizenTitle} />
+        <h2 id="portal-form-eu-family-heading" className="sr-only">
+          {citizenTitle}
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {PORTAL_FORM_EU_FAMILY_CITIZEN_FIELD_KEYS.map(
+            (field): React.ReactElement => (
+              <PortalFormControl
+                key={field}
+                name={field}
+                label={fieldLabel(field)}
+                required={isPortalFormFieldRequired(field)}
+                pending={pending}
+                register={register}
+                setValue={setValue}
+                watch={watch}
+                errors={errors}
+              />
+            ),
           )}
-          pending={pending}
-          register={register}
-          errors={errors}
-        />
+        </div>
       </div>
-    </div>
-  </section>
-)
+      <div className="space-y-3">
+        <PortalFormSectionHeader title={relationshipTitle} />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <PortalFormControl
+            name="otherCitizenFamilyRelationship"
+            label={fieldLabel('otherCitizenFamilyRelationship')}
+            required={isPortalFormFieldRequired(
+              'otherCitizenFamilyRelationship',
+            )}
+            pending={pending}
+            register={register}
+            setValue={setValue}
+            watch={watch}
+            errors={errors}
+          />
+        </div>
+      </div>
+    </section>
+  )
+}

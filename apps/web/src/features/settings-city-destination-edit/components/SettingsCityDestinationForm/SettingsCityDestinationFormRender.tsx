@@ -1,3 +1,4 @@
+import { ArrowDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Btn } from '@/shared/ui'
 import type { SettingsCityDestinationFormRenderProps } from '../../types'
@@ -41,11 +42,8 @@ export const SettingsCityDestinationFormRender = ({
           onAdd={onAddCity}
           onRemove={onRemoveCity}
         />
-        <p
-          className="text-center text-sm font-semibold text-text-secondary"
-          aria-hidden="true"
-        >
-          {t('settingsCityDestination.arrow')}
+        <p className="flex justify-center text-text-secondary" aria-hidden="true">
+          <ArrowDown size={28} strokeWidth={2.25} aria-hidden />
         </p>
         <SettingsStringListEditor
           label={t('settingsCityDestination.destinationsLabel')}

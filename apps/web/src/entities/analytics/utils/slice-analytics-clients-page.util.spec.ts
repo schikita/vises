@@ -8,6 +8,10 @@ const buildRows = (count: number): AnalyticsClientsPerAgentDto[] =>
     agentId: `agent-${index + 1}`,
     count: index + 1,
     percentage: '0%',
+    balance: '0.00',
+    registered: index + 1,
+    paid: 0,
+    paidAmount: '0.00',
   }))
 
 describe('sliceAnalyticsClientsPage', (): void => {

@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, ListPager } from '@/shared/ui'
-import { ANALYTICS_CLIENTS_PER_AGENT_PAGE_SIZE } from '../../constants'
+import {
+  ANALYTICS_CLIENTS_PER_AGENT_PAGE_SIZE,
+  ANALYTICS_PER_AGENT_PAGE_SIZE,
+} from '../../constants'
 import type { AnalyticsReportProps } from '../../types'
 import {
+  filterAnalyticsPerAgentByQ,
   mapAnalyticsStatusBuckets,
   sliceAnalyticsClientsPage,
+  sliceAnalyticsPerAgentPage,
 } from '../../utils'
 import { AnalyticsClientsPerAgentTable } from '../AnalyticsClientsPerAgentTable'
 import { AnalyticsPerAgentList } from '../AnalyticsPerAgentList'
@@ -15,8 +20,7 @@ import { AnalyticsStatusBucketsTable } from '../AnalyticsStatusBucketsTable'
 export const AnalyticsReport = ({
   data,
   perAgentPage,
-  perAgentPageSize,
-  perAgentTotal,
+  agentSearch,
   onPerAgentPageChange,
 }: AnalyticsReportProps): React.ReactElement => {
   const { t } = useTranslation()
@@ -27,6 +31,18 @@ export const AnalyticsReport = ({
     data.clientsPerAgent,
     clientsPage,
     clientsPageSize,
+  )
+
+  const filteredPerAgent = filterAnalyticsPerAgentByQ(
+    data.perAgent,
+    agentSearch,
+  )
+  const perAgentPageSize = ANALYTICS_PER_AGENT_PAGE_SIZE
+  const perAgentTotal = filteredPerAgent.length
+  const perAgentItems = sliceAnalyticsPerAgentPage(
+    filteredPerAgent,
+    perAgentPage,
+    perAgentPageSize,
   )
 
   return (
@@ -56,7 +72,7 @@ export const AnalyticsReport = ({
           {t('analytics.perAgent.title')}
         </h2>
         <AnalyticsPerAgentList
-          items={data.perAgent.items}
+          items={perAgentItems}
           emptyTitle={t('analytics.empty.perAgentTitle')}
           emptyText={t('analytics.empty.perAgentText')}
         />

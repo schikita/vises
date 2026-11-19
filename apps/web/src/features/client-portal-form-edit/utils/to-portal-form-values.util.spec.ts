@@ -119,7 +119,8 @@ describe('toPortalFormValues', (): void => {
     const detail = emptyDetail()
     detail.firstName = 'Ada'
     detail.passportNumber = 'AB123'
-    detail.phone = '+201000000000'
+    detail.phone = '+34 600-000-000'
+    detail.invitingFaxNo = 'Fax +34'
     detail.purpose = 'Tourism'
     detail.firstEntry = 'FR'
     detail.entries = 'Multiple'
@@ -145,7 +146,8 @@ describe('toPortalFormValues', (): void => {
 
     expect(values.firstName).toBe('Ada')
     expect(values.passportNumber).toBe('AB123')
-    expect(values.phone).toBe('+201000000000')
+    expect(values.phone).toBe('34600000000')
+    expect(values.invitingFaxNo).toBe('Fax +34')
     expect(values.purpose).toBe('Tourism')
     expect(values.firstEntry).toBe('FR')
     expect(values.entries).toBe('Multiple')

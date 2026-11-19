@@ -11,16 +11,15 @@ export const PORTAL_FORM_FINGERPRINT_STATUS_VALUE = {
 export const PORTAL_FORM_FINGERPRINT_STATUS_OPTIONS = [
   {
     value: PORTAL_FORM_FINGERPRINT_STATUS_VALUE.PRINTS_TAKEN,
-    label:
-      'Prints taken in last 59 months for Schengen visa applications',
+    labelKey: 'printsTaken',
   },
   {
     value: PORTAL_FORM_FINGERPRINT_STATUS_VALUE.LEGAL_REASONS,
-    label: 'For legal reasons(under 12 years old)',
+    labelKey: 'legalReasons',
   },
   {
     value: PORTAL_FORM_FINGERPRINT_STATUS_VALUE.NO_EXEMPTION,
-    label: 'No reason for exemption',
+    labelKey: 'noExemption',
   },
 ] as const
 

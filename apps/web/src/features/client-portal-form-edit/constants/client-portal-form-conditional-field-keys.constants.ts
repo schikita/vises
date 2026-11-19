@@ -17,6 +17,7 @@ export const PORTAL_FORM_CONDITIONAL_STRING_FIELD_KEYS = [
   'otherResidenceshipPermitValidUntil',
   'previousVisaValidFrom',
   'previousVisaValidTo',
+  'previousVisaIssuedCountry',
   'finalDestinationIssuedByCountry',
   'finalDestinationValidFromDate',
   'finalDestinationValidToDate',

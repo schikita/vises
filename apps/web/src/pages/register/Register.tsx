@@ -4,6 +4,11 @@ import { useSession } from '@/entities/session'
 import { AuthRegisterForm, AUTH_REGISTER_MESSAGES } from '@/features/auth-register'
 import { Logo } from '@/shared/ui'
 
+const resolveRegisterName = (firstName: string, lastName: string, login: string): string => {
+  const joined = [firstName, lastName].filter(Boolean).join(' ').trim()
+  return joined.length > 0 ? joined : login
+}
+
 export const RegisterPage = (): React.ReactElement => {
   const { session, ready, register } = useSession()
   const nav = useNavigate()
@@ -21,11 +26,14 @@ export const RegisterPage = (): React.ReactElement => {
           apiError={error}
           onValidSubmit={async (values) => {
             const result = await register({
+              name: resolveRegisterName(
+                values.firstName,
+                values.lastName,
+                values.login,
+              ),
               login: values.login,
-              email: values.email,
+              email: values.email || undefined,
               password: values.password,
-              ...(values.firstName ? { firstName: values.firstName } : {}),
-              ...(values.lastName ? { lastName: values.lastName } : {}),
             })
             if (typeof result === 'string') {
               setError(result)

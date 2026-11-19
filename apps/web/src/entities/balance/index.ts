@@ -5,5 +5,6 @@ export {
   postBalanceTopUp,
   postBalanceAdjust,
   resolveCurrentBalanceFromLedger,
+  sliceBalanceTransactionsPage,
 } from './utils'
 export { BalanceAmountCard, BalanceLedgerTable } from './ui'

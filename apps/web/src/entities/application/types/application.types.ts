@@ -61,6 +61,8 @@ export type TimelineItem = {
 export type Application = {
   id: string
   code: string
+  /** CRM client this application is attached to (AppOut.clientId). */
+  clientId?: string
   clientEmail: string
   /** Portal RegisterUser / login email; null when unset (DEC-004). */
   portalFormEmail: string | null

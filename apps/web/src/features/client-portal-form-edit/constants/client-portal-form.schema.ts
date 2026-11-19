@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { PORTAL_FORM_HAPPY_PATH_REQUIRED_FIELD_KEYS } from './client-portal-form-happy-path-required-keys.constants'
 import { PORTAL_FORM_INVITING_AUTHORITY_VALUE } from './client-portal-form-inviting-authority.constants'
+import { PORTAL_FORM_REQUIRED_MESSAGE } from './portal-form-required-message.constants'
 
 const invitingAuthoritySchema = z.union([
   z.literal(''),
@@ -82,6 +83,7 @@ export const clientPortalFormSchema = z
     isVisaIssuedBefore: z.string(),
     previousVisaValidFrom: z.string(),
     previousVisaValidTo: z.string(),
+    previousVisaIssuedCountry: z.string(),
     finalDestinationIssuedByCountry: z.string(),
     finalDestinationValidFromDate: z.string(),
     finalDestinationValidToDate: z.string(),
@@ -95,6 +97,7 @@ export const clientPortalFormSchema = z
     visaType: z.string(),
     visaSubType: z.string(),
     category: z.string(),
+    destination: z.string(),
   })
   .superRefine((values, ctx): void => {
     for (const key of PORTAL_FORM_HAPPY_PATH_REQUIRED_FIELD_KEYS) {
@@ -102,7 +105,7 @@ export const clientPortalFormSchema = z
         ctx.addIssue({
           code: 'custom',
           path: [key],
-          message: 'Required',
+          message: PORTAL_FORM_REQUIRED_MESSAGE,
         })
       }
     }

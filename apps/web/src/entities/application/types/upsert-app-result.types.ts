@@ -19,7 +19,22 @@ export type UpsertAppResult = Application & {
   issuedClientAccess?: IssuedAccess
 }
 
-/** Optional write flag for staff upsert workflow arming (DEC-015). */
-export type AppUpsertWrite = Application & {
+/**
+ * Path B create body — identity fields only (DEC-ACU / plan §3).
+ * No id/status; no trip/payment/visit/manager/code/applicants seeds.
+ */
+export type AppCreateWrite = {
+  clientEmail: string
+  clientId?: string
+}
+
+/**
+ * Body for POST /apps upsert.
+ * - Create (Path B): identity-only `AppCreateWrite` (omit `id` / `status`).
+ * - Update: partial or full application fields; optional `clientId` ignored on update by API.
+ * - Optional `portalWorkflowAction` for staff workflow arming (DEC-015).
+ */
+export type AppUpsertWrite = Partial<Application> & {
+  clientId?: string
   portalWorkflowAction?: 'ensure' | 'supersede' | 'none'
 }

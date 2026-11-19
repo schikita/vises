@@ -5,7 +5,7 @@ export { ClientDetailPage, ClientsPage } from './clients'
 export { AgentBalancePage, AgentsPage } from './agents'
 export { BalancePage } from './balance'
 
-export { Applications } from './applications'
+export { ApplicationCreatePage, Applications } from './applications'
 export { ApplicationDetail } from './application-detail'
 export { SettingsPage } from './settings'
 export { UsersPage } from './users'

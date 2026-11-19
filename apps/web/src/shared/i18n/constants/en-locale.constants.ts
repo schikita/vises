@@ -1,4 +1,5 @@
 import { LOCALE_CHROME_EN } from './locale-chrome.constants'
+import { PORTAL_FORM_LOCALE_EN } from './portal-form-locale-en.constants'
 
 /** English UI catalog (FR-20). */
 export const EN_LOCALE = {
@@ -79,8 +80,9 @@ export const EN_LOCALE = {
   staffCreate: {
     backToApps: 'Back to applications',
     title: 'Create application',
-    subtitle:
-      'Data as in the visa center form: Latin characters, as in the travel passport.',
+    openingFormTitle: 'Opening the portal form',
+    openingForm: 'The visa site form opens next. Enter the applicant email there.',
+    openFormFailed: 'Could not open the portal form. The new application has no client.',
     steps: {
       submission: 'Submission',
       questionnaire: 'Questionnaire',
@@ -106,6 +108,10 @@ export const EN_LOCALE = {
       clientEmailPlaceholder: 'client@example.com',
       clientEmailHint:
         'Provide the client email. Access to the cabinet will be created or found by it.',
+      clientId: 'Existing client ID (optional)',
+      clientIdPlaceholder: 'Client UUID',
+      clientIdHint:
+        'Leave empty to create a new CRM client, or attach an existing client by id.',
     },
     applicantCardTitle: 'Applicant {{index}}',
     removeApplicant: 'Remove',
@@ -420,8 +426,6 @@ export const EN_LOCALE = {
     },
     portalForm: {
       title: 'Portal form',
-      subtitle:
-        'Collect Edit Member and booking location / visa type fields for portal autofill.',
       back: 'Back to client',
       loadingTitle: 'Loading…',
       loadingText: 'Fetching portal form data.',
@@ -433,6 +437,7 @@ export const EN_LOCALE = {
       passportError: 'Passport save failed: {{message}}',
       portalFormError: 'Portal-form save failed: {{message}}',
       tripError: 'Trip save failed: {{message}}',
+      ...PORTAL_FORM_LOCALE_EN,
     },
     status: {
       filling: 'Filling',
@@ -592,7 +597,9 @@ export const EN_LOCALE = {
       loadingTitle: 'Loading…',
       loadingText: 'Fetching applications.',
       emptyTitle: 'No applications',
-      emptyText: 'Clear filters or create an application.',
+      emptyText: 'Clear filters to widen results, or use the create control below.',
+      emptyCreateCtaStaff: 'Create application',
+      emptyCreateCtaAgent: 'New client',
     },
     status: {
       filling: 'Filling',

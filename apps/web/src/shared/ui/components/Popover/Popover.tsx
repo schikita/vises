@@ -11,6 +11,7 @@ export const Popover = (props: PopoverProps): React.ReactElement => {
     contentClassName = '',
     contentId: contentIdProp,
     contentAriaLabel,
+    className = '',
   } = props
   const rootRef = useRef<HTMLDivElement | null>(null)
   const generatedId = useId()
@@ -64,7 +65,7 @@ export const Popover = (props: PopoverProps): React.ReactElement => {
     : trigger
 
   return (
-    <div className="relative" ref={rootRef}>
+    <div className={`relative ${className}`.trim()} ref={rootRef}>
       {triggerNode}
       {open ? (
         <div

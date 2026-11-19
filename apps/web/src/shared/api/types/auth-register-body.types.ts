@@ -1,8 +1,7 @@
-/** `POST /auth/register` body (live Nest RegisterDto). */
+/** `POST /auth/register` body (matches API `RegisterDto`). */
 export type AuthRegisterBody = {
+  name: string
   login: string
-  email: string
   password: string
-  firstName?: string
-  lastName?: string
+  email?: string
 }

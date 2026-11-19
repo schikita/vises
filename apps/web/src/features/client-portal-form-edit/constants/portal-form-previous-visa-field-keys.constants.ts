@@ -2,4 +2,5 @@
 export const PORTAL_FORM_PREVIOUS_VISA_FIELD_KEYS = [
   'previousVisaValidFrom',
   'previousVisaValidTo',
+  'previousVisaIssuedCountry',
 ] as const

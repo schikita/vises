@@ -16,7 +16,7 @@ import { homePath, useSession } from '@/entities/session'
 import { readListNoticeI18nKey, resolveApiErrorI18nKey } from '@/shared/api'
 import { STAFF_LIST_PAGE_SIZE, staffListPageCount } from '@/shared/lib'
 import type { AppsListSortKey, AppsListSortState } from './types'
-import { mapAppToListRow } from './utils'
+import { mapAppToListRow, resolveApplicationsEmptyCreateCta } from './utils'
 import { ApplicationsRender } from './ApplicationsRender'
 
 /**
@@ -39,6 +39,9 @@ export const Applications = (): React.ReactElement => {
   const role = session?.role
   const appsBase = role ? `${homePath(role)}/apps` : '/app/apps'
   const clientsBase = role ? `${homePath(role)}/clients` : '/app/clients'
+  const emptyCreateCta = role ? resolveApplicationsEmptyCreateCta(role) : null
+  const createCtaTo = emptyCreateCta?.to ?? null
+  const createCtaLabel = emptyCreateCta ? t(emptyCreateCta.labelKey) : ''
   const noticeKey = readListNoticeI18nKey(location.state)
   const notice = noticeKey ? t(noticeKey) : ''
 
@@ -137,6 +140,8 @@ export const Applications = (): React.ReactElement => {
       notice={notice}
       appsBase={appsBase}
       clientsBase={clientsBase}
+      createCtaTo={createCtaTo}
+      createCtaLabel={createCtaLabel}
       onQueryChange={onQueryChange}
       onStatusChange={onStatusChange}
       onCityChange={onCityChange}

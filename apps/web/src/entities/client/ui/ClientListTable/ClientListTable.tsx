@@ -4,12 +4,11 @@ import { formatDateTime } from '@/shared/lib'
 import { DataTable, StatusBadge, type DataTableColumnDef } from '@/shared/ui'
 import { CLIENT_LIST_SORT_COLUMNS } from '../../constants/client-list-sort-columns.constants'
 import type { ClientListTableProps } from '../../types'
+import { formatShortAgentId } from '../../utils/format-short-agent-id.util'
 import { ClientListSortIcon } from '../ClientListSortIcon'
-import { ClientRouteDisplay } from '../ClientRouteDisplay'
 
 /**
- * DEC-P8 / DEC-P11 / DEC-P16 list rows: agentName + route arrow, sortable columns.
- * Entire row is clickable.
+ * SoT list rows: name, agentId (admin), status, createdAt. Entire row is clickable.
  */
 export const ClientListTable = ({
   items,
@@ -49,15 +48,11 @@ export const ClientListTable = ({
             <span className="font-medium text-text-primary">{displayName}</span>
           )
         }
-        if (col.key === 'agentName') {
-          return <span className="text-text-secondary">{row.agentName}</span>
-        }
-        if (col.key === 'route') {
+        if (col.key === 'agentId') {
           return (
-            <ClientRouteDisplay
-              routeFrom={row.routeFrom}
-              routeTo={row.routeTo}
-            />
+            <span className="text-text-secondary">
+              {formatShortAgentId(row.agentId)}
+            </span>
           )
         }
         if (col.key === 'status') {

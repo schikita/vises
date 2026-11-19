@@ -35,6 +35,7 @@ describe('toTripUpsertPatch', (): void => {
       visaType: 'Tourist',
       visaSubType: 'Short Stay',
       category: 'Normal',
+      destination: '',
     })
     expect(Object.keys(patch).sort()).toEqual(
       [...PORTAL_FORM_TRIP_FIELD_KEYS].sort(),

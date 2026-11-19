@@ -1,15 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import type {
-  BalanceTransactionsListDto,
-  UserMeDto,
-} from '@vises/contracts'
+import type { BalanceTransactionDto, UserMeDto } from '@vises/contracts'
 import {
   BALANCE_QUERY_KEYS,
   BalanceLedgerTable,
   ZERO_BALANCE_DISPLAY,
   fetchBalanceTransactions,
+  sliceBalanceTransactionsPage,
 } from '@/entities/balance'
 import { useSession } from '@/entities/session'
 import { fetchAuthMe, resolveApiErrorI18nKey } from '@/shared/api'
@@ -17,7 +15,7 @@ import { STAFF_LIST_PAGE_SIZE } from '@/shared/lib'
 import { BalanceRender } from './BalanceRender'
 
 /**
- * Agent `/app/balance` — own balance card + ledger only (FE8 / AC-11 / FE17).
+ * Agent `/app/balance` — own balance card + ledger only (FE8 / AC-11).
  * Never mounts top-up or adjust controls.
  */
 export const BalancePage = (): React.ReactElement => {
@@ -25,10 +23,7 @@ export const BalancePage = (): React.ReactElement => {
   const { session } = useSession()
   const agentId = session?.userId ?? ''
   const [ledgerPage, setLedgerPage] = useState(1)
-  const ledgerParams = {
-    page: ledgerPage,
-    pageSize: STAFF_LIST_PAGE_SIZE,
-  }
+  const pageSize = STAFF_LIST_PAGE_SIZE
 
   const meQuery = useQuery({
     queryKey: [...BALANCE_QUERY_KEYS.all, 'me'] as const,
@@ -37,9 +32,9 @@ export const BalancePage = (): React.ReactElement => {
   })
 
   const ledgerQuery = useQuery({
-    queryKey: BALANCE_QUERY_KEYS.transactions(agentId, ledgerParams),
-    queryFn: (): Promise<BalanceTransactionsListDto> =>
-      fetchBalanceTransactions(agentId, ledgerParams),
+    queryKey: BALANCE_QUERY_KEYS.transactions(agentId),
+    queryFn: (): Promise<BalanceTransactionDto[]> =>
+      fetchBalanceTransactions(agentId),
     enabled: Boolean(agentId),
   })
 
@@ -53,6 +48,8 @@ export const BalancePage = (): React.ReactElement => {
       : ''
 
   const loading = meQuery.isLoading || ledgerQuery.isLoading
+  const allItems = ledgerQuery.data ?? []
+  const pageItems = sliceBalanceTransactionsPage(allItems, ledgerPage, pageSize)
 
   const currentBalance =
     meQuery.data?.balance ??
@@ -61,7 +58,7 @@ export const BalancePage = (): React.ReactElement => {
   const ledger: ReactNode =
     ledgerQuery.data !== undefined ? (
       <BalanceLedgerTable
-        items={ledgerQuery.data.items}
+        items={pageItems}
         emptyTitle={t('balance.ledger.emptyTitle')}
         emptyText={t('balance.ledger.emptyText')}
       />
@@ -73,9 +70,9 @@ export const BalancePage = (): React.ReactElement => {
       loadError={loadError}
       currentBalance={currentBalance}
       ledger={ledger}
-      ledgerPage={ledgerQuery.data?.page ?? ledgerPage}
-      ledgerPageSize={ledgerQuery.data?.pageSize ?? STAFF_LIST_PAGE_SIZE}
-      ledgerTotal={ledgerQuery.data?.total ?? 0}
+      ledgerPage={ledgerPage}
+      ledgerPageSize={pageSize}
+      ledgerTotal={allItems.length}
       onLedgerPageChange={setLedgerPage}
     />
   )

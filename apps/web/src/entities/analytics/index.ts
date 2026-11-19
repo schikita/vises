@@ -13,10 +13,12 @@ export {
 export {
   buildAnalyticsQueryPath,
   fetchRolesApplicationsAnalytics,
+  filterAnalyticsPerAgentByQ,
   formatAnalyticsPercentageDisplay,
   isAnalyticsDtoEmpty,
   mapAnalyticsStatusBuckets,
   sliceAnalyticsClientsPage,
+  sliceAnalyticsPerAgentPage,
 } from './utils'
 export {
   AnalyticsStatusBucketsTable,

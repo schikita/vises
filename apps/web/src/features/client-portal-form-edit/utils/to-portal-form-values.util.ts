@@ -9,6 +9,8 @@ import {
 } from '../constants'
 import type { ClientPortalFormValues } from '../types'
 import { conditionalFlagToFormString } from './conditional-flag-to-form-string.util'
+import { digitsOnlyPhone } from './digits-only-phone.util'
+import { isPortalFormPhoneField } from './is-portal-form-widget-field.util'
 import { nullishToFormString } from './nullish-to-form-string.util'
 import { toInvitingAuthorityFormValue } from './to-inviting-authority-form-value.util'
 
@@ -32,7 +34,8 @@ export const toPortalFormValues = (
       )
       continue
     }
-    values[key] = nullishToFormString(detail[key])
+    const raw = nullishToFormString(detail[key])
+    values[key] = isPortalFormPhoneField(key) ? digitsOnlyPhone(raw) : raw
   }
 
   const conditionals = detail.portalFormConditionals

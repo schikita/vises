@@ -3,7 +3,6 @@ import type { AnalyticsDto } from '@vises/contracts'
 export type AnalyticsReportProps = {
   data: AnalyticsDto
   perAgentPage: number
-  perAgentPageSize: number
-  perAgentTotal: number
+  agentSearch: string
   onPerAgentPageChange: (page: number) => void
 }

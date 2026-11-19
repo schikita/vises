@@ -1,6 +1,8 @@
 export { buildAnalyticsQueryPath } from './build-analytics-query-path.util'
 export { fetchRolesApplicationsAnalytics } from './fetch-roles-applications-analytics.util'
+export { filterAnalyticsPerAgentByQ } from './filter-analytics-per-agent-by-q.util'
 export { formatAnalyticsPercentageDisplay } from './format-analytics-percentage-display.util'
 export { isAnalyticsDtoEmpty } from './is-analytics-dto-empty.util'
 export { mapAnalyticsStatusBuckets } from './map-analytics-status-buckets.util'
 export { sliceAnalyticsClientsPage } from './slice-analytics-clients-page.util'
+export { sliceAnalyticsPerAgentPage } from './slice-analytics-per-agent-page.util'

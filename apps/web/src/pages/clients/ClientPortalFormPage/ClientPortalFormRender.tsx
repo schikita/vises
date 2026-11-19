@@ -5,6 +5,7 @@ import type { ClientPortalFormRenderProps } from '../types/client-portal-form-re
 
 export const ClientPortalFormRender = ({
   detailPath,
+  showClientBackLink,
   loading,
   loadError,
   title,
@@ -15,18 +16,19 @@ export const ClientPortalFormRender = ({
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          to={detailPath}
-          className="text-sm font-medium text-forest no-underline hover:underline"
+        {showClientBackLink ? (
+          <Link
+            to={detailPath}
+            className="text-sm font-medium text-forest no-underline hover:underline"
+          >
+            {t('clients.portalForm.back')}
+          </Link>
+        ) : null}
+        <h1
+          className={`text-2xl font-semibold tracking-tight text-text-primary${showClientBackLink ? ' mt-2' : ''}`}
         >
-          {t('clients.portalForm.back')}
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary">
           {title}
         </h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          {t('clients.portalForm.subtitle')}
-        </p>
       </div>
 
       {loadError ? (

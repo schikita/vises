@@ -33,6 +33,7 @@ import {
   useEntityGoneRedirect,
 } from '@/shared/api'
 import { useStore } from '@/widgets/app-store'
+import { shouldShowPortalFormClientLink } from '../utils/should-show-portal-form-client-link.util'
 import { ClientPortalFormRender } from './ClientPortalFormRender'
 
 /**
@@ -139,6 +140,7 @@ export const ClientPortalFormPage = (): React.ReactElement => {
           visaType: tripPatch.visaType,
           visaSubType: tripPatch.visaSubType,
           category: tripPatch.category,
+          destination: tripPatch.destination,
         })
       } catch (err: unknown) {
         nextTripError = resolveSubsectionError(err)
@@ -165,13 +167,21 @@ export const ClientPortalFormPage = (): React.ReactElement => {
     }
   }
 
-  const title =
+  const savedName =
     detailQuery.data !== undefined
       ? [detailQuery.data.firstName, detailQuery.data.lastName]
           .filter(Boolean)
           .join(' ')
-          .trim() || t('clients.list.unnamed')
-      : t('clients.portalForm.title')
+          .trim()
+      : ''
+  const title = savedName || t('clients.portalForm.title')
+  const showClientBackLink =
+    detailQuery.data !== undefined &&
+    shouldShowPortalFormClientLink(
+      detailQuery.data.applicationId,
+      detailQuery.data.applicationStatus,
+      savedName.length > 0,
+    )
 
   const loading =
     detailQuery.isLoading ||
@@ -227,6 +237,7 @@ export const ClientPortalFormPage = (): React.ReactElement => {
   return (
     <ClientPortalFormRender
       detailPath={detailPath}
+      showClientBackLink={showClientBackLink}
       loading={loading}
       loadError={loadError}
       title={title}

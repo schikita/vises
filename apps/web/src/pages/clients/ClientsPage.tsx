@@ -2,16 +2,16 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type {
-  ClientDto,
-  ClientsListDto,
-  ClientsListSortBy,
-  ClientsListSortDir,
-} from '@vises/contracts'
+import type { ClientDto, ClientListDto } from '@vises/contracts'
 import {
   CLIENT_QUERY_KEYS,
   fetchClientsList,
+  filterClientsList,
   postClientCreate,
+  sliceClientsListPage,
+  sortClientsList,
+  type ClientsListSortBy,
+  type ClientsListSortDir,
 } from '@/entities/client'
 import { homePath, useSession } from '@/entities/session'
 import {
@@ -24,7 +24,7 @@ import { STAFF_LIST_PAGE_SIZE } from '@/shared/lib'
 import { ClientsRender } from './ClientsRender'
 
 /**
- * Clients list (FE9 / FE17 / FE18 / DEC-P8 / DEC-P16): paginated search/sort + Agent/Route table.
+ * Clients list: SoT returns full array; search/sort/page are client-side.
  */
 export const ClientsPage = (): React.ReactElement => {
   const { t } = useTranslation()
@@ -46,20 +46,9 @@ export const ClientsPage = (): React.ReactElement => {
   const noticeKey = readListNoticeI18nKey(location.state)
   const notice = noticeKey ? t(noticeKey) : ''
 
-  const listParams = useMemo(
-    () => ({
-      page,
-      pageSize: STAFF_LIST_PAGE_SIZE,
-      search: search.trim() || undefined,
-      sortBy,
-      sortDir,
-    }),
-    [page, search, sortBy, sortDir],
-  )
-
   const listQuery = useQuery({
-    queryKey: CLIENT_QUERY_KEYS.list(listParams),
-    queryFn: (): Promise<ClientsListDto> => fetchClientsList(listParams),
+    queryKey: CLIENT_QUERY_KEYS.list(),
+    queryFn: (): Promise<ClientListDto[]> => fetchClientsList(),
   })
 
   const createMutation = useMutation({
@@ -75,9 +64,14 @@ export const ClientsPage = (): React.ReactElement => {
     },
   })
 
-  const items = listQuery.data?.items ?? []
-  const total = listQuery.data?.total ?? 0
-  const pageSize = listQuery.data?.pageSize ?? STAFF_LIST_PAGE_SIZE
+  const filteredSorted = useMemo((): ClientListDto[] => {
+    const rows = listQuery.data ?? []
+    return sortClientsList(filterClientsList(rows, search), sortBy, sortDir)
+  }, [listQuery.data, search, sortBy, sortDir])
+
+  const total = filteredSorted.length
+  const pageSize = STAFF_LIST_PAGE_SIZE
+  const items = sliceClientsListPage(filteredSorted, page, pageSize)
   const listError = listQuery.isError
     ? t(resolveApiErrorI18nKey(listQuery.error))
     : ''

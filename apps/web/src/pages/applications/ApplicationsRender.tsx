@@ -13,6 +13,7 @@ import {
 } from '@/shared/ui'
 import { APPS_LIST_SORT_COLUMNS } from './constants'
 import type { ApplicationsListRow, ApplicationsRenderProps } from './types'
+import { ApplicationsEmptyCreateCta } from './ui/ApplicationsEmptyCreateCta'
 import { AppsListSortIcon } from './ui/AppsListSortIcon'
 
 export const ApplicationsRender = ({
@@ -30,6 +31,8 @@ export const ApplicationsRender = ({
   notice,
   appsBase,
   clientsBase,
+  createCtaTo,
+  createCtaLabel,
   onQueryChange,
   onStatusChange,
   onCityChange,
@@ -129,11 +132,17 @@ export const ApplicationsRender = ({
           </h1>
           <p className="mt-1 text-sm text-text-secondary">
             {t('applications.list.subtitle')}
-            {filteredCount > 0
+            {!loading && filteredCount > 0
               ? ` · ${rangeStart}–${rangeEnd} / ${filteredCount}`
               : null}
           </p>
         </div>
+        {createCtaTo ? (
+          <ApplicationsEmptyCreateCta
+            to={createCtaTo}
+            label={createCtaLabel}
+          />
+        ) : null}
       </div>
 
       {notice ? (
@@ -215,12 +224,27 @@ export const ApplicationsRender = ({
       </div>
 
       <div className="mt-5">
-        {loading && pageItems.length === 0 ? (
+        {loading ? (
           <Card className="overflow-hidden p-0">
             <Empty
               title={t('applications.list.loadingTitle')}
               text={t('applications.list.loadingText')}
             />
+          </Card>
+        ) : pageItems.length === 0 ? (
+          <Card className="overflow-hidden p-0">
+            <Empty
+              title={t('applications.list.emptyTitle')}
+              text={t('applications.list.emptyText')}
+            />
+            {createCtaTo ? (
+              <div className="flex justify-center pb-12 -mt-8">
+                <ApplicationsEmptyCreateCta
+                  to={createCtaTo}
+                  label={createCtaLabel}
+                />
+              </div>
+            ) : null}
           </Card>
         ) : (
           <DataTable
@@ -234,12 +258,14 @@ export const ApplicationsRender = ({
         )}
       </div>
 
-      <ListPager
-        page={page}
-        pageSize={pageSize}
-        total={filteredCount}
-        onPageChange={onPageChange}
-      />
+      {loading ? null : (
+        <ListPager
+          page={page}
+          pageSize={pageSize}
+          total={filteredCount}
+          onPageChange={onPageChange}
+        />
+      )}
     </div>
   )
 }

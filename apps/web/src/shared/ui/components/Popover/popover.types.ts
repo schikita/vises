@@ -8,4 +8,5 @@ export type PopoverProps = {
   contentClassName?: string
   contentId?: string
   contentAriaLabel?: string
+  className?: string
 }

@@ -59,6 +59,7 @@ describe('toPortalFormBody', (): void => {
       otherResidenceshipPermitValidUntil: null,
       previousVisaValidFrom: null,
       previousVisaValidTo: null,
+      previousVisaIssuedCountry: null,
       finalDestinationIssuedByCountry: null,
       finalDestinationValidFromDate: null,
       finalDestinationValidToDate: null,

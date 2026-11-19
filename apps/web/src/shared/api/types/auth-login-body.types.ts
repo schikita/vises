@@ -1,5 +1,5 @@
-/** `POST /auth/login` body. */
+/** `POST /auth/login` body (matches API `LoginDto`). */
 export type AuthLoginBody = {
-  identifier: string
+  login: string
   password: string
 }

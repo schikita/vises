@@ -1,9 +1,8 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { AnalyticsDto } from '@vises/contracts'
 import {
-  ANALYTICS_PER_AGENT_PAGE_SIZE,
   ANALYTICS_QUERY_KEYS,
   AnalyticsReport,
   fetchRolesApplicationsAnalytics,
@@ -20,8 +19,8 @@ import { AnalyticsRender } from './AnalyticsRender'
 import { resolveAnalyticsQueryParams } from './utils'
 
 /**
- * Admin `/admin` and agent `/app` analytics (FE11 / FE17 / FE18 / DEC-P10 / DEC-P14 / DEC-P15).
- * Date range drafts require Apply before refetch; perAgent defaults to top 5 + search `q`.
+ * Admin `/admin` and agent `/app` analytics (FE11 / FE17 / FE18).
+ * Date range drafts require Apply before refetch; perAgent search/pager are client-side.
  */
 export const AnalyticsPage = (): React.ReactElement => {
   const { t } = useTranslation()
@@ -34,20 +33,10 @@ export const AnalyticsPage = (): React.ReactElement => {
   const [perAgentPage, setPerAgentPage] = useState(1)
   const [agentSearch, setAgentSearch] = useState('')
 
-  const queryParams = useMemo(
-    (): AnalyticsQuery => ({
-      ...appliedRange,
-      page: perAgentPage,
-      pageSize: ANALYTICS_PER_AGENT_PAGE_SIZE,
-      ...(agentSearch.trim() ? { q: agentSearch.trim() } : {}),
-    }),
-    [appliedRange, perAgentPage, agentSearch],
-  )
-
   const analyticsQuery = useQuery({
-    queryKey: ANALYTICS_QUERY_KEYS.rolesApplications(queryParams),
+    queryKey: ANALYTICS_QUERY_KEYS.rolesApplications(appliedRange),
     queryFn: (): Promise<AnalyticsDto> =>
-      fetchRolesApplicationsAnalytics(queryParams),
+      fetchRolesApplicationsAnalytics(appliedRange),
     placeholderData: keepPreviousData,
   })
 
@@ -92,9 +81,8 @@ export const AnalyticsPage = (): React.ReactElement => {
       <AnalyticsReport
         key={reportKey}
         data={successData}
-        perAgentPage={successData.perAgent.page}
-        perAgentPageSize={successData.perAgent.pageSize}
-        perAgentTotal={successData.perAgent.total}
+        perAgentPage={perAgentPage}
+        agentSearch={agentSearch}
         onPerAgentPageChange={setPerAgentPage}
       />
     ) : null

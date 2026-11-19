@@ -1,4 +1,5 @@
 import { LOCALE_CHROME_RU } from './locale-chrome.constants'
+import { PORTAL_FORM_LOCALE_RU } from './portal-form-locale-ru.constants'
 
 /** Russian UI catalog (FR-20). */
 export const RU_LOCALE = {
@@ -79,7 +80,9 @@ export const RU_LOCALE = {
   staffCreate: {
     backToApps: 'К заявкам',
     title: 'Создать заявку',
-    subtitle: 'Данные как в анкете визового центра: латиницей, как в загранпаспорте.',
+    openingFormTitle: 'Открываем анкету портала',
+    openingForm: 'Дальше откроется анкета сайта. Email заявителя указывается там.',
+    openFormFailed: 'Не удалось открыть анкету портала. У новой заявки нет клиента.',
     steps: {
       submission: 'Подача',
       questionnaire: 'Анкета',
@@ -104,6 +107,10 @@ export const RU_LOCALE = {
       clientEmail: 'Email клиента',
       clientEmailPlaceholder: 'client@example.com',
       clientEmailHint: 'Укажите email клиента. По нему будет создан или найден доступ в кабинет.',
+      clientId: 'ID существующего клиента (необязательно)',
+      clientIdPlaceholder: 'UUID клиента',
+      clientIdHint:
+        'Оставьте пустым, чтобы создать нового CRM-клиента, или укажите id существующего.',
     },
     applicantCardTitle: 'Заявитель {{index}}',
     removeApplicant: 'Удалить',
@@ -419,8 +426,6 @@ export const RU_LOCALE = {
     },
     portalForm: {
       title: 'Портальная форма',
-      subtitle:
-        'Сбор полей Edit Member и Location / Visa Type для автозаполнения портала.',
       back: 'К карточке клиента',
       loadingTitle: 'Загрузка…',
       loadingText: 'Получаем данные портальной формы.',
@@ -432,6 +437,7 @@ export const RU_LOCALE = {
       passportError: 'Ошибка сохранения паспорта: {{message}}',
       portalFormError: 'Ошибка сохранения portal-form: {{message}}',
       tripError: 'Ошибка сохранения поездки: {{message}}',
+      ...PORTAL_FORM_LOCALE_RU,
     },
     status: {
       filling: 'Заполнение',
@@ -591,7 +597,10 @@ export const RU_LOCALE = {
       loadingTitle: 'Загрузка…',
       loadingText: 'Получаем список заявок.',
       emptyTitle: 'Ничего не нашлось',
-      emptyText: 'Сбросьте фильтр или создайте заявку.',
+      emptyText:
+        'Сбросьте фильтры, чтобы расширить выдачу, или воспользуйтесь кнопкой создания ниже.',
+      emptyCreateCtaStaff: 'Создать заявку',
+      emptyCreateCtaAgent: 'Новый клиент',
     },
     status: {
       filling: 'Заполнение',

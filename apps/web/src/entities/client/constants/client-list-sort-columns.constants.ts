@@ -1,8 +1,8 @@
-import type { ClientsListSortBy } from '@vises/contracts'
+import type { ClientsListSortBy } from '../types/clients-list-sort-by.types'
 
 export const CLIENT_LIST_SORT_COLUMNS: Array<{
   key: ClientsListSortBy
-  labelKey: `clients.list.columns.${'name' | 'agent' | 'route' | 'status' | 'createdAt'}`
+  labelKey: `clients.list.columns.${'name' | 'agent' | 'status' | 'createdAt'}`
   requiresAgentColumn: boolean
 }> = [
   {
@@ -11,14 +11,9 @@ export const CLIENT_LIST_SORT_COLUMNS: Array<{
     requiresAgentColumn: false,
   },
   {
-    key: 'agentName',
+    key: 'agentId',
     labelKey: 'clients.list.columns.agent',
     requiresAgentColumn: true,
-  },
-  {
-    key: 'route',
-    labelKey: 'clients.list.columns.route',
-    requiresAgentColumn: false,
   },
   {
     key: 'status',

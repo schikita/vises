@@ -11,15 +11,14 @@ export const PORTAL_FORM_INVITING_AUTHORITY_VALUE = {
 export const PORTAL_FORM_INVITING_AUTHORITY_OPTIONS = [
   {
     value: PORTAL_FORM_INVITING_AUTHORITY_VALUE.COMPANY,
-    label: 'Inviting company/organization',
+    labelKey: 'company',
   },
   {
     value: PORTAL_FORM_INVITING_AUTHORITY_VALUE.HOTEL,
-    label:
-      'Hotel(s) or temporary accommodation(s) in the member state(s)',
+    labelKey: 'hotel',
   },
   {
     value: PORTAL_FORM_INVITING_AUTHORITY_VALUE.PERSON,
-    label: 'Inviting person(s) in the member state(s)',
+    labelKey: 'person',
   },
 ] as const
