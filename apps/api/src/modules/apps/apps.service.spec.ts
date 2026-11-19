@@ -238,6 +238,32 @@ describe('AppsService (PF-TASK-007 / DEC-PF-011 + visaSubType)', (): void => {
     expect(result.application.clientId).toBe('cli-new');
   });
 
+  it('upsert create without clientEmail skips cabinet identity and stores a blank email', async (): Promise<void> => {
+    const service = await createService();
+    appsFindOne.mockResolvedValue(null);
+    createClientWithDebit.mockResolvedValue(
+      Object.assign(new Client(), { id: 'cli-blank' }),
+    );
+
+    const body: UpsertAppDto = {
+      portalWorkflowAction: 'none',
+    };
+
+    const result = await service.upsert(body, admin);
+
+    expect(ensureClientForIdentity).not.toHaveBeenCalled();
+    expect(createClientWithDebit).toHaveBeenCalledWith(
+      admin,
+      expect.objectContaining({ email: null }),
+    );
+    const saved = appsSave.mock.calls[0][0] as Application;
+    expect(saved.clientEmail).toBe('');
+    expect(saved.clientId).toBe('cli-blank');
+    expect(result.application.clientEmail).toBe('');
+    expect(result.application.clientId).toBe('cli-blank');
+    expect(result.issuedClientAccess).toBeUndefined();
+  });
+
   it('upsert create with existing clientId attaches without debit', async (): Promise<void> => {
     const service = await createService();
     appsFindOne.mockResolvedValue(null);

@@ -257,27 +257,25 @@ export class AppsService implements IAppsService {
 
     if (isCreate && isStaff) {
       const identity = (body.clientEmail ?? '').trim();
-      if (!identity) {
-        throw new HttpException(
-          'Client email is required',
-          HttpStatus.BAD_REQUEST,
+      if (identity.length === 0) {
+        // Email is collected later on the portal form, not at create time.
+        clientEmail = '';
+      } else {
+        const name = deriveClientNameFromApplicants(applicants);
+        const ensured = await this.usersService.ensureClientForIdentity(
+          identity,
+          name,
         );
-      }
+        clientEmail = ensured.user.email || ensured.user.login;
+        applicants = copyPrimaryApplicantEmailIfBlank(applicants, clientEmail);
 
-      const name = deriveClientNameFromApplicants(applicants);
-      const ensured = await this.usersService.ensureClientForIdentity(
-        identity,
-        name,
-      );
-      clientEmail = ensured.user.email || ensured.user.login;
-      applicants = copyPrimaryApplicantEmailIfBlank(applicants, clientEmail);
-
-      if (ensured.created && ensured.password && ensured.token) {
-        issuedClientAccess = {
-          user: ensured.user,
-          password: ensured.password,
-          token: ensured.token,
-        };
+        if (ensured.created && ensured.password && ensured.token) {
+          issuedClientAccess = {
+            user: ensured.user,
+            password: ensured.password,
+            token: ensured.token,
+          };
+        }
       }
     }
 

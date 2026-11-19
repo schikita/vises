@@ -33,6 +33,7 @@ import {
   applyPortalFormFields,
   assertAgentCreate,
   assertCanAccessClient,
+  isOfficeStaffRole,
   buildNewClientRow,
   buildPassportPlainOut,
   extractPassportCiphertextFields,
@@ -307,6 +308,24 @@ export class ClientsService implements IClientsService {
       now,
     });
     await manager.save(Client, client);
+
+    if (isOfficeStaffRole(actor.role)) {
+      await manager.save(
+        BalanceTransaction,
+        manager.create(BalanceTransaction, {
+          id: uid('btx'),
+          agentId: actor.id,
+          actorId: actor.id,
+          type: 'client_creation_debit',
+          amount: '0.00',
+          reason: CLIENT_CREATION_DEBIT_REASON,
+          resultingBalance: '0.00',
+          clientId,
+          createdAt: now,
+        }),
+      );
+      return client;
+    }
 
     await this.balance.debitWithLock(manager, {
       agentId: actor.id,

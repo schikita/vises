@@ -16,6 +16,7 @@ export type ClientPortalFormConditionals = {
   isVisaIssuedBefore?: boolean | string | null;
   previousVisaValidFrom?: string | null;
   previousVisaValidTo?: string | null;
+  previousVisaIssuedCountry?: string | null;
   finalDestinationIssuedByCountry?: string | null;
   finalDestinationValidFromDate?: string | null;
   finalDestinationValidToDate?: string | null;
